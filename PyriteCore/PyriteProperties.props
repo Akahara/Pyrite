@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <PyriteCore>$(SolutionDir)PyriteCore\</PyriteCore>
+    <PyriteDllOutput>$(SolutionDir)build\</PyriteDllOutput>
+    <PyriteIncludeDir>$(PyriteCore)src;$(PyriteCore)vendor</PyriteIncludeDir>
+    <PyriteLib>$(PyriteCore)lib\</PyriteLib>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_PropertySheetDisplayName>PyriteProperties</_PropertySheetDisplayName>
+  </PropertyGroup>
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="PyriteCore">
+      <Value>$(PyriteCore)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PyriteDllOutput">
+      <Value>$(PyriteDllOutput)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PyriteIncludeDir">
+      <Value>$(PyriteIncludeDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PyriteLib">
+      <Value>$(PyriteLib)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

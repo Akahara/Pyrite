@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyriteCore", "PyriteCore\PyriteCore.vcxproj", "{69916868-4977-4B73-A4EB-224C7F4F48EB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyriteEditor", "PyriteEditor\PyriteEditor.vcxproj", "{549FA038-355B-4784-ADB4-0B3678CBC0C1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{69916868-4977-4B73-A4EB-224C7F4F48EB} = {69916868-4977-4B73-A4EB-224C7F4F48EB}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Debug|x64.ActiveCfg = Debug|x64
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Debug|x64.Build.0 = Debug|x64
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Debug|x86.ActiveCfg = Debug|x64
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Release|x64.ActiveCfg = Release|x64
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Release|x64.Build.0 = Release|x64
+		{69916868-4977-4B73-A4EB-224C7F4F48EB}.Release|x86.ActiveCfg = Release|x64
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Debug|x64.ActiveCfg = Debug|x64
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Debug|x64.Build.0 = Debug|x64
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Debug|x86.ActiveCfg = Debug|Win32
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Debug|x86.Build.0 = Debug|Win32
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Release|x64.ActiveCfg = Release|x64
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Release|x64.Build.0 = Release|x64
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Release|x86.ActiveCfg = Release|Win32
+		{549FA038-355B-4784-ADB4-0B3678CBC0C1}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {17DD2197-7E72-4121-AB66-DCC5F19E92AB}
+	EndGlobalSection
+EndGlobal
