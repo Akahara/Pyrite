@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "AABB.h"
+#include "Transform.h"
 #include "utils/Math.h"
 
 namespace pyr
@@ -10,7 +11,7 @@ namespace pyr
 
 struct PerspectiveProjection
 {
-  float fovy   = DirectX::XM_PI * .4f;
+  float fovy   = PI * .4f;
   float aspect = 16.f/9.f;
   float zNear  = 3.f;     // world space
   float zFar   = 10000.f; // world space
@@ -38,16 +39,13 @@ public:
 
   const CameraProjection &getProjection() const { return m_projection; }
   void setProjection(const CameraProjection &proj);
-  void setPosition(const vec3 &position) { m_position = XMVectorSetW(position, 1.f); }
-  void setRotation(const quat &rotation) { m_rotation = rotation; }
-  void setRotation(float yaw, float pitch);
+  void setPosition(const vec3 &position) { m_transform.position = position; }
+  void setRotation(const quat &rotation) { m_transform.rotation = rotation; }
+  void setTransform(const Transform& transform) { m_transform = transform; }
   void lookAt(const vec3 &target);
 
-  void rotate(const quat rot) { m_rotation *= rot; }
-  void rotate(float rx, float ry, float rz, bool absolute = false);
-  void move(const vec3 &dl);
-
-  static quat quaternionLookAt(const vec3 &pos, const vec3 &target);
+  void rotate(const quat rot) { m_transform.rotation *= rot; }
+  void move(const vec3& dl) { m_transform.position += dl; }
 
   // must be called after a position/rotation update !
   void updateViewMatrix();
@@ -57,8 +55,9 @@ public:
   const mat4 &getViewProjectionMatrix() const { return m_viewProjectionMatrix; }
   const mat4 &getProjectionMatrix() const { return m_projectionMatrix; }
   const mat4 &getViewMatrix() const { return m_viewMatrix; }
-  const vec3 &getPosition() const { return m_position; }
-  const quat &getRotation() const { return m_rotation; }
+  const Transform& getTransform() const { return m_transform; }
+  const vec3 &getPosition() const { return m_transform.position; }
+  const quat &getRotation() const { return m_transform.rotation; }
 
   vec3 getRight() const;
   vec3 getUp() const;
@@ -67,8 +66,7 @@ public:
 
 private:
   CameraProjection m_projection;
-  vec3  m_position = vec3::Zero;
-  quat  m_rotation = DirectX::XMQuaternionIdentity();
+  Transform m_transform;
   mat4  m_projectionMatrix{};
   mat4  m_viewMatrix{};
   mat4  m_viewProjectionMatrix{};
@@ -88,7 +86,7 @@ struct Plane
 
   float signedDistanceTo(const vec3& point) const
   {
-    return XMVectorGetX(XMVector3Dot(normal, point)) - distanceToOrigin;
+    return normal.Dot(point) - distanceToOrigin;
   }
 };
 

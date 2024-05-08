@@ -149,6 +149,7 @@
     <ClInclude Include="src\utils\StringUtils.h" />
     <ClInclude Include="src\world\AABB.h" />
     <ClInclude Include="src\world\Camera.h" />
+    <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />

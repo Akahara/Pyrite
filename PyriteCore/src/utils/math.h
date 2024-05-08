@@ -16,6 +16,7 @@ using vec3 = DirectX::SimpleMath::Vector3;
 using vec4 = DirectX::SimpleMath::Vector4;
 using quat = DirectX::SimpleMath::Quaternion;
 using mat4 = DirectX::SimpleMath::Matrix;
+using plane = DirectX::SimpleMath::Plane;
 
 static constexpr float PI = 3.14159265359f;
 
