@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "shader.h"
-#include "texture.h"
-#include "engine/d3ddevice.h"
+#include "Shader.h"
+#include "Texture.h"
+#include "engine/Device.h"
 
 namespace pyr {
 

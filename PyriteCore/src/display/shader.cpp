@@ -1,13 +1,13 @@
-#include "shader.h"
+#include "Shader.h"
 
 #define NOMINMAX
 #include <stdexcept>
 #include <d3dcompiler.h>
 #include <fstream>
 
-#include "engine/directxlib.h"
-#include "graphical_resource.h"
-#include "engine/windowsengine.h"
+#include "engine/Directxlib.h"
+#include "GraphicalResource.h"
+#include "engine/Engine.h"
 #include "InputLayout.h"
 
 

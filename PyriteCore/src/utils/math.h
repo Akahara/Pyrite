@@ -6,7 +6,7 @@
 #include <random>
 #include <cmath>
 
-#include "engine/directxlib.h"
+#include "engine/Directxlib.h"
 
 #undef min
 #undef max

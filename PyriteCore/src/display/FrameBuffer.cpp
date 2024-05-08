@@ -1,12 +1,12 @@
-﻿#include "frame_buffer.h"
+﻿#include "FrameBuffer.h"
 
 #include <algorithm>
 
-#include "render_profiles.h"
-#include "shader.h"
-#include "engine/windowsengine.h"
-#include "utils/debug.h"
-#include "utils/math.h"
+#include "RenderProfiles.h"
+#include "Shader.h"
+#include "engine/Engine.h"
+#include "utils/Debug.h"
+#include "utils/Math.h"
 #include "InputLayout.h"
 
 namespace pyr

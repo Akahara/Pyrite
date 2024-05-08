@@ -18,7 +18,7 @@
 #define NO_D3D11_DEBUG_NAME
 #else
 #include <d3d11_1.h>
-#include <d3d11shader.h>
+#include <d3d11Shader.h>
 #endif
 
 #pragma comment( lib, "d3dcompiler.lib" )

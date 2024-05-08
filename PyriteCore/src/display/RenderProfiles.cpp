@@ -1,9 +1,9 @@
-#include "render_profiles.h"
+#include "RenderProfiles.h"
 
 #include <stack>
 
-#include "engine/windowsengine.h"
-#include "utils/debug.h"
+#include "engine/Engine.h"
+#include "utils/Debug.h"
 
 namespace pyr
 {

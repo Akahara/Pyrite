@@ -1,8 +1,8 @@
-#include "graphical_resource.h"
+#include "GraphicalResource.h"
 
-#include "engine/directxlib.h"
-#include "utils/logger.h"
-#include "utils/stringutils.h"
+#include "engine/Directxlib.h"
+#include "utils/Logger.h"
+#include "utils/StringUtils.h"
 
 namespace pyr
 {

@@ -2,12 +2,12 @@
 #include <tchar.h>
 #include <Windows.h>
 
-#include "editorscene.h"
+#include "EditorScene.h"
 #include "TriangleScene.h"
-#include "utils/debug.h"
-#include "engine/windowsengine.h"
-#include "engine/d3ddevice.h"
-#include "scene/scene_manager.h"
+#include "utils/Debug.h"
+#include "engine/Engine.h"
+#include "engine/Device.h"
+#include "scene/SceneManager.h"
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {

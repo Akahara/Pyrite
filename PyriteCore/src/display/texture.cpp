@@ -1,12 +1,11 @@
-#include "texture.h"
+#include "Texture.h"
 
 #include <stdexcept>
 
-#include "engine/directxlib.h"
 #include "ddstextureloader/DDSTextureLoader11.h"
-
-#include "engine/windowsengine.h"
-#include "utils/stringutils.h"
+#include "engine/Directxlib.h"
+#include "engine/Engine.h"
+#include "utils/StringUtils.h"
 
 namespace pyr
 {

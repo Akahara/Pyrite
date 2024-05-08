@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scene/scene.h"
+#include "scene/Scene.h"
 
 namespace pye
 {

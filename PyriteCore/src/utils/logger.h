@@ -4,8 +4,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include "math.h"
-#include "stringutils.h"
+#include "Math.h"
+#include "StringUtils.h"
 
 inline std::ostream &operator<<(std::ostream &ss, const vec2& v)
 {

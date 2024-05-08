@@ -3,8 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "texture.h"
-#include "utils/debug.h"
+#include "Texture.h"
+#include "utils/Debug.h"
 
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;

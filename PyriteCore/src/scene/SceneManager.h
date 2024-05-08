@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 
-#include "scene.h"
+#include "Scene.h"
 
 namespace pyr
 {

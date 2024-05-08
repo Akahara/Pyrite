@@ -589,7 +589,7 @@ extern "C" {
 #include <limits.h>
 
 #if !defined(STBI_NO_LINEAR) || !defined(STBI_NO_HDR)
-#include <math.h>  // ldexp, pow
+#include <Math.h>  // ldexp, pow
 #endif
 
 #ifndef STBI_NO_STDIO

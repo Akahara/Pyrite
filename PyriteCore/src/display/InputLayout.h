@@ -4,8 +4,8 @@
 #include <span>
 #include <unordered_map>
 
-#include "vertex.h"
-#include "engine/directxlib.h"
+#include "Vertex.h"
+#include "engine/Directxlib.h"
 
 namespace pyr
 {

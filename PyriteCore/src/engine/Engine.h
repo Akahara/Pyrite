@@ -1,8 +1,8 @@
 #pragma once
 
-#include "d3ddevice.h"
-#include "display/graphical_resource.h"
-#include "utils/clock.h"
+#include "Device.h"
+#include "display/GraphicalResource.h"
+#include "utils/Clock.h"
 
 namespace pyr
 {

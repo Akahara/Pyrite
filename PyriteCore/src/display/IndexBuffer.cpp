@@ -5,8 +5,8 @@
 #include <vector>
 #include <algorithm>
 
-#include "engine/directxlib.h"
-#include "engine/windowsengine.h"
+#include "engine/Directxlib.h"
+#include "engine/Engine.h"
 
 namespace pyr
 {

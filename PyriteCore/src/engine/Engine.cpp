@@ -1,15 +1,15 @@
-#include "windowsengine.h"
+#include "Engine.h"
 
 #include <utility>
-#include "directxlib.h"
-#include "display/frame_buffer.h"
-#include "display/render_profiles.h"
-#include "utils/clock.h"
+#include "Directxlib.h"
+#include "display/FrameBuffer.h"
+#include "display/RenderProfiles.h"
+#include "utils/Clock.h"
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
-#include "inputs/user_inputs.h"
-#include "scene/scene_manager.h"
-#include "utils/stringutils.h"
+#include "inputs/UserInputs.h"
+#include "scene/SceneManager.h"
+#include "utils/StringUtils.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

@@ -1,6 +1,6 @@
-#include "scene_manager.h"
+#include "SceneManager.h"
 
-#include "utils/debug.h"
+#include "utils/Debug.h"
 
 namespace pyr
 {

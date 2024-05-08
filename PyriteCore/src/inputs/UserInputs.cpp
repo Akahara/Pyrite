@@ -1,4 +1,4 @@
-#include "user_inputs.h"
+#include "UserInputs.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -7,8 +7,8 @@
 #define NOMINMAX
 #include <dinput.h>
 
-#include "engine/d3ddevice.h"
-#include "engine/directxlib.h"
+#include "engine/Device.h"
+#include "engine/Directxlib.h"
 
 namespace pyr
 {

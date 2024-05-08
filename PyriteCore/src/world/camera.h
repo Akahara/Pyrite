@@ -2,8 +2,8 @@
 
 #include <variant>
 
-#include "aabb.h"
-#include "utils/math.h"
+#include "AABB.h"
+#include "utils/Math.h"
 
 namespace pyr
 {

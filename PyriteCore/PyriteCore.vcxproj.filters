@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\display\frame_buffer.cpp" />
-    <ClCompile Include="src\display\graphical_resource.cpp" />
-    <ClCompile Include="src\display\render_profiles.cpp" />
-    <ClCompile Include="src\display\shader.cpp" />
-    <ClCompile Include="src\display\texture.cpp" />
-    <ClCompile Include="src\engine\d3ddevice.cpp" />
-    <ClCompile Include="src\engine\directxlib.cpp" />
-    <ClCompile Include="src\engine\windowsengine.cpp" />
-    <ClCompile Include="src\inputs\user_inputs.cpp" />
-    <ClCompile Include="src\scene\scene_manager.cpp" />
-    <ClCompile Include="src\utils\clock.cpp" />
-    <ClCompile Include="src\world\camera.cpp" />
+    <ClCompile Include="src\display\FrameBuffer.cpp" />
+    <ClCompile Include="src\display\GraphicalResource.cpp" />
+    <ClCompile Include="src\display\RenderProfiles.cpp" />
+    <ClCompile Include="src\display\Shader.cpp" />
+    <ClCompile Include="src\display\Texture.cpp" />
+    <ClCompile Include="src\engine\Device.cpp" />
+    <ClCompile Include="src\engine\Directxlib.cpp" />
+    <ClCompile Include="src\engine\Engine.cpp" />
+    <ClCompile Include="src\inputs\UserInputs.cpp" />
+    <ClCompile Include="src\scene\SceneManager.cpp" />
+    <ClCompile Include="src\utils\Clock.cpp" />
+    <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
     <ClCompile Include="vendor\imgui\imgui.cpp" />
     <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
@@ -24,29 +24,30 @@
     <ClCompile Include="vendor\stbi\stbi_impl.cpp" />
     <ClCompile Include="src\display\IndexBuffer.cpp" />
     <ClCompile Include="src\display\VertexBuffer.cpp" />
+    <ClCompile Include="src\utils\StringUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\display\core_utils.h" />
-    <ClInclude Include="src\display\frame_buffer.h" />
-    <ClInclude Include="src\display\graphical_resource.h" />
+    <ClInclude Include="src\display\CoreUtils.h" />
+    <ClInclude Include="src\display\FrameBuffer.h" />
+    <ClInclude Include="src\display\GraphicalResource.h" />
     <ClInclude Include="src\display\InputLayout.h" />
-    <ClInclude Include="src\display\render_profiles.h" />
-    <ClInclude Include="src\display\shader.h" />
-    <ClInclude Include="src\display\texture.h" />
-    <ClInclude Include="src\display\vertex.h" />
-    <ClInclude Include="src\engine\d3ddevice.h" />
-    <ClInclude Include="src\engine\directxlib.h" />
-    <ClInclude Include="src\engine\windowsengine.h" />
-    <ClInclude Include="src\inputs\scancodes.h" />
-    <ClInclude Include="src\inputs\user_inputs.h" />
-    <ClInclude Include="src\scene\scene.h" />
-    <ClInclude Include="src\scene\scene_manager.h" />
-    <ClInclude Include="src\utils\clock.h" />
-    <ClInclude Include="src\utils\debug.h" />
-    <ClInclude Include="src\utils\math.h" />
-    <ClInclude Include="src\utils\stringutils.h" />
-    <ClInclude Include="src\world\aabb.h" />
-    <ClInclude Include="src\world\camera.h" />
+    <ClInclude Include="src\display\RenderProfiles.h" />
+    <ClInclude Include="src\display\Shader.h" />
+    <ClInclude Include="src\display\Texture.h" />
+    <ClInclude Include="src\display\Vertex.h" />
+    <ClInclude Include="src\engine\Device.h" />
+    <ClInclude Include="src\engine\Directxlib.h" />
+    <ClInclude Include="src\engine\Engine.h" />
+    <ClInclude Include="src\inputs\ScanCodes.h" />
+    <ClInclude Include="src\inputs\UserInputs.h" />
+    <ClInclude Include="src\scene\Scene.h" />
+    <ClInclude Include="src\scene\SceneManager.h" />
+    <ClInclude Include="src\utils\Clock.h" />
+    <ClInclude Include="src\utils\Debug.h" />
+    <ClInclude Include="src\utils\Math.h" />
+    <ClInclude Include="src\utils\StringUtils.h" />
+    <ClInclude Include="src\world\AABB.h" />
+    <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />
@@ -62,6 +63,7 @@
     <ClInclude Include="vendor\stbi\stb_image.h" />
     <ClInclude Include="src\display\VertexBuffer.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
+    <ClInclude Include="src\utils\Logger.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

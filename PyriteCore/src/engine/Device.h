@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "directxlib.h"
+#include "Directxlib.h"
 
 namespace pyr
 {

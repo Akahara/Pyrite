@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "utils/debug.h"
-#include "utils/math.h"
+#include "utils/Debug.h"
+#include "utils/Math.h"
 
 struct Transform;
 

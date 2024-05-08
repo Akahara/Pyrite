@@ -2,10 +2,10 @@
 
 #include "display/IndexBuffer.h"
 #include "display/InputLayout.h"
-#include "display/vertex.h"
+#include "display/Vertex.h"
 #include "display/VertexBuffer.h"
-#include "engine/windowsengine.h"
-#include "scene/scene.h"
+#include "engine/Engine.h"
+#include "scene/Scene.h"
 
 namespace pye
 {

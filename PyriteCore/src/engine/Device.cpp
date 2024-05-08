@@ -1,11 +1,11 @@
-#include "d3ddevice.h"
+#include "Device.h"
 
 #include <vector>
 #include <dxgitype.h>
 
-#include "windowsengine.h"
-#include "display/frame_buffer.h"
-#include "inputs/user_inputs.h"
+#include "Engine.h"
+#include "display/FrameBuffer.h"
+#include "inputs/UserInputs.h"
 
 #define DO_D3D11_DEBUG
 

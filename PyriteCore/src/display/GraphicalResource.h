@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "texture.h"
-#include "shader.h"
+#include "Texture.h"
+#include "Shader.h"
 #include "InputLayout.h"
 
 namespace pyr
