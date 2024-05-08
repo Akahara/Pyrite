@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Windows.h>
-
+#include "engine/directxlib.h"
 #include "scancodes.h"
 
 namespace pyr

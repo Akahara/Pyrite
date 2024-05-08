@@ -6,6 +6,9 @@
 #define _XM_NO_INTRINSICS_
 #include <d3d11.h>
 #include <Effects11/d3dx11effect.h>
+#include <DirectXMath.h>
+#include <directtk/SimpleMath.h>
+#include <Windows.h>
 
 struct directx_error : std::runtime_error {
   explicit directx_error(const std::string &message) : std::runtime_error(message) {}

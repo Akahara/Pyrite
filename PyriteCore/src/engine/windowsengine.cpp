@@ -1,8 +1,7 @@
 #include "windowsengine.h"
 
 #include <utility>
-#define NOMINMAX
-#include <Windows.h>
+#include "directxlib.h"
 #include "display/frame_buffer.h"
 #include "display/render_profiles.h"
 #include "utils/clock.h"

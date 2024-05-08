@@ -1,6 +1,6 @@
 ﻿#include "clock.h"
 
-#include <Windows.h>
+#include "engine/directxlib.h"
 
 namespace pyr
 {

@@ -1,15 +1,15 @@
 ﻿#pragma once
 
-#define NOMINMAX
 #include <algorithm>
 #include <utility>
 #include <concepts>
 #include <random>
 #include <cmath>
 
-#define _XM_NO_INTRINSICS_
-#include <DirectXMath.h>
-#include <directtk/SimpleMath.h>
+#include "engine/directxlib.h"
+
+#undef min
+#undef max
 
 using vec2 = DirectX::SimpleMath::Vector2;
 using vec3 = DirectX::SimpleMath::Vector3;

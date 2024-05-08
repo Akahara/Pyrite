@@ -1,9 +1,13 @@
 #include "graphical_resource.h"
 
 #include "engine/directxlib.h"
+#include "utils/logger.h"
+#include "utils/stringutils.h"
 
 namespace pyr
 {
+
+PYR_DEFINELOG(GraphicalResourceRegistry, INFO);
 
 GraphicalResourceRegistry::~GraphicalResourceRegistry()
 {
@@ -39,7 +43,7 @@ Cubemap GraphicalResourceRegistry::loadCubemap(const filepath &path)
 void GraphicalResourceRegistry::reloadShaders()
 {
   for(auto &[file, oldEffect] : m_effects) {
-    //try {
+    try {
       Effect newEffect = ShaderManager::makeEffect(file, oldEffect.second);
       DXRelease(oldEffect.first.m_effect);
       oldEffect.first.m_constantBufferBindingsCache.clear();
@@ -47,9 +51,9 @@ void GraphicalResourceRegistry::reloadShaders()
       oldEffect.first.m_pass = newEffect.m_pass;
       oldEffect.first.m_effect = newEffect.m_effect;
       oldEffect.first.m_technique = newEffect.m_technique;
-    //} catch (const std::runtime_error &e) {
-      //logs::graphics.logm(utils::widestring2string(file), " compilation error: ", e.what());
-    //}
+    } catch (const std::runtime_error &e) {
+      PYR_LOG(GraphicalResourceRegistry, WARN, pyr::widestring2string(file), " compilation error: ", e.what());
+    }
   }
 }
 
