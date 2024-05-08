@@ -24,6 +24,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     pyr::SceneManager& scenes = pyr::SceneManager::getInstance();
     scenes.registerScene<pye::TriangleScene>("TriangleScene");
     scenes.registerScene<pye::EmptyEditorScene>("Empty");
+    scenes.registerScene<pye::ForwardPassScene>("Forward pass");
 
     // Load the scene that is passed on the command line by default
     scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
