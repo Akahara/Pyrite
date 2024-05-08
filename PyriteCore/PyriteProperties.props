@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros">
     <PyriteCore>$(SolutionDir)PyriteCore\</PyriteCore>
     <PyriteDllOutput>$(SolutionDir)build\</PyriteDllOutput>
-    <PyriteIncludeDir>$(PyriteCore)src;$(PyriteCore)vendor</PyriteIncludeDir>
+    <PyriteIncludeDir>$(PyriteCore)src;$(PyriteCore)vendor;$(PyriteCore)vendor\imgui</PyriteIncludeDir>
     <PyriteLib>$(PyriteCore)lib\</PyriteLib>
   </PropertyGroup>
   <PropertyGroup>

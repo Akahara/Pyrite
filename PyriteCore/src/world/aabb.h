@@ -31,7 +31,7 @@ public:
 
   bool isInBounds(const vec3 &point) const 
   {
-    return XMVector3InBounds(point - m_origin, m_size);
+    return (point - m_origin).InBounds(m_size);
   }
 
   /*

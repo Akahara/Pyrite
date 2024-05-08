@@ -9,6 +9,7 @@
 #include "engine/Engine.h"
 #include "engine/Device.h"
 #include "scene/SceneManager.h"
+#include "utils/StringUtils.h"
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
@@ -20,7 +21,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     settings.appTitle = "PyriteEditor";
     settings.bHasTitleBar = true;
     pyr::Engine engine{ hInstance, std::move(settings) };
-    pyr::SceneManager::getInstance().setInitialScene(std::make_unique<pye::ForwardPassScene>());
+    pyr::SceneManager& scenes = pyr::SceneManager::getInstance();
+    scenes.registerScene<pye::TriangleScene>("TriangleScene");
+    scenes.registerScene<pye::EmptyEditorScene>("Empty");
+
+    // Load the scene that is passed on the command line by default
+    scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG
