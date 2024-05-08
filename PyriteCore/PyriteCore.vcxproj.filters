@@ -30,6 +30,7 @@
     <ClCompile Include="vendor\imguizmo\ImGradient.cpp" />
     <ClCompile Include="vendor\imguizmo\ImGuizmo.cpp" />
     <ClCompile Include="vendor\imguizmo\ImSequencer.cpp" />
+    <ClCompile Include="src\utils\ImGuiExt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -75,6 +76,7 @@
     <ClInclude Include="vendor\imguizmo\ImGuizmo.h" />
     <ClInclude Include="vendor\imguizmo\ImSequencer.h" />
     <ClInclude Include="vendor\imguizmo\ImZoomSlider.h" />
+    <ClInclude Include="src\utils\ImGuiExt.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

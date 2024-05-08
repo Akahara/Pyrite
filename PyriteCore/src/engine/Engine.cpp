@@ -104,7 +104,7 @@ Engine::~Engine()
 void Engine::run()
 {
   if (!SceneManager::getInstance().getActiveScene())
-    SceneManager::getInstance().setInitialScene(std::make_unique<EmptyScene>());
+    SceneManager::getInstance().transitionToScene(SceneManager::make_scene_supplier<EmptyScene>());
 
   bool running = true;
   while (running && !m_bShouldExit) {

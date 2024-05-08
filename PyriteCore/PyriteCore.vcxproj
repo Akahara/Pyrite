@@ -105,6 +105,7 @@
     <ClCompile Include="src\inputs\UserInputs.cpp" />
     <ClCompile Include="src\scene\SceneManager.cpp" />
     <ClCompile Include="src\utils\Clock.cpp" />
+    <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="src\scene\SceneManager.h" />
     <ClInclude Include="src\utils\Clock.h" />
     <ClInclude Include="src\utils\Debug.h" />
+    <ClInclude Include="src\utils\ImGuiExt.h" />
     <ClInclude Include="src\utils\Logger.h" />
     <ClInclude Include="src\utils\Math.h" />
     <ClInclude Include="src\utils\StringUtils.h" />
