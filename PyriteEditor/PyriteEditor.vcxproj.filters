@@ -6,5 +6,6 @@
   <ItemGroup>
     <ClInclude Include="src\EditorScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
+    <ClInclude Include="src\ForwardPassScene.h" />
   </ItemGroup>
 </Project>

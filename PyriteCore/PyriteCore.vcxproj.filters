@@ -25,6 +25,11 @@
     <ClCompile Include="src\display\IndexBuffer.cpp" />
     <ClCompile Include="src\display\VertexBuffer.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
+    <ClCompile Include="src\world\Mesh\Mesh.cpp" />
+    <ClCompile Include="src\world\Mesh\Model.cpp" />
+    <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
+    <ClCompile Include="src\world\Material.cpp" />
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -64,6 +69,16 @@
     <ClInclude Include="src\display\VertexBuffer.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
     <ClInclude Include="src\utils\Logger.h" />
+    <ClInclude Include="src\world\Mesh\Mesh.h" />
+    <ClInclude Include="src\world\Mesh\Model.h" />
+    <ClInclude Include="src\world\Mesh\StaticMesh.h" />
+    <ClInclude Include="src\world\Mesh\MeshImporter.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderPass.h" />
+    <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
+    <ClInclude Include="src\world\Material.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
