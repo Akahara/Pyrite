@@ -5,7 +5,8 @@ namespace pyr
 
 enum class BlendProfile
 {
-  BLEND, NO_BLEND,
+  BLEND,
+  NO_BLEND,
 };
 
 enum class DepthProfile

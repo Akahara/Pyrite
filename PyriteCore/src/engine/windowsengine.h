@@ -10,7 +10,7 @@ class Effect;
 
 struct EngineSettings {
   std::string appTitle;
-  bool bHasTitleBar = true; // TODO
+  bool bHasTitleBar = true;
 };
 
 class Engine
@@ -21,6 +21,9 @@ public:
 
   void run();
 
+  static const EngineSettings& getEngineSettings() { return s_engineSingleton->m_settings; }
+  // Can be used during engine initialization to test if the device was already initialized, not necessary after the engine's constructor completed
+  static bool hasDevice() { return s_engineSingleton->m_device != nullptr; }
   static Device &device() { return *s_engineSingleton->m_device; }
   static ID3D11Device &d3ddevice() { return s_engineSingleton->m_device->getDevice(); }
   static ID3D11DeviceContext &d3dcontext() { return s_engineSingleton->m_device->getImmediateContext(); }

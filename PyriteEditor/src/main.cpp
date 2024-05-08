@@ -2,9 +2,11 @@
 #include <tchar.h>
 #include <Windows.h>
 
+#include "editorscene.h"
 #include "utils/debug.h"
 #include "engine/windowsengine.h"
 #include "engine/d3ddevice.h"
+#include "scene/scene_manager.h"
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
@@ -14,7 +16,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 #endif
     pyr::EngineSettings settings;
     settings.appTitle = "PyriteEditor";
+    settings.bHasTitleBar = true;
     pyr::Engine engine{ hInstance, std::move(settings) };
+    pyr::SceneManager::getInstance().setInitialScene(std::make_unique<pye::EmptyEditorScene>());
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG

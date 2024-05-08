@@ -26,10 +26,6 @@ public:
   void resizeWindow(int newWidth, int newHeight);
   void present();
 
-private:
-  void initSwapChain(DeviceMode mode, const HWND hWnd);
-  void initRenderTargets();
-
 public:
   ID3D11Device &getDevice() const { return *m_device; }
   ID3D11DeviceContext &getImmediateContext() const { return *m_immediateContext; }

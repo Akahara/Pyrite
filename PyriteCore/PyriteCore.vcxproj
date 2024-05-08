@@ -103,6 +103,7 @@
     <ClCompile Include="src\inputs\user_inputs.cpp" />
     <ClCompile Include="src\scene\scene_manager.cpp" />
     <ClCompile Include="src\utils\clock.cpp" />
+    <ClCompile Include="src\world\camera.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
     <ClCompile Include="vendor\imgui\imgui.cpp" />
     <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
@@ -130,6 +131,8 @@
     <ClInclude Include="src\utils\debug.h" />
     <ClInclude Include="src\utils\math.h" />
     <ClInclude Include="src\utils\stringutils.h" />
+    <ClInclude Include="src\world\aabb.h" />
+    <ClInclude Include="src\world\camera.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />

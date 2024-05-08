@@ -53,9 +53,8 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
     m_appInstance,
     NULL);
 
-#ifdef PYR_NOTITLEBAR
-  SetWindowLong(m_mainWindowHandle, GWL_STYLE, 0);
-#endif
+  if (!m_settings.bHasTitleBar)
+    SetWindowLong(m_mainWindowHandle, GWL_STYLE, 0);
 
   if (!m_mainWindowHandle)
     throw std::runtime_error("Could not create a window handle");
@@ -105,7 +104,8 @@ Engine::~Engine()
 
 void Engine::run()
 {
-  SceneManager::getInstance().setActiveScene(std::make_unique<EmptyScene>());
+  if (!SceneManager::getInstance().getActiveScene())
+    SceneManager::getInstance().setInitialScene(std::make_unique<EmptyScene>());
 
   bool running = true;
   while (running && !m_bShouldExit) {
@@ -118,11 +118,11 @@ void Engine::run()
 
     postFrame();
     runFrame(static_cast<float>(delta));
-
+    
     // if scenes need to be created/deleted drop the frames instead of trying to catch back
-    //if (SceneManager::getInstance().performTransitions())
-      //m_previousTime = m_clock.getTimeAsCount();
-    //else
+    if (SceneManager::getInstance().doSceneTransition())
+      m_previousTime = m_clock.getTimeAsCount();
+    else
       m_previousTime = currentTime;
   }
 }
@@ -188,7 +188,8 @@ static LRESULT CALLBACK wndProcCallback(HWND hWnd, UINT message, WPARAM wParam, 
   case WM_SIZE: {
     int width = LOWORD(lParam);
     int height = HIWORD(lParam);
-    Engine::device().resizeWindow(width, height);
+    if (Engine::hasDevice())
+      Engine::device().resizeWindow(width, height);
     break;
   }
   default:

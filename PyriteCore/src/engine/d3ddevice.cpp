@@ -3,6 +3,7 @@
 #include <vector>
 #include <dxgitype.h>
 
+#include "windowsengine.h"
 #include "display/frame_buffer.h"
 #include "inputs/user_inputs.h"
 
@@ -39,7 +40,78 @@ private:
 
 Device::Device(DeviceMode mode, HWND hWnd)
 {
-  initSwapChain(mode, hWnd);
+  UINT createDeviceFlags = 0;
+#ifdef DO_D3D11_DEBUG
+  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+  constexpr D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
+  constexpr UINT featureLevelCount = ARRAYSIZE(featureLevels);
+
+  DXGI_SWAP_CHAIN_DESC swapChainDesc;
+  ZeroMemory(&swapChainDesc, sizeof swapChainDesc);
+
+  switch (mode) {
+  case DeviceMode::WINDOWED:
+    RECT windowRect;
+    if (Engine::getEngineSettings().bHasTitleBar)
+      WinTry(GetClientRect(hWnd, &windowRect));
+    else
+      WinTry(GetWindowRect(hWnd, &windowRect));
+    s_winWidth = windowRect.right - windowRect.left;
+    s_winHeight = windowRect.bottom - windowRect.top;
+    swapChainDesc.BufferCount = 1;
+    swapChainDesc.BufferDesc.Width = s_winWidth;
+    swapChainDesc.BufferDesc.Height = s_winHeight;
+    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.OutputWindow = hWnd;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
+    swapChainDesc.Windowed = TRUE;
+    break;
+  default:
+    throw std::exception("Not implemented: device mode other than WINDOWED");
+  }
+
+  swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+  RECT rcClient, rcWindow;
+  POINT ptDiff;
+  GetClientRect(hWnd, &rcClient);
+  GetWindowRect(hWnd, &rcWindow);
+  ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
+  ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
+  MoveWindow(hWnd, rcWindow.left, rcWindow.top, static_cast<int>(s_winWidth) + ptDiff.x, static_cast<int>(s_winHeight) + ptDiff.y, TRUE);
+
+  DXTry(
+    D3D11CreateDeviceAndSwapChain(
+      NULL,
+      D3D_DRIVER_TYPE_HARDWARE,
+      NULL,
+      createDeviceFlags,
+      featureLevels,
+      featureLevelCount,
+      D3D11_SDK_VERSION,
+      &swapChainDesc,
+      &m_swapChain,
+      &m_device,
+      NULL,
+      &m_immediateContext
+    ),
+    "Could not create a DirectX device");
+
+  D3D11_VIEWPORT viewport;
+  viewport.Width = (FLOAT)s_winWidth;
+  viewport.Height = (FLOAT)s_winHeight;
+  viewport.MinDepth = 0.f;
+  viewport.MaxDepth = 1.f;
+  viewport.TopLeftX = 0.f;
+  viewport.TopLeftY = 0.f;
+  m_immediateContext->RSSetViewports(1, &viewport);
+
+  m_backbuffer = std::make_unique<FrameBuffer>(m_swapChain, m_device, s_winWidth, s_winHeight);
 }
 
 Device::~Device()
@@ -55,83 +127,6 @@ Device::~Device()
   DXTry(debugDev->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL), "Could not report live objects");
 #endif
   DXRelease(m_device);
-}
-
-void Device::initSwapChain(DeviceMode mode, const HWND hWnd)
-{
-  UINT createDeviceFlags = 0;
-#ifdef DO_D3D11_DEBUG
-  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-  constexpr D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
-  constexpr UINT featureLevelCount = ARRAYSIZE(featureLevels);
-
-  DXGI_SWAP_CHAIN_DESC swapChainDesc;
-  ZeroMemory(&swapChainDesc, sizeof swapChainDesc);
-
-  switch (mode) {
-  case DeviceMode::WINDOWED:
-	  RECT windowRect;
-  #ifdef PYR_NOTITLEBAR
-	  WinTry(GetWindowRect(hWnd, &windowRect));
-  #else
-	  WinTry(GetClientRect(hWnd, &windowRect));
-  #endif
-	  s_winWidth = windowRect.right - windowRect.left;
-	  s_winHeight = windowRect.bottom - windowRect.top;
-	  swapChainDesc.BufferCount = 1;
-	  swapChainDesc.BufferDesc.Width = s_winWidth;
-	  swapChainDesc.BufferDesc.Height = s_winHeight;
-	  swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	  swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
-	  swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	  swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	  swapChainDesc.OutputWindow = hWnd;
-	  swapChainDesc.SampleDesc.Count = 1;
-	  swapChainDesc.SampleDesc.Quality = 0;
-	  swapChainDesc.Windowed = TRUE;
-	  break;
-  default:
-	  throw std::exception("Not implemented: device mode other than WINDOWED");
-  }
-
-  swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-  RECT rcClient, rcWindow;
-  POINT ptDiff;
-  GetClientRect(hWnd, &rcClient);
-  GetWindowRect(hWnd, &rcWindow);
-  ptDiff.x = (rcWindow.right - rcWindow.left) - rcClient.right;
-  ptDiff.y = (rcWindow.bottom - rcWindow.top) - rcClient.bottom;
-  MoveWindow(hWnd, rcWindow.left, rcWindow.top, static_cast<int>(s_winWidth) + ptDiff.x, static_cast<int>(s_winHeight) + ptDiff.y, TRUE);
-
-  DXTry(
-	  D3D11CreateDeviceAndSwapChain(
-	    NULL,
-	    D3D_DRIVER_TYPE_HARDWARE,
-	    NULL,
-	    createDeviceFlags,
-	    featureLevels,
-	    featureLevelCount,
-	    D3D11_SDK_VERSION,
-	    &swapChainDesc,
-	    &m_swapChain,
-	    &m_device,
-	    NULL,
-	    &m_immediateContext
-	  ),
-	  "Could not create a DirectX device");
-
-  D3D11_VIEWPORT viewport;
-  viewport.Width = (FLOAT)s_winWidth;
-  viewport.Height = (FLOAT)s_winHeight;
-  viewport.MinDepth = 0.f;
-  viewport.MaxDepth = 1.f;
-  viewport.TopLeftX = 0.f;
-  viewport.TopLeftY = 0.f;
-  m_immediateContext->RSSetViewports(1, &viewport);
-
-  m_backbuffer = std::make_unique<FrameBuffer>(m_swapChain, m_device, s_winWidth, s_winHeight);
 }
 
 void Device::present()

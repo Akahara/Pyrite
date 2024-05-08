@@ -15,10 +15,12 @@ public:
 
   static SceneManager &getInstance() { return s_singleton; }
 
-  // BEWARE! this method cannot be called from an active scene, use disposeAllScenes() and pushLayeredScene() instead
-  void setActiveScene(std::unique_ptr<Scene> &&scene);
+  void setInitialScene(std::unique_ptr<Scene> &&scene);
+  Scene* getActiveScene() const { return m_activeScene.get(); }
+  void transitionToScene(SceneSupplier nextSceneSupplier);
+  void dispose();
 
-  void disposeAllScenes();
+  bool doSceneTransition();
 
   // creates a "scene supplier", a function that creates the scene when called
   // This is useful because scenes can be created at the right time, refer to the scene model
@@ -36,6 +38,7 @@ public:
 
 private:
   static SceneManager s_singleton;
+  SceneSupplier m_nextScene;
   std::unique_ptr<Scene> m_activeScene;
 };
 
