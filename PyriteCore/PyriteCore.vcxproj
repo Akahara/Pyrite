@@ -78,7 +78,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_SILENCE_CXX20_CISO646_REMOVED_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PyriteIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -108,6 +108,11 @@
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
+    <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImCurveEdit.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImGradient.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImGuizmo.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImSequencer.cpp" />
     <ClCompile Include="vendor\imgui\imgui.cpp" />
     <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
     <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
@@ -146,6 +151,12 @@
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />
     <ClInclude Include="vendor\Effects11\d3dxGlobal.h" />
+    <ClInclude Include="vendor\imguizmo\GraphEditor.h" />
+    <ClInclude Include="vendor\imguizmo\ImCurveEdit.h" />
+    <ClInclude Include="vendor\imguizmo\ImGradient.h" />
+    <ClInclude Include="vendor\imguizmo\ImGuizmo.h" />
+    <ClInclude Include="vendor\imguizmo\ImSequencer.h" />
+    <ClInclude Include="vendor\imguizmo\ImZoomSlider.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />
     <ClInclude Include="vendor\imgui\imgui.h" />
     <ClInclude Include="vendor\imgui\imgui_impl_dx11.h" />

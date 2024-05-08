@@ -25,6 +25,11 @@
     <ClCompile Include="src\display\IndexBuffer.cpp" />
     <ClCompile Include="src\display\VertexBuffer.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
+    <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImCurveEdit.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImGradient.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImGuizmo.cpp" />
+    <ClCompile Include="vendor\imguizmo\ImSequencer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -64,6 +69,12 @@
     <ClInclude Include="src\display\VertexBuffer.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
     <ClInclude Include="src\utils\Logger.h" />
+    <ClInclude Include="vendor\imguizmo\GraphEditor.h" />
+    <ClInclude Include="vendor\imguizmo\ImCurveEdit.h" />
+    <ClInclude Include="vendor\imguizmo\ImGradient.h" />
+    <ClInclude Include="vendor\imguizmo\ImGuizmo.h" />
+    <ClInclude Include="vendor\imguizmo\ImSequencer.h" />
+    <ClInclude Include="vendor\imguizmo\ImZoomSlider.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
