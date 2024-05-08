@@ -7,6 +7,7 @@
 #include "engine/windowsengine.h"
 #include "utils/debug.h"
 #include "utils/math.h"
+#include "InputLayout.h"
 
 namespace pyr
 {
@@ -273,7 +274,7 @@ Texture FrameBufferPipeline::getPreviousFrame(uint8_t pastFrameCount) const
   return m_geometryBuffer[idx].getTargetAsTexture(FrameBuffer::COLOR_0);
 }
 
-ShaderVertexLayout FrameBufferPipeline::getBlitVertexLayout()
+InputLayout FrameBufferPipeline::getBlitVertexLayout()
 {
   return {};
 }

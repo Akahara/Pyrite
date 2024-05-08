@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include "editorscene.h"
+#include "TriangleScene.h"
 #include "utils/debug.h"
 #include "engine/windowsengine.h"
 #include "engine/d3ddevice.h"
@@ -18,7 +19,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     settings.appTitle = "PyriteEditor";
     settings.bHasTitleBar = true;
     pyr::Engine engine{ hInstance, std::move(settings) };
-    pyr::SceneManager::getInstance().setInitialScene(std::make_unique<pye::EmptyEditorScene>());
+    pyr::SceneManager::getInstance().setInitialScene(std::make_unique<pye::TriangleScene>());
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG

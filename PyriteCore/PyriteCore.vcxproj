@@ -94,9 +94,11 @@
   <ItemGroup>
     <ClCompile Include="src\display\frame_buffer.cpp" />
     <ClCompile Include="src\display\graphical_resource.cpp" />
+    <ClCompile Include="src\display\IndexBuffer.cpp" />
     <ClCompile Include="src\display\render_profiles.cpp" />
     <ClCompile Include="src\display\shader.cpp" />
     <ClCompile Include="src\display\texture.cpp" />
+    <ClCompile Include="src\display\VertexBuffer.cpp" />
     <ClCompile Include="src\engine\d3ddevice.cpp" />
     <ClCompile Include="src\engine\directxlib.cpp" />
     <ClCompile Include="src\engine\windowsengine.cpp" />
@@ -115,11 +117,16 @@
     <ClCompile Include="vendor\stbi\stbi_impl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\display\core_utils.h" />
     <ClInclude Include="src\display\frame_buffer.h" />
     <ClInclude Include="src\display\graphical_resource.h" />
+    <ClInclude Include="src\display\IndexBuffer.h" />
+    <ClInclude Include="src\display\InputLayout.h" />
     <ClInclude Include="src\display\render_profiles.h" />
     <ClInclude Include="src\display\shader.h" />
     <ClInclude Include="src\display\texture.h" />
+    <ClInclude Include="src\display\vertex.h" />
+    <ClInclude Include="src\display\VertexBuffer.h" />
     <ClInclude Include="src\engine\d3ddevice.h" />
     <ClInclude Include="src\engine\directxlib.h" />
     <ClInclude Include="src\engine\windowsengine.h" />

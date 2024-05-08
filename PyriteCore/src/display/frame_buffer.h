@@ -83,7 +83,7 @@ public:
   // pastFrameCount must be less than SAVED_FRAMES-1
   Texture getPreviousFrame(uint8_t pastFrameCount) const;
 
-  static ShaderVertexLayout getBlitVertexLayout();
+  static InputLayout getBlitVertexLayout();
   static void doBlitDrawCall();
   static void doSimpleBlit(const Texture &blitTexture);
   static void doMSAASimpleBlit(const Texture &multisampledBlitTexture);

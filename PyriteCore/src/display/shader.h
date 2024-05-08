@@ -19,37 +19,21 @@ struct D3D11_INPUT_ELEMENT_DESC;
 namespace pyr
 {
 
+class InputLayout;
+
 class GraphicalResourceRegistry;
-
-struct ShaderVertexLayout
-{
-  enum FieldType { VERTEX, INSTANCE };
-
-  ~ShaderVertexLayout();
-
-  template<class T>
-  ShaderVertexLayout &addField(const char *name, unsigned int count, FieldType fieldType=VERTEX);
-
-private:
-  ShaderVertexLayout &addField(const char *name, unsigned int format, unsigned int size, FieldType fieldType);
-
-  friend class ShaderManager;
-
-  std::vector<D3D11_INPUT_ELEMENT_DESC> m_layout;
-  unsigned int                          m_stride = 0;
-  unsigned int                          m_instancedStride = 0;
-};
 
 class Effect
 {
 private:
   friend class ShaderManager;
   friend class GraphicalResourceRegistry;
+
   Effect(ID3DX11Effect *effect, ID3DX11EffectTechnique *technique, ID3DX11EffectPass *pass, ID3D11InputLayout *inputLayout)
 	: m_effect(effect), m_technique(technique), m_pass(pass), m_inputLayout(inputLayout) { }
 public:
-  Effect() = default;
 
+  Effect() = default;
   Effect(const Effect &) = delete;
   Effect &operator=(const Effect &) = delete;
   Effect(Effect &&) noexcept;
@@ -82,10 +66,10 @@ private:
 class ShaderManager
 {
 public:
-  static Effect makeEffect(const std::wstring &path, const ShaderVertexLayout& layout);
+  static Effect makeEffect(const std::wstring &path, const InputLayout& layout);
 
 private:
-  static ID3D11InputLayout *createVertexLayout(const ShaderVertexLayout &layout, const void *shaderBytecode, size_t bytecodeLength);
+  static ID3D11InputLayout *createVertexLayout(const InputLayout& layout, const void *shaderBytecode, size_t bytecodeLength);
 };
 
 }

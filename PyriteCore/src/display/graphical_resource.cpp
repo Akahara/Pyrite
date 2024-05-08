@@ -53,7 +53,7 @@ void GraphicalResourceRegistry::reloadShaders()
   }
 }
 
-Effect *GraphicalResourceRegistry::loadEffect(const filepath &path, const ShaderVertexLayout &layout)
+Effect *GraphicalResourceRegistry::loadEffect(const filepath &path, const InputLayout &layout)
 {
   if (m_effects.contains(path))
     return &m_effects[path].first;

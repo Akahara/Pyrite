@@ -8,50 +8,12 @@
 #include "engine/directxlib.h"
 #include "graphical_resource.h"
 #include "engine/windowsengine.h"
+#include "InputLayout.h"
+
+
 
 namespace pyr
 {
-
-template<>
-ShaderVertexLayout &ShaderVertexLayout::addField<float>(const char *name, unsigned int count, FieldType fieldType)
-{
-  DXGI_FORMAT format =
-	count == 2 ? DXGI_FORMAT_R32G32_FLOAT :
-	count == 3 ? DXGI_FORMAT_R32G32B32_FLOAT :
-	count == 4 ? DXGI_FORMAT_R32G32B32A32_FLOAT :
-	(DXGI_FORMAT)0;
-  return addField(name, format, sizeof(float) * count, fieldType);
-}
-
-template<>
-ShaderVertexLayout &ShaderVertexLayout::addField<uint32_t>(const char *name, unsigned int count, FieldType fieldType)
-{
-  DXGI_FORMAT format = count == 1 ? DXGI_FORMAT_R32_UINT : (DXGI_FORMAT)0;
-  return addField(name, format, sizeof(uint32_t) * count, fieldType);
-}
-
-ShaderVertexLayout::~ShaderVertexLayout() = default;
-
-ShaderVertexLayout &ShaderVertexLayout::addField(const char *name, unsigned int format, unsigned int size, FieldType fieldType)
-{
-  if (!format) throw std::runtime_error("Tried to add an invalid number of fields in a vertex layout for " + std::string(name));
-  D3D11_INPUT_ELEMENT_DESC layoutItem{};
-  layoutItem.SemanticName         = name;
-  layoutItem.SemanticIndex        = 0;
-  layoutItem.Format               = (DXGI_FORMAT)format;
-  layoutItem.InputSlot            = fieldType == INSTANCE ? 1 : 0;
-  layoutItem.InputSlotClass       = fieldType == INSTANCE ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
-  layoutItem.AlignedByteOffset    = fieldType == INSTANCE ? m_instancedStride : m_stride;
-  layoutItem.InstanceDataStepRate = fieldType == INSTANCE ? 1 : 0;
-  m_layout.push_back(layoutItem);
-
-  if (fieldType == INSTANCE)
-		m_instancedStride += size;
-  else
-		m_stride += size;
-
-  return *this;
-}
 
 struct IncludeManager final : ID3DInclude
 {
@@ -73,7 +35,7 @@ struct IncludeManager final : ID3DInclude
   }
 };
 
-Effect ShaderManager::makeEffect(const std::wstring &path, const ShaderVertexLayout& layout)
+Effect ShaderManager::makeEffect(const std::wstring &path, const InputLayout& layout)
 {
   auto &device = Engine::d3ddevice();
 
@@ -105,15 +67,17 @@ Effect ShaderManager::makeEffect(const std::wstring &path, const ShaderVertexLay
   return e;
 }
 
-ID3D11InputLayout *ShaderManager::createVertexLayout(const ShaderVertexLayout &layout, const void *shaderBytecode, size_t bytecodeLength)
+ID3D11InputLayout *ShaderManager::createVertexLayout(const InputLayout& layout, const void *shaderBytecode, size_t bytecodeLength)
 {
-  if (layout.m_layout.empty())
+  if (layout.empty())
 		return nullptr;
+
 	ID3D11InputLayout *inputLayout = nullptr;
+
   DXTry(
 	  Engine::d3ddevice().CreateInputLayout(
-		  layout.m_layout.data(),
-		  static_cast<UINT>(layout.m_layout.size()),
+		  layout,
+		  static_cast<UINT>(layout.count()),
 		  shaderBytecode,
 		  bytecodeLength,
 		  &inputLayout),

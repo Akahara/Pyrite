@@ -4,6 +4,7 @@
 
 #include "texture.h"
 #include "shader.h"
+#include "InputLayout.h"
 
 namespace pyr
 {
@@ -31,14 +32,14 @@ public:
 
   Texture loadTexture(const filepath &path);
   Cubemap loadCubemap(const filepath &path);
-  Effect *loadEffect(const filepath &path, const ShaderVertexLayout &layout);
+  Effect *loadEffect(const filepath &path, const InputLayout& layout);
 
   void reloadShaders();
 
 private:
   map<filepath, Texture> m_texturesCache;
   map<filepath, Cubemap> m_cubemapsCache;
-  map<filepath, std::pair<Effect, ShaderVertexLayout>> m_effects;
+  map<filepath, std::pair<Effect, InputLayout>> m_effects;
 };
 
 }
