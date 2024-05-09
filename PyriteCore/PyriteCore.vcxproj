@@ -111,6 +111,9 @@
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
+    <ClCompile Include="src\world\Mesh\Mesh.cpp" />
+    <ClCompile Include="src\world\Mesh\Model.cpp" />
+    <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
     <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
@@ -160,6 +163,10 @@
     <ClInclude Include="src\world\AABB.h" />
     <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="src\world\Material.h" />
+    <ClInclude Include="src\world\Mesh\Mesh.h" />
+    <ClInclude Include="src\world\Mesh\MeshImporter.h" />
+    <ClInclude Include="src\world\Mesh\Model.h" />
+    <ClInclude Include="src\world\Mesh\StaticMesh.h" />
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
