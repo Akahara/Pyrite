@@ -1,8 +1,7 @@
 ﻿#pragma once
 #include "Model.h"
 #include "world/Material.h"
-
-struct Transform {};
+#include "world/Transform.h"
 
 namespace pyr
 {
@@ -15,10 +14,7 @@ private:
     Transform m_transform;
     Material m_material;
 
-
 public:
-
-    // render ?
 
     StaticMesh() = default;
     StaticMesh(

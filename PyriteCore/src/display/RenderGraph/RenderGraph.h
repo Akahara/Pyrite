@@ -18,6 +18,10 @@ namespace pyr
         }
 
         void addPass(RenderPass* pass) { m_passes.emplace_back(pass); }
+        void clearGraph()
+        {
+            for (RenderPass* p : m_passes) p->clear();
+        }
 
     };
 }

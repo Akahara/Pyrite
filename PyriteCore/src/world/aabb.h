@@ -3,8 +3,6 @@
 #include "utils/Debug.h"
 #include "utils/Math.h"
 
-struct Transform;
-
 /* Axis-aligned bounding box */
 class AABB {
 private:

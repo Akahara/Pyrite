@@ -79,10 +79,12 @@ struct Plane
 
   Plane() = default;
 
-  Plane(const vec3& pl, const vec3 norm) 
-    : normal(XMVector3Normalize(norm))
-    , distanceToOrigin(XMVectorGetX(XMVector3Dot(normal, pl)))
-  {}
+  Plane(const vec3& pl, const vec3& norm) 
+  {
+      normal = norm;
+      normal.Normalize();
+      distanceToOrigin = normal.Dot(pl);
+  }
 
   float signedDistanceTo(const vec3& point) const
   {

@@ -1,10 +1,13 @@
 #pragma once
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
+#include "ConstantBuffer.h"
 #include "Texture.h"
 #include "utils/Debug.h"
+#include "utils/StringUtils.h"
 
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
@@ -34,8 +37,6 @@ private:
 public:
 
   Effect() = default;
-  Effect(const Effect &) = delete;
-  Effect &operator=(const Effect &) = delete;
   Effect(Effect &&) noexcept;
   Effect &operator=(Effect &&) noexcept;
 
@@ -46,6 +47,20 @@ public:
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
+
+  template<class DataStruct>
+  void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data)
+  {
+	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
+	  pCB->SetConstantBuffer(data->getRawBuffer());
+      DXRelease(pCB);
+  }
+
+  template<class T>
+  void setUniform(const std::string& uniformName, const T& data)
+  {
+      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(data);
+  }
 
 private:
   ID3DX11EffectVariable *getVariableBinding(const std::string &name) const;
