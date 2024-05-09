@@ -14,10 +14,7 @@ private:
     Transform m_transform;
     Material m_material;
 
-
 public:
-
-    // render ?
 
     StaticMesh() = default;
     StaticMesh(

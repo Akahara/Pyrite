@@ -34,6 +34,7 @@
     <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="src\display\ConstantBuffer.inl" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -83,6 +84,11 @@
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\display\ConstantBuffer.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
+    <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderPass.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

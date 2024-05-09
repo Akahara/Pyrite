@@ -7,43 +7,34 @@
 
 namespace pyr
 {
-    namespace BuiltinPasses
+
+namespace BuiltinPasses
+{
+
+class ForwardPass : public RenderPass
+{
+private:
+public:
+
+    virtual void clear() override { m_meshes.clear(); }
+
+    virtual void apply() override
     {
-
-        class ForwardPass : public RenderPass
+        // Render all objects 
+        for (const StaticMesh* smesh : m_meshes)
         {
-
-        private:
-
-            //Camera m_camera;
-
-        public:
-
-            virtual void apply() override
+            smesh->bindModel();
+            smesh->bindMaterial();
+            // todo bind materials and shaders
+            std::span<const SubMesh> subMeshIndices = smesh->getModel()->getRawMeshData()->getSubmeshes();
+            for (int index = 0; index < subMeshIndices.size() - 1; ++index)
             {
-
-                // Upload MVP :D
-
-
-                // Render all objects 
-                for (const StaticMesh* smesh : m_meshes)
-                {
-                    smesh->bindModel();
-                    smesh->bindMaterial();
-                    // todo bind materials and shaders
-                    std::span<const SubMesh> subMeshIndices = smesh->getModel()->getRawMeshData()->getSubmeshes();
-                    for (int index = 0; index < subMeshIndices.size() - 1; ++index)
-                    {
-                        const size_t indexCount = subMeshIndices[index + 1].startIndex - subMeshIndices[index].startIndex;
-                        Engine::d3dcontext().DrawIndexed(static_cast<UINT>(indexCount), subMeshIndices[index].startIndex, 0);
-                    }
-                }
-
+                const size_t indexCount = subMeshIndices[index + 1].startIndex - subMeshIndices[index].startIndex;
+                Engine::d3dcontext().DrawIndexed(static_cast<UINT>(indexCount), subMeshIndices[index].startIndex, 0);
             }
-
-        };
-
-
+        }
     }
 
+};
+}
 }

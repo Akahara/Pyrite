@@ -96,6 +96,7 @@
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
     <ClCompile Include="src\display\IndexBuffer.cpp" />
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\display\RenderProfiles.cpp" />
     <ClCompile Include="src\display\Shader.cpp" />
     <ClCompile Include="src\display\Texture.cpp" />
@@ -133,6 +134,11 @@
     <ClInclude Include="src\display\GraphicalResource.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
     <ClInclude Include="src\display\InputLayout.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
+    <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
+    <ClInclude Include="src\display\RenderGraph\RenderPass.h" />
     <ClInclude Include="src\display\RenderProfiles.h" />
     <ClInclude Include="src\display\Shader.h" />
     <ClInclude Include="src\display\Texture.h" />

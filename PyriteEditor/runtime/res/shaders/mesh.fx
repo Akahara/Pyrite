@@ -1,20 +1,32 @@
-// todo add verrtex type in .incl file
-
-
-struct Mesh_Vertex_type
+cbuffer CameraBuffer
 {
-    float3 Pos : POSITION;
-    float2 uv : TEXCOORD;
+    float4x4 MVP;
+    float4 cameraPosition;
 };
 
-float4 CubeVS(Mesh_Vertex_type vsIn) : SV_Position
+struct VertexInput
 {
-    return float4(vsIn.Pos, 1);
+    float3 Pos : POSITION;
+    float2 uv : TEXCOORD0;
+};
+
+struct VertexOut
+{
+    float4 pos : SV_Position;
+    float2 uv : TEXCOORD0;
+};
+
+VertexOut CubeVS(VertexInput vsIn)
+{
+    VertexOut vso;
+    vso.pos = mul(MVP, float4(vsIn.Pos, 1));
+    vso.uv = vsIn.uv;
+    return vso;
 }
 
-float4 CubePS() : SV_Target
+float4 CubePS(VertexOut vsIn) : SV_Target
 {
-    return float4(1, 1, 0, 1);
+    return float4(vsIn.uv, 0, 1);
 }
 
 technique11 MiniPhong

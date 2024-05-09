@@ -24,6 +24,7 @@ namespace pyr
     public:
 
         virtual void apply() = 0;
+        virtual void clear() {};
 
         //template<class ...Ts>
         //void addNamedOutputs(NamedOutput&& output...) { (m_outputs.push_back(output),...); }

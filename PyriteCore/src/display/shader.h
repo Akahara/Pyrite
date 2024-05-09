@@ -51,7 +51,7 @@ public:
   template<class DataStruct>
   void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data)
   {
-	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.data());
+	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
 	  pCB->SetConstantBuffer(data->getRawBuffer());
       DXRelease(pCB);
   }
