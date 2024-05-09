@@ -8,6 +8,7 @@
 #include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
+#include "world/camera.h"
 #include "world/Mesh/MeshImporter.h"
 
 namespace pye
@@ -26,6 +27,7 @@ namespace pye
         pyr::StaticMesh cubeInstance;
         pyr::Material cubeMat;
 
+        pyr::Camera m_camera;
 
     public:
 
@@ -44,10 +46,24 @@ namespace pye
 
             m_RDG.addPass(&pyr::BuiltinPasses::s_ForwardPass);
 
+            m_camera.setPosition({ 1,2,5 });
+            m_camera.setProjection(pyr::PerspectiveProjection{});
+            m_camera.lookAt({0,0,0});
+            m_camera.lookAt({0,0,0});
+            m_camera.updateViewMatrix();
+
+
+            using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; vec4 pos) > ;
+            auto pter = std::make_shared<CameraBuffer>();
+            pter->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = vec4{1,2,5,0} });
+            m_baseEffect.bindConstantBuffer("CameraBuffer", pter);
+
         }
 
         void update(double delta) override
         {
+            auto mvp = m_camera.getViewProjectionMatrix();
+            
         }
 
         void render() override

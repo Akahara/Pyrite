@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\display\ConstantBuffer.inl" />
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
     <ClCompile Include="src\display\IndexBuffer.cpp" />
@@ -108,7 +109,9 @@
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
+    <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
+    <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
     <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
     <ClCompile Include="vendor\imguizmo\ImCurveEdit.cpp" />
     <ClCompile Include="vendor\imguizmo\ImGradient.cpp" />
@@ -124,6 +127,7 @@
     <ClCompile Include="vendor\stbi\stbi_impl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\display\ConstantBuffer.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
     <ClInclude Include="src\display\FrameBuffer.h" />
     <ClInclude Include="src\display\GraphicalResource.h" />
@@ -149,6 +153,7 @@
     <ClInclude Include="src\utils\StringUtils.h" />
     <ClInclude Include="src\world\AABB.h" />
     <ClInclude Include="src\world\Camera.h" />
+    <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />

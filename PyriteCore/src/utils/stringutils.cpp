@@ -19,4 +19,11 @@ std::wstring string2widestring(const std::string& string)
 	return converter.from_bytes(string);
 }
 
+std::wstring string2widestring(std::string_view string)
+{
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+	return converter.from_bytes(std::string(string));
+}
+
 }

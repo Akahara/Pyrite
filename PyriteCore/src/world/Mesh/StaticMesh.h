@@ -1,8 +1,7 @@
 ﻿#pragma once
 #include "Model.h"
 #include "world/Material.h"
-
-struct Transform {};
+#include "world/Transform.h"
 
 namespace pyr
 {

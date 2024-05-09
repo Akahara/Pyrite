@@ -1,6 +1,13 @@
+cbuffer CameraBuffer
+{
+    float4x4 MVP;
+    float4 cameraPosition;
+};
+
+
 float4 DefaultVS(float3 Pos : POSITION) : SV_Position
 {
-    return float4(Pos, 1);
+    return mul(MVP, float4(Pos, 1));
 }
 
 float4 DefaultPS() : SV_Target

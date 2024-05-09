@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "GraphicalResource.h"
 #include "RenderProfiles.h"
 #include "Shader.h"
 #include "engine/Engine.h"

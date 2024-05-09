@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Device.h"
-#include "display/GraphicalResource.h"
 #include "utils/Clock.h"
 
 namespace pyr
 {
-class Effect;
+    class GraphicalResourceRegistry;
+    class Effect;
 
 struct EngineSettings {
   std::string appTitle;
