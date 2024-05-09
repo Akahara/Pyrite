@@ -57,10 +57,10 @@ public:
   }
 
   template<class T>
-  void setUniform(std::string_view uniformName, T&& data)
-       {
-  	    //m_effect->GetVariableByName(uniformName.data())->AsScalar()->SetFloat(value);
-       }
+  void setUniform(const std::string& uniformName, const T& data)
+  {
+      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(data);
+  }
 
 private:
   ID3DX11EffectVariable *getVariableBinding(const std::string &name) const;

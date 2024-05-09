@@ -63,7 +63,16 @@ namespace pye
         void update(double delta) override
         {
             auto mvp = m_camera.getViewProjectionMatrix();
-            
+            static float elapsed = 0;
+            elapsed += delta;
+            m_baseEffect.setUniform<float>("u_blue", (sin(elapsed) + 1) / 2.f);
+
+
+            m_camera.setPosition({ 10 * sin(elapsed),5 , 10 * cos(elapsed)});
+            m_camera.lookAt({ 0,0,0 });
+            m_camera.updateViewMatrix();
+
+            pter->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = vec4{1,2,5,0} });
         }
 
         void render() override

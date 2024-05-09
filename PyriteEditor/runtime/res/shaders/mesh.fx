@@ -4,6 +4,8 @@ cbuffer CameraBuffer
     float4 cameraPosition;
 };
 
+float u_blue = 0;
+
 struct VertexInput
 {
     float3 Pos : POSITION;
@@ -26,7 +28,7 @@ VertexOut CubeVS(VertexInput vsIn)
 
 float4 CubePS(VertexOut vsIn) : SV_Target
 {
-    return float4(vsIn.uv, 0, 1);
+    return float4(vsIn.uv, u_blue, 1);
 }
 
 technique11 MiniPhong

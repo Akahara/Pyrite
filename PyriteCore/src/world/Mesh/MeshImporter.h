@@ -20,7 +20,7 @@ namespace pyr
 		{
 			Assimp::Importer importer;
 
-			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate );
+			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate  );
 
 			if (!scene)
 				throw 3; // error log here
