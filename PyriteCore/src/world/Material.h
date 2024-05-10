@@ -10,6 +10,7 @@ class Material
 private:
 
     // should have a bunch of textures here
+    // todo rename, remove bind() operations
 
     const Effect* m_shader;
 
@@ -19,10 +20,12 @@ public:
     Material(const Effect* shader) : m_shader(shader)
     {}
 
-    void bind() const 
-    {
+    void bind() const  {
         m_shader->bind();
     }
+
+    const Effect* getEffect() const { return m_shader; }
+
 };
 
 }
