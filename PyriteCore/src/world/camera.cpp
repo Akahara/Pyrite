@@ -16,7 +16,9 @@ mat4 PerspectiveProjection::buildProjectionMatrix() const
 
 mat4 OrthographicProjection::buildProjectionMatrix() const
 {
-  return mat4::CreateOrthographic(width, height, zNear, zFar);
+  mat4 R;
+  XMStoreFloat4x4(&R, XMMatrixOrthographicLH(width, height, zNear, zFar));
+  return R;
 }
 
 void Camera::setProjection(const CameraProjection& proj)
