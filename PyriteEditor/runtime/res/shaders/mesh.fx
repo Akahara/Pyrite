@@ -1,18 +1,13 @@
+#include "incl/samplers.incl"
+
 cbuffer CameraBuffer
 {
     float4x4 MVP;
-    float4 cameraPosition;
+    float3 cameraPosition;
 };
 
 float u_blue = 0;
 Texture2D tex_breadbug;
-
-SamplerState MeshTextureSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
 
 struct VertexInput
 {

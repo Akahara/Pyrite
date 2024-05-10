@@ -14,8 +14,9 @@ namespace pyr
  */
 class GraphicalResourceRegistry
 {
-private:
+public:
   using filepath = std::wstring;
+private:
   template<class T, class K>
   using map = std::unordered_map<T, K>;
   template<class T>

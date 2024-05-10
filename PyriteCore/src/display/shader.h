@@ -49,7 +49,7 @@ public:
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
 
   template<class DataStruct>
-  void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data)
+  void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data) const
   {
 	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
 	  pCB->SetConstantBuffer(data->getRawBuffer());

@@ -23,6 +23,7 @@ public:
     {}
 
     const pyr::Model* getModel() const { return m_model; }
+    const pyr::Material& getMaterial() const { return m_material; }
 
     void bindModel() const      { m_model->bind(); }
     void bindMaterial() const   { m_material.bind(); }

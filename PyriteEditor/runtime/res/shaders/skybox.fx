@@ -2,7 +2,7 @@
 TextureCube cubemap;
 SamplerState cubemapSampler;
 
-cbuffer cbWorld
+cbuffer CameraBuffer
 {
   float4x4 matViewProj;
   float3 cameraPosition;
@@ -32,11 +32,11 @@ struct VSOut
 
 VSOut SkyboxVS(uint vertexId : SV_VertexID)
 {
-  VSOut vsOut = (VSOut) 0;
-  vsOut.worldPos = VERTICES[vertexId];
-  vsOut.position = mul(matViewProj, vsOut.worldPos + float4(cameraPosition, 0));
-  vsOut.position.z = vsOut.position.w; // force depth to be greater than every object in the scene
-  return vsOut;
+    VSOut vsOut = (VSOut) 0;
+    vsOut.worldPos = VERTICES[vertexId];
+    vsOut.position = mul(matViewProj, vsOut.worldPos + float4(cameraPosition, 0));
+    vsOut.position.z = vsOut.position.w; // force depth to be greater than every object in the scene
+    return vsOut;
 }
 
 float4 SkyboxPS(VSOut vs) : SV_Target

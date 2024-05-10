@@ -79,7 +79,7 @@ void RenderProfiles::initProfiles()
 
   pushBlendProfile(BlendProfile::NO_BLEND);
   pushDepthProfile(DepthProfile::TESTWRITE_DEPTH);
-  pushRasterProfile(RasterizerProfile::CULLBACK_RASTERIZER);
+  pushRasterProfile(RasterizerProfile::NOCULL_RASTERIZER);
 }
 
 static void initBlendProfiles()

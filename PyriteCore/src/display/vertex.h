@@ -62,6 +62,7 @@ namespace pyr
 	struct BaseVertex
 	{};
 
+
 	// Feed multiple vertex parameter type :
 	// GenericVertex<POSITION, COLOR...>;
 	template <VertexParameterType ... M>
@@ -69,6 +70,8 @@ namespace pyr
 	{
 		using type_t = std::tuple<VertexParameter<M>...>;
 	};
+
+	using EmptyVertex = GenericVertex<>;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 }

@@ -12,6 +12,7 @@
 #include "world/camera.h"
 #include "world/Mesh/MeshImporter.h"
 #include "display/GraphicalResource.h"
+#include "display/RenderProfiles.h"
 
 namespace pye
 {
@@ -31,11 +32,12 @@ namespace pye
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
-        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; vec4 pos) > ;
-        std::shared_ptr<CameraBuffer> pter;
+        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
+        std::shared_ptr<CameraBuffer> pcameraBuffer;
 
         pyr::GraphicalResourceRegistry m_grr;
         pyr::Texture m_breadbug;
+        pyr::BuiltinPasses::ForwardPass m_forwardPass;
 
     public:
 
@@ -50,17 +52,17 @@ namespace pye
             cubeModel = pyr::Model{ cubeMesh };
             cubeInstance = pyr::StaticMesh{ cubeModel, cubeMat };
 
-            pyr::BuiltinPasses::s_ForwardPass.addMeshToPass(&cubeInstance);
+            m_forwardPass.addMeshToPass(&cubeInstance);
 
-            m_RDG.addPass(&pyr::BuiltinPasses::s_ForwardPass);
+            m_RDG.addPass(&m_forwardPass);
 
             m_camera.setPosition({ 1,2,5 });
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camera.lookAt({0,0,0});
             m_camController.setCamera(&m_camera);
 
-            pter = std::make_shared<CameraBuffer>();
-            pter->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = vec4{1,2,5,0} });
+            pcameraBuffer = std::make_shared<CameraBuffer>();
+            pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
             m_breadbug = m_grr.loadTexture(L"res/textures/breadbug.dds");
         }
 
@@ -73,7 +75,7 @@ namespace pye
 
             m_camController.processUserInputs(delta);
 
-            pter->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = vec4{1,2,5,0} });
+            pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition()});
         }
 
         void render() override
@@ -87,9 +89,14 @@ namespace pye
               m_camera.setPosition(p);
             ImGui::End();
 
+            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
+            pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            m_baseEffect.bindConstantBuffer("CameraBuffer", pter);
+            m_baseEffect.bindConstantBuffer("CameraBuffer", pcameraBuffer);
+            m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_RDG.execute();
+            pyr::RenderProfiles::popDepthProfile();
+            pyr::RenderProfiles::popRasterProfile();
 
         }
 
