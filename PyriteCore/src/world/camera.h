@@ -39,22 +39,18 @@ public:
 
   const CameraProjection &getProjection() const { return m_projection; }
   void setProjection(const CameraProjection &proj);
-  void setPosition(const vec3 &position) { m_transform.position = position; }
-  void setRotation(const quat &rotation) { m_transform.rotation = rotation; }
-  void setTransform(const Transform& transform) { m_transform = transform; }
+  void setPosition(const vec3 &position) { m_transform.position = position; m_bViewMatrixDirty = true; }
+  void setRotation(const quat &rotation) { m_transform.rotation = rotation; m_bViewMatrixDirty = true; }
+  void setTransform(const Transform& transform) { m_transform = transform; m_bViewMatrixDirty = true; }
   void lookAt(const vec3 &target);
 
-  void rotate(const quat rot) { m_transform.rotation *= rot; }
-  void move(const vec3& dl) { m_transform.position += dl; }
+  void rotate(const quat rot) { m_transform.rotation *= rot; m_bViewMatrixDirty = true; }
+  void rotate(float rx, float ry, float rz, bool absolute = false);
+  void move(const vec3& dl) { m_transform.position += dl; m_bViewMatrixDirty = true; }
 
-  // must be called after a position/rotation update !
-  void updateViewMatrix();
-  // must be called after a view/projection update !
-  void updateViewProjectionMatrix();
-
-  const mat4 &getViewProjectionMatrix() const { return m_viewProjectionMatrix; }
-  const mat4 &getProjectionMatrix() const { return m_projectionMatrix; }
-  const mat4 &getViewMatrix() const { return m_viewMatrix; }
+  const mat4 &getViewProjectionMatrix() const;
+  const mat4 &getProjectionMatrix() const;
+  const mat4 &getViewMatrix() const;
   const Transform& getTransform() const { return m_transform; }
   const vec3 &getPosition() const { return m_transform.position; }
   const quat &getRotation() const { return m_transform.rotation; }
@@ -65,11 +61,17 @@ public:
   vec3 getFlatForward() const;
 
 private:
+  void updateViewMatrix() const;
+  void updateViewProjMatrix() const;
+
+private:
   CameraProjection m_projection;
   Transform m_transform;
-  mat4  m_projectionMatrix{};
-  mat4  m_viewMatrix{};
-  mat4  m_viewProjectionMatrix{};
+  mat4 m_projectionMatrix{};
+  mutable mat4 m_viewMatrix{};
+  bool m_bViewMatrixDirty = true;
+  mutable mat4 m_viewProjectionMatrix{};
+  bool m_bViewProjectionMatrixDirty = true;
 };
 
 struct Plane
@@ -114,5 +116,24 @@ struct Frustum
   static bool isOnOrForwardPlan(const Plane &plane, const AABB &boundingBox);
 };
 
+
+class FreecamController
+{
+public:
+  explicit FreecamController(Camera* camera=nullptr)
+    : m_camera(camera) {}
+
+  void processUserInputs(float delta);
+
+  void setSpeed(float speed) { m_playerSpeed = speed; }
+  const Camera *getCamera() const { return m_camera; }
+  void setCamera(Camera* camera) { m_camera = camera; }
+
+private:
+  float m_playerSpeed = 15.f;
+  float m_inputCooldown{};
+  bool  m_cursorLocked{};
+  Camera* m_camera;
+};
 
 }
