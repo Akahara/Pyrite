@@ -5,6 +5,14 @@ cbuffer CameraBuffer
 };
 
 float u_blue = 0;
+Texture2D tex_breadbug;
+
+SamplerState MeshTextureSampler
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
 
 struct VertexInput
 {
@@ -28,7 +36,8 @@ VertexOut CubeVS(VertexInput vsIn)
 
 float4 CubePS(VertexOut vsIn) : SV_Target
 {
-    return float4(vsIn.uv, u_blue, 1);
+    return tex_breadbug.Sample(MeshTextureSampler, vsIn.uv);
+
 }
 
 technique11 MiniPhong

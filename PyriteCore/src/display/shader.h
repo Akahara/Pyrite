@@ -56,7 +56,7 @@ public:
       DXRelease(pCB);
   }
 
-  template<class T>
+  template<class T> // bruh this needs specialisation
   void setUniform(const std::string& uniformName, const T& data)
   {
       m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(data);

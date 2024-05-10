@@ -10,6 +10,7 @@
 #include "scene/Scene.h"
 #include "world/camera.h"
 #include "world/Mesh/MeshImporter.h"
+#include "display/GraphicalResource.h"
 
 namespace pye
 {
@@ -30,6 +31,9 @@ namespace pye
         pyr::Camera m_camera;
         using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; vec4 pos) > ;
         std::shared_ptr<CameraBuffer> pter;
+
+        pyr::GraphicalResourceRegistry m_grr;
+        pyr::Texture m_breadbug;
 
     public:
 
@@ -56,7 +60,7 @@ namespace pye
 
             pter = std::make_shared<CameraBuffer>();
             pter->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = vec4{1,2,5,0} });
-   
+            m_breadbug = m_grr.loadTexture(L"res/textures/breadbug.dds");
 
         }
 
@@ -66,6 +70,7 @@ namespace pye
             static float elapsed = 0;
             elapsed += delta;
             m_baseEffect.setUniform<float>("u_blue", (sin(elapsed) + 1) / 2.f);
+            m_baseEffect.bindTexture(m_breadbug, "tex_breadbug");
 
 
             m_camera.setPosition({ 10 * sin(elapsed),5 , 10 * cos(elapsed)});
