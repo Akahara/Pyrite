@@ -32,12 +32,13 @@
     <ClCompile Include="vendor\imguizmo\ImSequencer.cpp" />
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
-    <ClCompile Include="src\display\ConstantBuffer.inl" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
     <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\world\Mesh\Mesh.cpp" />
     <ClCompile Include="src\world\Mesh\Model.cpp" />
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
+    <ClCompile Include="src\display\DebugDraw.cpp" />
+    <ClCompile Include="src\utils\Debug.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -96,10 +97,12 @@
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
+    <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
     <None Include="vendor\directtk\SimpleMath.inl" />
+    <None Include="src\display\ConstantBuffer.inl" />
   </ItemGroup>
 </Project>

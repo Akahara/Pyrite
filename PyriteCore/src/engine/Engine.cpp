@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "Directxlib.h"
+#include "display/DebugDraw.h"
 #include "display/FrameBuffer.h"
 #include "display/RenderProfiles.h"
 #include "utils/Clock.h"
@@ -132,6 +133,7 @@ void Engine::runFrame(float deltaTime)
   // update
   UserInputs::pollEvents();
   SceneManager::getInstance().update(deltaTime);
+  DebugDraws::get().tick(deltaTime);
 
   // render
   FrameBuffer::getActiveFrameBuffer().clearTargets();
@@ -139,6 +141,7 @@ void Engine::runFrame(float deltaTime)
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();
   SceneManager::getInstance().render();
+  DebugDraws::get().render();
 
   ImGui::Render();
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

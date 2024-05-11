@@ -92,7 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\display\ConstantBuffer.inl" />
+    <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
     <ClCompile Include="src\display\IndexBuffer.cpp" />
@@ -107,6 +107,7 @@
     <ClCompile Include="src\inputs\UserInputs.cpp" />
     <ClCompile Include="src\scene\SceneManager.cpp" />
     <ClCompile Include="src\utils\Clock.cpp" />
+    <ClCompile Include="src\utils\Debug.cpp" />
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="src\display\ConstantBuffer.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
+    <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\display\FrameBuffer.h" />
     <ClInclude Include="src\display\GraphicalResource.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
@@ -191,6 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
+    <None Include="src\display\ConstantBuffer.inl" />
     <None Include="vendor\directtk\SimpleMath.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
