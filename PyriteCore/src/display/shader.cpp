@@ -126,11 +126,6 @@ void Effect::unbindResources()
   context.PSSetShaderResources(0, static_cast<UINT>(std::size(emptyResources)), emptyResources);
 }
 
-//void Effect::bindBuffer(const GenericBuffer &buffer, const std::string &name) const
-//{
-//  DXTry(getConstantBufferBinding(name)->SetConstantBuffer(buffer.getRawBuffer()), "Could not bind a constant buffer to an effect");
-//}
-
 void Effect::bindTexture(const Texture &texture, const std::string &name) const
 {
   DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(texture.getRawTexture()), "Could not bind a texture to an effect");

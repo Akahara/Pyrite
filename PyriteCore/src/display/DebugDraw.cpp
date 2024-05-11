@@ -2,10 +2,15 @@
 
 #include <execution>
 
+#include "GraphicalResource.h"
+#include "VertexBuffer.h"
 #include "engine/Engine.h"
+#include "utils/Utils.h"
 
 namespace pyr
 {
+
+DebugDraws DebugDraws::s_singleton;
 
 void DebugDraws::drawDebugLine(const vec3& p0, const vec3& p1, const vec4& color, float duration)
 {
@@ -54,6 +59,66 @@ void DebugDraws::drawDebugPoint(const vec3& location, const vec4& color, float d
 
 void DebugDraws::drawDebugCamera(const Camera& camera)
 {
+  vec4 color{ 0.7f , 0.8f, 0.8f, 1.f };
+  vec3 pos = camera.getPosition();
+  vec3 I = camera.getRight();
+  vec3 J = camera.getUp();
+  vec3 F = camera.getForward();
+
+  std::visit(Overloaded{
+    [&](const PerspectiveProjection& proj)
+    {
+      float dh = tanf(proj.fovy * .5f);
+      float dw = dh * proj.aspect;
+      vec3 U1 = F + dh * J + dw * I;
+      vec3 U2 = F - dh * J + dw * I;
+      vec3 U3 = F - dh * J - dw * I;
+      vec3 U4 = F + dh * J - dw * I;
+      float zNear = proj.zNear;
+      float zFar = proj.zFar;
+
+      m_debugLines.emplace_back(pos, pos + U1 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos, pos + U2 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos, pos + U3 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos, pos + U4 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos + U1 * zFar, pos + U2 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos + U2 * zFar, pos + U3 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos + U3 * zFar, pos + U4 * zFar, color, 0.f);
+      m_debugLines.emplace_back(pos + U4 * zFar, pos + U1 * zFar, color, 0.f);
+      for (float z = zNear; z < zFar; z += 5.f) {
+        m_debugLines.emplace_back(pos + U1 * z, pos + U2 * z, color, 0.f);
+        m_debugLines.emplace_back(pos + U2 * z, pos + U3 * z, color, 0.f);
+        m_debugLines.emplace_back(pos + U3 * z, pos + U4 * z, color, 0.f);
+        m_debugLines.emplace_back(pos + U4 * z, pos + U1 * z, color, 0.f);
+      }
+    },
+    [&](const OrthographicProjection& proj)
+    {
+      float zNear = proj.zNear;
+      float zFar = proj.zFar;
+      vec3 p1 = pos + I * proj.width * .5f + J * proj.height * .5f;
+      vec3 p2 = pos + I * proj.width * .5f - J * proj.height * .5f;
+      vec3 p3 = pos - I * proj.width * .5f - J * proj.height * .5f;
+      vec3 p4 = pos - I * proj.width * .5f + J * proj.height * .5f;
+
+      m_debugLines.emplace_back(p1, p1 + F * zFar, color, 0.f);
+      m_debugLines.emplace_back(p2, p2 + F * zFar, color, 0.f);
+      m_debugLines.emplace_back(p3, p3 + F * zFar, color, 0.f);
+      m_debugLines.emplace_back(p4, p4 + F * zFar, color, 0.f);
+      for (float z = zNear; z < zFar; z += 5.f) {
+        m_debugLines.emplace_back(p1 + z * F, p2 + z * F, color, 0.f);
+        m_debugLines.emplace_back(p2 + z * F, p3 + z * F, color, 0.f);
+        m_debugLines.emplace_back(p3 + z * F, p4 + z * F, color, 0.f);
+        m_debugLines.emplace_back(p4 + z * F, p1 + z * F, color, 0.f);
+      }
+    }
+  }, camera.getProjection());
+}
+
+void DebugDraws::load(GraphicalResourceRegistry& resources)
+{
+  m_lineEffect = resources.loadEffect(L"res/shaders/debug_lines.fx", InputLayout::MakeLayoutFromVertex<Vertex>());
+  m_cameraCBO = std::make_unique<CameraConstantBuffer>();
 }
 
 void DebugDraws::tick(float deltaTime)
@@ -70,10 +135,34 @@ void DebugDraws::tick(float deltaTime)
 
 void DebugDraws::render()
 {
-  if (!PYR_ENSURE(m_viewportCam))
+  if (!PYR_ENSURE(m_viewportCam, "No debug viewport camera set, did you forget to call drawDebugSetCamera ?"))
     return;
-  auto &context = Engine::d3dcontext();
-  context.IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
+
+  // Draw lines
+  if (!m_debugLines.empty()) {
+    m_lineVertexCache.clear();
+    for (const DebugLine& line : m_debugLines) {
+      m_lineVertexCache.push_back({ line.p0, line.color });
+      m_lineVertexCache.push_back({ line.p1, line.color });
+    }
+    if (!m_lineVBO || m_lineVBO->getVerticesCount() < m_lineVertexCache.size()) {
+      m_lineVBO = std::make_unique<VertexBuffer>(m_lineVertexCache, true);
+    } else {
+      m_lineVBO->setData(m_lineVertexCache.data(), sizeof(Vertex) * m_lineVertexCache.size(), 0);
+    }
+      
+    m_cameraCBO->setData({ m_viewportCam->getViewProjectionMatrix() });
+
+    auto &context = Engine::d3dcontext();
+    context.IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
+    m_lineEffect->bind();
+    m_lineEffect->bindConstantBuffer("cbCamera", *m_cameraCBO);
+    m_lineVBO->bind();
+    context.Draw(static_cast<UINT>(m_lineVertexCache.size()), 0);
+  }
+
+  // TODO Draw points
+  PYR_ENSURE(m_debugPoints.empty(), "Debug points are not supported yet");
 }
 
 }

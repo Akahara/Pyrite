@@ -1,8 +1,6 @@
 #pragma once
 
-#include "directtk/SimpleMath.h"
-
-using namespace DirectX::SimpleMath;
+#include "utils/math.h"
 
 namespace pyr
 {
@@ -14,6 +12,7 @@ namespace pyr
 		NORMAL,
 		TANGENT,
 		UV,
+		COLOR,
 	};
 
 	template <VertexParameterType T>
@@ -33,28 +32,34 @@ namespace pyr
 	struct VertexParameter<POSITION>
 	{
 		static constexpr VertexParameterType type = POSITION;
-		Vector3 position;
+		vec3 position;
 	};
 
 	template <>
 	struct VertexParameter<NORMAL>
 	{
 		static constexpr VertexParameterType type = NORMAL;
-		Vector3 normal;
+		vec3 normal;
 	};
 
 	template <>
 	struct VertexParameter<TANGENT>
 	{
 		static constexpr VertexParameterType type = TANGENT;
-		Vector3 tangent;
+		vec3 tangent;
 	};
 
 	template <>
 	struct VertexParameter<UV>
 	{
 		static constexpr VertexParameterType type = UV;
-		Vector2 texCoords;
+		vec2 texCoords;
+	};
+
+	template <>
+	struct VertexParameter<COLOR> {
+	  static constexpr VertexParameterType type = UV;
+	  vec4 color;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////

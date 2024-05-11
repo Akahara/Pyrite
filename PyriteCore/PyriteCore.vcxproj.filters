@@ -98,6 +98,7 @@
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
     <ClInclude Include="src\display\DebugDraw.h" />
+    <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
   </ItemGroup>
   <ItemGroup>
