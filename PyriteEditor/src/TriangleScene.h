@@ -54,7 +54,7 @@ namespace pye
             m_baseEffect.bind();
             m_vbo.bind();
             m_ibo.bind();
-            pyr::Engine::d3dcontext().DrawIndexed(m_ibo.getIndicesCount(), 0, 0);
+            pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(m_ibo.getIndicesCount()), 0, 0);
             
         }
     };

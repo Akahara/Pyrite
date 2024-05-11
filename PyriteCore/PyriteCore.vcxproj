@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\ConstantBuffer.h" />
+    <ClInclude Include="src\display\ConstantBufferBinding.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
     <ClInclude Include="src\display\FrameBuffer.h" />
     <ClInclude Include="src\display\GraphicalResource.h" />

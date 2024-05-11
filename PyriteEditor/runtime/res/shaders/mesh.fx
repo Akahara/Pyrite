@@ -1,9 +1,21 @@
 #include "incl/samplers.incl"
+#include "incl/cbuffers.incl"
 
 cbuffer CameraBuffer
 {
     float4x4 MVP;
     float3 cameraPosition;
+};
+
+cbuffer ColorBuffer
+{
+    float4 colorShift;
+};
+
+cbuffer UnusedBuffer
+{
+    float4 foo;
+    float4x4 bar;
 };
 
 float u_blue = 0;
@@ -31,7 +43,7 @@ VertexOut CubeVS(VertexInput vsIn)
 
 float4 CubePS(VertexOut vsIn) : SV_Target
 {
-    return tex_breadbug.Sample(MeshTextureSampler, vsIn.uv);
+    return tex_breadbug.Sample(MeshTextureSampler, vsIn.uv) * colorShift + importedValue;
 
 }
 

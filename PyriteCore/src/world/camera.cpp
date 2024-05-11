@@ -154,7 +154,7 @@ bool Frustum::isOnOrForwardPlan(const Plane &plane, const AABB &boundingBox)
   return -r <= plane.signedDistanceTo(center);
 }
 
-void FreecamController::processUserInputs(float delta)
+void FreecamController::processUserInputs(double delta)
 {
   if (!m_camera) return;
   m_inputCooldown -= delta;

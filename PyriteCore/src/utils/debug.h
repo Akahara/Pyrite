@@ -2,6 +2,7 @@
 
 #include <string>
 #include <stdexcept>
+#include "logger.h"
 
 #ifdef _DEBUG
 #define PYR_ISDEBUG

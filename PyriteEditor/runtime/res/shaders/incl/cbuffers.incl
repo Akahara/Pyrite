@@ -1,0 +1,9 @@
+cbuffer ImportedBuffer
+{
+	float4 importedValue;
+}
+
+cbuffer ActorBuffer 
+{
+	float4x4 ModelMatrix;	
+}

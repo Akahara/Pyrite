@@ -14,23 +14,31 @@ struct ID3D11Buffer;
 namespace pyr
 
 {
-    template<typename DataStruct>
-    class ConstantBuffer
-    {
-    private:
 
+    struct BaseConstantBuffer {
+    protected:
+        
+        BaseConstantBuffer() {};
         ID3D11Buffer* m_buffer;
 
+    public:
+        [[nodiscard]] const ID3D11Buffer* getRawBuffer() const noexcept { return m_buffer; }
+        [[nodiscard]] ID3D11Buffer* getRawBuffer() noexcept { return m_buffer; }
+    };
+
+
+    template<typename DataStruct>
+    class ConstantBuffer : public BaseConstantBuffer
+    {
     public:
 
         using data_t = DataStruct;
 
         ConstantBuffer();
+        ~ConstantBuffer() { DXRelease(m_buffer); }
         ConstantBuffer(data_t d) : ConstantBuffer() { setData(d); }
 
         void setData(const DataStruct& data);
-        [[nodiscard]] const ID3D11Buffer* getRawBuffer() const noexcept { return m_buffer; }        
-        [[nodiscard]] ID3D11Buffer* getRawBuffer() noexcept { return m_buffer; }        
     };
 }
 

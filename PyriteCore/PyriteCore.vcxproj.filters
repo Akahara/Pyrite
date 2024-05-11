@@ -96,6 +96,7 @@
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
+    <ClInclude Include="src\display\ConstantBufferBinding.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

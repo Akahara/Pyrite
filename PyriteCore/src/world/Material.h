@@ -22,6 +22,7 @@ public:
 
     void bind() const  {
         m_shader->bind();
+        m_shader->uploadAllBindings();
     }
 
     const Effect* getEffect() const { return m_shader; }

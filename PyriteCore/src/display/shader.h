@@ -3,11 +3,15 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 #include "ConstantBuffer.h"
+#include "ConstantBufferBinding.h"
 #include "Texture.h"
 #include "utils/Debug.h"
 #include "utils/StringUtils.h"
+
+static inline PYR_DEFINELOG(LogShader, VERBOSE);
 
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
@@ -47,7 +51,33 @@ public:
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
+  
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
 
+  void addBinding(const ConstantBufferBinding& binding) { m_bindings.push_back(binding); }
+
+  void uploadAllBindings() const
+  {
+	  std::ranges::for_each(m_bindings, [this](const ConstantBufferBinding& binding) 
+		  { 
+			  if (!binding.bufferRef && binding.Flag != ConstantBufferBinding::BindFlag::Ignorable)
+			  {
+				  PYR_LOGF(LogShader, FATAL, "Constant buffer binding {} has no constant buffer reference.", binding.label);
+				  PYR_LOGF(LogShader, WARN, "Constant buffer binding {} has no constant buffer reference.", binding.label);
+			  }
+			  if (binding.bufferRef) bindConstantBuffer(binding.label, binding.bufferRef);
+		  }
+	  );
+  }
+
+  void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<BaseConstantBuffer> data) const
+  {
+	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
+	  pCB->SetConstantBuffer(data->getRawBuffer());
+	  DXRelease(pCB);
+  }
+
+  // This is the direct way of settings cbuffers value. Consider using a cbufferBinding that basically does this under the hood when calling uploadAllCbuffers
   template<class DataStruct>
   void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data) const
   {
@@ -76,6 +106,10 @@ private:
   ID3D11InputLayout      *m_inputLayout;
   mutable std::unordered_map<std::string, ID3DX11EffectVariable *> m_variableBindingsCache;
   mutable std::unordered_map<std::string, ID3DX11EffectConstantBuffer *> m_constantBufferBindingsCache;
+
+
+  std::vector<ConstantBufferBinding> m_bindings; // todo say bind all cbuffers
+
 };
 
 class ShaderManager
