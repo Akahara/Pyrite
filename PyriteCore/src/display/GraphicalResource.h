@@ -28,14 +28,16 @@ public:
 
   GraphicalResourceRegistry(const GraphicalResourceRegistry &) = delete;
   GraphicalResourceRegistry &operator=(const GraphicalResourceRegistry &) = delete;
-  GraphicalResourceRegistry(GraphicalResourceRegistry &&) = delete;
-  GraphicalResourceRegistry &operator=(GraphicalResourceRegistry &&) = delete;
+  GraphicalResourceRegistry(GraphicalResourceRegistry &&) noexcept;
+  GraphicalResourceRegistry &operator=(GraphicalResourceRegistry &&) noexcept;
 
   Texture loadTexture(const filepath &path);
   Cubemap loadCubemap(const filepath &path);
   Effect *loadEffect(const filepath &path, const InputLayout& layout);
 
   void reloadShaders();
+
+  void swap(GraphicalResourceRegistry& other) noexcept;
 
 private:
   map<filepath, Texture> m_texturesCache;

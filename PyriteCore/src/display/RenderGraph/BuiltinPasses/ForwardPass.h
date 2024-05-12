@@ -21,6 +21,10 @@ private:
     pyr::Cubemap m_skybox;
     pyr::Effect* m_skyboxEffect;
 
+    using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
+
+    std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
+
 public:
 
     ForwardPass()
@@ -36,16 +40,35 @@ public:
         // Render all objects 
         for (const StaticMesh* smesh : m_meshes)
         {
-            smesh->bindModel();
-            smesh->bindMaterial();
+            auto material = smesh->getMaterial();
+            const Effect* effect = material->getEffect();
+
+            pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+
             // todo bind materials and shaders
             std::span<const SubMesh> subMeshIndices = smesh->getModel()->getRawMeshData()->getSubmeshes();
             for (int index = 0; index < subMeshIndices.size() - 1; ++index)
             {
+                smesh->bindModel();
+                smesh->bindMaterial();
+                effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+
+                if (subMeshIndices.size() > index + 2)
+                {
+
+                    std::shared_ptr<Material> submeshMaterial = smesh->getMaterialOfIndex(subMeshIndices[index + 2].materialIndex);
+                    if (submeshMaterial)
+                    {
+                        if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex) effect->bindTexture(*tex,"mat_albedo");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::NORMAL); tex) effect->bindTexture(*tex,"mat_normal");
+                    }
+                }
                 const size_t indexCount = subMeshIndices[index + 1].startIndex - subMeshIndices[index].startIndex;
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(indexCount), subMeshIndices[index].startIndex, 0);
+                effect->unbindResources();
             }
-            smesh->getMaterial().getEffect()->unbindResources();
+            
+            
         }
 
         renderSkybox();

@@ -4,10 +4,35 @@
 #include "utils/Logger.h"
 #include "utils/StringUtils.h"
 
+#include <utility>
+#include <algorithm>
+
 namespace pyr
 {
 
 PYR_DEFINELOG(GraphicalResourceRegistry, INFO);
+
+GraphicalResourceRegistry::GraphicalResourceRegistry(GraphicalResourceRegistry&& other) noexcept
+    : m_cubemapsCache{ std::exchange(other.m_cubemapsCache, {}) }
+    , m_texturesCache{ std::exchange(other.m_texturesCache, {}) }
+    , m_effects{ std::exchange(other.m_effects, {}) }
+
+{}
+
+GraphicalResourceRegistry& GraphicalResourceRegistry::operator=(GraphicalResourceRegistry&& other) noexcept
+{
+    GraphicalResourceRegistry{ std::move(other) }.swap(*this);
+    return *this;
+}
+
+
+void GraphicalResourceRegistry::swap(GraphicalResourceRegistry& other) noexcept
+{
+    std::swap(m_texturesCache, other.m_texturesCache);
+    std::swap(m_effects, other.m_effects);
+    std::swap(m_cubemapsCache, other.m_cubemapsCache);
+}
+
 
 GraphicalResourceRegistry::~GraphicalResourceRegistry()
 {

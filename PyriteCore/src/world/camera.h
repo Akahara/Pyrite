@@ -13,7 +13,7 @@ struct PerspectiveProjection
 {
   float fovy   = PI * .4f;
   float aspect = 16.f/9.f;
-  float zNear  = 3.f;     // world space
+  float zNear  = 0.1f;     // world space
   float zFar   = 10000.f; // world space
 
   mat4 buildProjectionMatrix() const;
@@ -23,7 +23,7 @@ struct OrthographicProjection
 {
   float width  = 160;    // world space
   float height = 90;     // world space
-  float zNear  = 3.f;    // world space
+  float zNear  = .1f;    // world space
   float zFar = 10000.f;  // world space
 
   mat4 buildProjectionMatrix() const;
