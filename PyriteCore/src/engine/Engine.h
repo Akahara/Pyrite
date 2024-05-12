@@ -20,6 +20,7 @@ public:
   ~Engine();
 
   void run();
+  static void exit() { s_engineSingleton->m_bShouldExit = true; }
 
   static const EngineSettings& getEngineSettings() { return s_engineSingleton->m_settings; }
   // Can be used during engine initialization to test if the device was already initialized, not necessary after the engine's constructor completed

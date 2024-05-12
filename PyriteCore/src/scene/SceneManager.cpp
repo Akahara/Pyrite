@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 
+#include <ranges>
+
 #include "imgui.h"
 #include "utils/Debug.h"
 #include "utils/ImGuiExt.h"
@@ -59,7 +61,7 @@ void SceneManager::render()
   if (m_knownScenes.size() > 1)
   {
     ImGui::Begin("Scenes");
-    for (auto &[name, _] : m_knownScenes)
+    for (const auto& name : m_knownScenes | std::views::keys)
     {
       if (name == m_activeSceneName
         ? ImGui::ColoredButton(name.c_str(), ImVec4{ 0.191f, 0.581f, 0.224f, 1.f })

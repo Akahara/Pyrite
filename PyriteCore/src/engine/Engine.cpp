@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "Directxlib.h"
+#include "display/DebugDraw.h"
 #include "display/FrameBuffer.h"
 #include "display/RenderProfiles.h"
 #include "utils/Clock.h"
@@ -69,6 +70,7 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
 
   RenderProfiles::initProfiles();
   FrameBufferPipeline::loadGlobalResources(*m_globalGraphicalResources);
+  DebugDraws::get().load(*m_globalGraphicalResources);
 
   m_primaryFrameBuffer = std::make_unique<FrameBuffer>(Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::Target::COLOR_0 | FrameBuffer::Target::DEPTH_STENCIL);
   m_primaryFrameBuffer->bind();
@@ -132,6 +134,7 @@ void Engine::runFrame(float deltaTime)
   // update
   UserInputs::pollEvents();
   SceneManager::getInstance().update(deltaTime);
+  DebugDraws::get().tick(deltaTime);
 
   // render
   FrameBuffer::getActiveFrameBuffer().clearTargets();
@@ -139,6 +142,7 @@ void Engine::runFrame(float deltaTime)
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();
   SceneManager::getInstance().render();
+  DebugDraws::get().render();
 
   ImGui::Render();
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

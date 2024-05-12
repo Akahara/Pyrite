@@ -23,7 +23,7 @@ Texture2D tex_breadbug;
 
 struct VertexInput
 {
-    float3 Pos : POSITION;
+    float4 Pos : POSITION;
     float2 uv : TEXCOORD0;
 };
 
@@ -36,7 +36,7 @@ struct VertexOut
 VertexOut CubeVS(VertexInput vsIn)
 {
     VertexOut vso;
-    vso.pos = mul(MVP, float4(vsIn.Pos, 1));
+    vso.pos = mul(MVP, vsIn.Pos);
     vso.uv = vsIn.uv;
     return vso;
 }

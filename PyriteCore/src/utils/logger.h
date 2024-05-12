@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <format>
 #include <iomanip>
@@ -53,14 +53,22 @@ public:
 	}
 
 	template<class ...Args>
-	void logf(Verbosity verbosity, std::format_string<Args...> format, Args&&... args)
-	{
-		if (verbosity < m_verbosity)
-			return;
+	void logf(Verbosity verbosity, std::string_view format, Args&&... args)
+    {
+	    if (verbosity < m_verbosity)
+	      return;
 
-		OutputDebugStringA(std::vformat(
-			std::string(format.get()) + "\n",
-			std::make_format_args(std::forward<Args>(args)...)).c_str());
+	    OutputDebugStringA(std::vformat(
+	      std::string(format) + "\n",
+	      std::make_format_args(std::forward<Args>(args)...)).c_str());
+    }
+
+
+    static std::string concat(auto&&... args)
+	{
+        std::stringstream ss;
+	    (ss << ... << std::forward<decltype(args)>(args));
+	    return ss.str().c_str();
 	}
 
 private:
@@ -72,4 +80,3 @@ private:
 #define PYR_DECLARELOG(logname) extern Logger PyrLogger_##logname
 #define PYR_LOG(logger, verbosity, ...) PyrLogger_##logger.log(Logger::verbosity, __VA_ARGS__)
 #define PYR_LOGF(logger, verbosity, format, ...) PyrLogger_##logger.logf(Logger::verbosity, format, __VA_ARGS__)
-

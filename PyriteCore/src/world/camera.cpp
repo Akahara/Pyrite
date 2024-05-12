@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "engine/Engine.h"
 #include "inputs/UserInputs.h"
 
 using namespace DirectX;
@@ -154,14 +155,13 @@ bool Frustum::isOnOrForwardPlan(const Plane &plane, const AABB &boundingBox)
   return -r <= plane.signedDistanceTo(center);
 }
 
-void FreecamController::processUserInputs(double delta)
+void FreecamController::processUserInputs(float deltaTime)
 {
   if (!m_camera) return;
-  m_inputCooldown -= delta;
 
   constexpr float mouseSensitivity = 1 / 1000.f;
 
-  const MouseState mouse = UserInputs::getMouseState();
+  const MouseState& mouse = UserInputs::getMouseState();
 
   if (m_cursorLocked && (mouse.deltaX != 0 || mouse.deltaY != 0 || mouse.deltaScroll != 0)) {
     m_camera->rotate(0, static_cast<float>(mouse.deltaX) * mouseSensitivity, 0, false);
@@ -176,17 +176,17 @@ void FreecamController::processUserInputs(double delta)
   if (UserInputs::isKeyPressed(keys::SC_LEFT_SHIFT)) movementDelta += vec3::Up;
   if (UserInputs::isKeyPressed(keys::SC_LEFT_CTRL))  movementDelta -= vec3::Up;
 
-  m_camera->move(delta * m_playerSpeed * movementDelta);
+  m_camera->move(deltaTime * m_playerSpeed * movementDelta);
 
   if (mouse.deltaScroll != 0) {
     m_playerSpeed *= pow(1.1f, mouse.deltaScroll < 0 ? -1.f : +1.f);
     m_playerSpeed = mathf::clamp(m_playerSpeed, .1f, 1000.f);
   }
 
-  if (UserInputs::isKeyPressed(keys::SC_F) && m_inputCooldown < 0) {
+  if (UserInputs::consumeKeyPress(keys::SC_F))
     UserInputs::setCursorLocked(m_cursorLocked = !m_cursorLocked);
-    m_inputCooldown = .4f;
-  }
+  if (UserInputs::consumeKeyPress(keys::SC_ESCAPE))
+    Engine::exit();
 }
 
 }

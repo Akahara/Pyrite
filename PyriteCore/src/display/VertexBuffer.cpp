@@ -6,11 +6,20 @@
 
 namespace pyr
 {
-    
+void VertexBuffer::setData(const void* data, size_t size, size_t offset)
+{
+  D3D11_MAPPED_SUBRESOURCE mappedResource;
+  ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+  DXTry(Engine::d3dcontext().Map(m_vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource), "Could not map a vertex buffer");
+  memcpy(static_cast<char*>(mappedResource.pData) + offset, data, size);
+  Engine::d3dcontext().Unmap(m_vbo, 0);
+}
+
 void VertexBuffer::bind() const noexcept
 {
 	constexpr UINT offset = 0;
-	pyr::Engine::d3dcontext().IASetVertexBuffers(0, 1, &m_vbo, &m_stride, &offset);
+    Engine::d3dcontext().IASetVertexBuffers(0, 1, &m_vbo, &m_stride, &offset);
 }
 
 void VertexBuffer::swap(VertexBuffer& other) noexcept {

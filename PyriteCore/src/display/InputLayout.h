@@ -25,6 +25,7 @@ namespace pyr
     { POSITION, "POSITION"},
     { TANGENT, "TANGENT"},
     { UV, "TEXCOORD"},
+    { COLOR, "COLOR" },
     //"BLENDINDICES",
     //"BLENDWEIGHT",
     //"BINORMAL",
@@ -67,13 +68,13 @@ namespace pyr
     public:
         // Compile time input layout
         template<class T> requires std::derived_from<T, BaseVertex>
-        static constexpr InputLayout MakeLayoutFromVertex(bool bIsInstanced = false)
+        static InputLayout MakeLayoutFromVertex(bool bIsInstanced = false)
         {
             int i = 0;
             std::array<D3D11_INPUT_ELEMENT_DESC, std::tuple_size_v<typename T::type_t>> desc{};
             std::apply([&]<class ...Ts>(Ts&&...) constexpr {
                 ((desc[i++] = D3D11_INPUT_ELEMENT_DESC{
-                    labelMap[Ts::type],
+                    labelMap[vpt_traits<Ts>::type],
                     0,
                     formats[sizeof(Ts) / sizeof(float) - 1],
                     0,

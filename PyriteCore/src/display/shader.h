@@ -46,7 +46,6 @@ public:
 
   void bind() const;
   static void unbindResources();
-  //void bindBuffer(const GenericBuffer &buffer, const std::string &name) const;
   void bindTexture(const Texture &texture, const std::string &name) const;
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
@@ -79,17 +78,15 @@ public:
 
   // This is the direct way of settings cbuffers value. Consider using a cbufferBinding that basically does this under the hood when calling uploadAllCbuffers
   template<class DataStruct>
-  void bindConstantBuffer(const std::string& constantBufferName, std::shared_ptr<ConstantBuffer<DataStruct>> data) const
+  void bindConstantBuffer(const std::string& constantBufferName, const ConstantBuffer<DataStruct>& data) const
   {
-	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
-	  pCB->SetConstantBuffer(data->getRawBuffer());
-      DXRelease(pCB);
+	  DXTry(getConstantBufferBinding(constantBufferName)->SetConstantBuffer(const_cast<ID3D11Buffer *>(data.getRawBuffer())), "Could not bind a CBuffer to an effect");
   }
 
-  template<class T> // bruh this needs specialisation
+  template<class T> requires std::is_floating_point_v<T>
   void setUniform(const std::string& uniformName, const T& data)
   {
-      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(data);
+      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));
   }
 
 private:

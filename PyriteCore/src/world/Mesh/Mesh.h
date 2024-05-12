@@ -19,11 +19,11 @@ namespace pyr
 
     /////////////////////////////////////////////////////////////////
     
-    class Mesh {
+class Mesh {
 
-    public:
-        using mesh_vertex_t = GenericVertex<POSITION, UV>;
-        using mesh_indice_t = IndexBuffer::size_type;
+public:
+    using mesh_vertex_t = GenericVertex<POSITION, UV>;
+    using mesh_indice_t = IndexBuffer::size_type;
 
 private:
 

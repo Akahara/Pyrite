@@ -18,25 +18,25 @@ namespace pyr
     public:
 
         template<class V> requires std::derived_from<V, BaseVertex>
-        explicit VertexBuffer(const std::vector<V>& vertices) : m_stride(sizeof(V))
+        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable=false) : m_stride(sizeof(V))
         {
             m_vertexCount = vertices.size();
 
             D3D11_BUFFER_DESC descriptor{};
-            D3D11_SUBRESOURCE_DATA m_initData{};
+            D3D11_SUBRESOURCE_DATA initData{};
 
             // -- Vertex buffer
             ZeroMemory(&descriptor, sizeof(descriptor));
 
-            descriptor.Usage = D3D11_USAGE_IMMUTABLE;
+            descriptor.Usage = bMutable ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE;
             descriptor.ByteWidth = static_cast<UINT>(vertices.size()) * sizeof(V);
             descriptor.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            descriptor.CPUAccessFlags = 0;
+            descriptor.CPUAccessFlags = bMutable ? D3D11_CPU_ACCESS_WRITE : 0;
 
-            ZeroMemory(&m_initData, sizeof(m_initData));
-            m_initData.pSysMem = &vertices[0];
+            ZeroMemory(&initData, sizeof(initData));
+            initData.pSysMem = &vertices[0];
 
-            pyr::Engine::d3ddevice().CreateBuffer(&descriptor, &m_initData, &m_vbo);
+            Engine::d3ddevice().CreateBuffer(&descriptor, &initData, &m_vbo);
         }
 
 
@@ -44,6 +44,7 @@ namespace pyr
 
         [[nodiscard]] size_t getVerticesCount()			const noexcept { return m_vertexCount; }
         [[nodiscard]] UINT   getStride()			    const noexcept { return m_stride; }
+        void setData(const void* data, size_t size, size_t offset);
         void bind() const noexcept;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////

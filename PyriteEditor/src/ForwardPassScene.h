@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "display/DebugDraw.h"
 #include "display/IndexBuffer.h"
 #include "display/InputLayout.h"
 #include "display/Vertex.h"
@@ -50,7 +51,7 @@ namespace pye
 
         ForwardPassScene()
         {
-
+            drawDebugSetCamera(&m_camera);
             // Import shader and bind cbuffers
             m_layout = pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>();
             m_baseEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", m_layout);
@@ -91,7 +92,7 @@ namespace pye
             pimportedBuffer->setData(ImportedBuffer::data_t{ .randomValue = vec4{1,0,0,0} });
             pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition()});
         }
-
+        
         void render() override
 
         {
@@ -111,12 +112,17 @@ namespace pye
             m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_RDG.execute();
 
+            pyr::drawDebugLine(vec3::Zero, vec3::UnitX * 10.f, { 1,0,0,1 });
+            pyr::drawDebugLine(vec3::Zero, vec3::UnitY * 10.f, { 0,1,0,1 });
+            pyr::drawDebugLine(vec3::Zero, vec3::UnitZ * 10.f, { 0,0,1,1 });
+            pyr::drawDebugBox(vec3::Zero, vec3(5.f));
+
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
 
         }
 
-        ~ForwardPassScene()
+        ~ForwardPassScene() override
         {
             m_RDG.clearGraph();
         }
