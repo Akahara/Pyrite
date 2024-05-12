@@ -22,8 +22,7 @@ namespace pyr
 
 			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate);
 
-			if (!scene)
-				throw 3; // error log here
+			PYR_ASSERT(scene, "Could not load mesh ", filePath);
 
 			// Todo : Once we have actual material support, we have to change this !
 
@@ -42,10 +41,9 @@ namespace pyr
 					aiVector3D normal = mesh->HasNormals() ? mesh->mNormals[verticeId] : aiVector3D{ 0, 0, 0 };
 					aiVector3D uv = mesh->HasTextureCoords(0) ? mesh->mTextureCoords[0][verticeId] : aiVector3D{ 0, 0, 0 };
 
-
 					Mesh::mesh_vertex_t computedVertex{};
 
-					computedVertex.position = vec4{ position.x * importScale, position.y * importScale, position.z * importScale, 1.f };
+					computedVertex.position = vec4{ position.x * importScale, position.y * importScale, -position.z * importScale, 1.f };
 					computedVertex.texCoords = vec2{ uv.x, uv.y };
 					vertices.push_back(computedVertex);
 				}
