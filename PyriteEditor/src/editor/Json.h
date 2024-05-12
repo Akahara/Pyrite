@@ -1,65 +1,72 @@
 ﻿#pragma once
 
-#include <array>
-#include <memory>
-#include <stdexcept>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
-#include <filesystem>
-
-#include "utils/debug.h"
-
-/*
- * Generic JSON parser, there is little (no) error logging but the
- * parser is still safe. By discarding error reporting facilities
- * the parser can be made blazingly fast.
- *
- * JsonObject can be copied but copy should be avoided whenever
- * possible. Deep json copy is not cheap.
- */
 
 class JsonObject;
 class JsonValue;
+using JsonArray = std::vector<JsonValue>;
+class JsonView;
 
 namespace json {
 
 using number_type = double;
-using array_type = std::vector<JsonValue>;
-using variant_type = std::variant<double, JsonObject, array_type, std::string, bool>;
-// set this flag on an output stream to write pretty json
-// boolalpha is used as a workarround because we cannot create new stream flags. We handle "true" and "false" oursleves anyway
-static constexpr auto pretty_format = std::boolalpha;
+using variant_type = std::variant<double, JsonObject, JsonArray, std::string, bool>;
+
+template<class T>
+concept is_json_type = requires(variant_type v) { { std::get<T>(v) }; };
+template<class T>
+concept is_json_key = std::is_integral_v<T> || std::is_convertible_v<T, std::string>;
+
+//// Format flag that can be passed to any output stream before writing a json value,
+//// if the flag is set, json will be printed using new lines and indentation
+//// The difference between pretty_print and force_pretty_print is that without 'force'
+//// newlines are not added for small objects ({ "a": 3 } will take a single line)
+//// Note that all other format flags are ignored while printing json
+//// ie. std::cout << json::pretty_print_json << myJsonValue;
+//static constexpr auto pretty_print_json = std::showpos;
+//static constexpr auto pretty_print_json_flag = std::ios::showpos;
+//static constexpr auto force_pretty_print_json = std::skipws;
+//static constexpr auto force_pretty_print_json_flag = std::ios::skipws;
+
+struct pretty_print {
+  const JsonValue& val;
+  explicit pretty_print(JsonValue& val) : val(val) {}
+};
+struct force_pretty_print {
+  const JsonValue& val;
+  explicit force_pretty_print(JsonValue& val) : val(val) {}
+};
 
 JsonValue parse(const std::string &text);
-JsonValue parseFile(const std::filesystem::path &filepath);
-JsonValue parse(std::istream &is);
+JsonValue parse(const std::filesystem::path &filepath);
 
 }
 
+struct json_parser_error : std::runtime_error {
+  explicit json_parser_error(const std::string& message) : std::runtime_error(message) {}
+  json_parser_error(const std::string &message, char problematicChar) : json_parser_error(message + ", got: " + std::to_string(problematicChar)) {}
+};
+
+struct json_use_error : std::runtime_error {
+  explicit json_use_error(const std::string& message) : std::runtime_error(message) {}
+};
+
 class JsonObject {
 public:
-  using array_type = json::array_type;
   using number_type = json::number_type;
 
-  number_type getNumber(const std::string &name) const { return get<number_type>(name); }
-  int getInt(const std::string &name) const { return static_cast<int>(getNumber(name)); }
-  float getFloat(const std::string &name) const { return static_cast<float>(getNumber(name)); }
-  double getDouble(const std::string &name) const { return static_cast<double>(getNumber(name)); }
-  const std::string &getString(const std::string &name) const { return get<std::string>(name); }
-  bool getBool(const std::string &name) const { return get<bool>(name); }
-  const JsonObject &getObject(const std::string &name) const { return get<JsonObject>(name); }
-  const array_type &getArray(const std::string &name) const { return get<array_type>(name); }
-  template<class T>
-  const T &get(const std::string &name) const;
-
-  const JsonValue &operator[](const std::string &name) const;
-
-  void set(const std::string &name, JsonValue &&val);
+  template<class T> requires json::is_json_type<T>
+  const T& get(const std::string& name) const;
+  void set(const std::string& name, JsonValue&& val);
 
   const std::unordered_map<std::string, JsonValue> &getFields() const { return m_fields; }
-  bool hasField(const std::string &name) const { return m_fields.contains(name); }
+  bool hasField(const std::string& name) const { return m_fields.contains(name); }
+  const JsonValue& getField(const std::string& name) const { return m_fields.at(name); }
+  JsonValue& getField(const std::string& name) { return m_fields.at(name); }
 
 private:
   std::unordered_map<std::string, JsonValue> m_fields;
@@ -67,81 +74,66 @@ private:
 
 class JsonValue {
 public:
-  using array_type = json::array_type;
   using number_type = json::number_type;
   using variant_type = json::variant_type;
 
-  template<class T>
-    requires std::is_same_v<T, JsonObject>
-          or std::is_same_v<T, array_type>
-  JsonValue(T &&val)
-    : m_value(std::forward<T>(val))
-  {}
+  template<class T> requires std::is_same_v<T, JsonObject> or std::is_same_v<T, JsonArray>
+  JsonValue(T &&jsonVal) : m_value(std::forward<T>(jsonVal)) {}
+  JsonValue(std::string stringVal) : m_value(std::move(stringVal)) {}
+  JsonValue(const char* stringVal) : m_value(std::string(stringVal)) {}
+  template<class T> requires (std::is_floating_point_v<T> or std::is_integral_v<T>) and !std::is_same_v<T, bool>
+  JsonValue(T numVal) : m_value(static_cast<number_type>(numVal)) {}
+  JsonValue(bool boolVal) : m_value(boolVal) {}
+  JsonValue() : m_value(JsonObject{}) {}
 
-  template<class T>
-    requires std::is_same_v<T, std::string>
-  JsonValue(T copiedVal)
-    : m_value(std::move(copiedVal))
-  {}
-  
-  template<class T>
-    requires std::is_floating_point_v<T>
-          or std::is_integral_v<T>
-          /* bool is an integral type */
-  JsonValue(T numVal)
-    : m_value(static_cast<number_type>(numVal))
-  {}
+  template<class T> requires json::is_json_type<T>
+  const T& as() const { return const_cast<JsonValue&>(*this).as<T>(); }
+  template<class T> requires json::is_json_type<T>
+  T &as();
 
-  number_type asNumber() const { return std::get<number_type>(m_value); }
-  const std::string &asString() const { return std::get<std::string>(m_value); }
-  const JsonObject &asObject() const { return std::get<JsonObject>(m_value); }
-  const array_type &asArray() const { return std::get<array_type>(m_value); }
-  bool asBool() const { return std::get<bool>(m_value); }
-  template<class T>
-  const T &as() const { return std::get<T>(m_value); }
+  template<class T> requires json::is_json_key<T>
+  JsonView operator[](T name);
 
   const variant_type &getVariant() const { return m_value; }
-
-  const JsonValue &operator[](const std::string& fieldName) const { return asObject()[fieldName]; }
 
 private:
   variant_type m_value;
 };
 
-struct json_parser_error : std::runtime_error {
-  explicit json_parser_error(const std::string& message) : std::runtime_error(message) {}
-  json_parser_error(const std::string &message, char problematicChar) : json_parser_error(message + ", got: " + std::to_string(problematicChar)) {}
+class JsonView {
+public:
+  using json_key = std::variant<std::string, size_t>;
+
+  JsonView(JsonValue& object, std::string key);
+
+  template<class T> requires std::is_integral_v<T>
+  JsonView(JsonValue& object, T key);
+
+  JsonView(const JsonView&) = delete;
+  JsonView(JsonView&&) = delete;
+  JsonView& operator=(const JsonView&) = delete;
+  JsonView& operator=(JsonView&&) = delete;
+
+  JsonView& operator=(JsonValue&& val);
+  JsonView& operator=(const JsonValue& val) { return *this = JsonValue{ val }; }
+
+  template<class T> requires json::is_json_type<T>
+  operator const T&() const;
+
+  operator const JsonValue&() const;
+  const JsonValue& operator*() const { return static_cast<const JsonValue&>(*this); }
+
+  template<class T> requires json::is_json_key<T>
+  JsonView operator[](T key);
+
+private:
+  JsonValue& m_object;
+  json_key m_field;
 };
 
+std::ostream& operator<<(std::ostream& os, const JsonValue& val);
+std::ostream& operator<<(std::ostream& os, json::pretty_print val);
+std::ostream& operator<<(std::ostream& os, json::force_pretty_print val);
+std::istream& operator>>(std::istream& is, JsonValue& val);
 
-
-std::ostream &operator<<(std::ostream &os, const JsonValue &val);
-inline std::istream &operator>>(std::istream &is, JsonValue &val) { val = json::parse(is); return is; }
-
-inline void JsonObject::set(const std::string& name, JsonValue&& val)
-{ m_fields.emplace(name, std::move(val)); }
-
-template <class T>
-const T& JsonObject::get(const std::string& name) const
-{
-#ifdef PYR_ISDEBUG
-  PYR_ENSURE(m_fields.contains(name), "Missing field in json: ", name);
-  try {
-    return m_fields.at(name).as<T>();
-  } catch (const std::bad_variant_access&) {
-    throw json_parser_error("Invalid type for json field " + name + ", expected " + typeid(T).name());
-  }
-#else
-  return m_fields.at(name).as<T>();
-#endif
-}
-
-inline const JsonValue& JsonObject::operator[](const std::string &name) const
-{
-#ifdef PYR_ISDEBUG
-  PYR_ENSURE(m_fields.contains(name), "Missing field in json: ", name);
-  return m_fields.at(name);
-#else
-  return m_fields.at(name);
-#endif
-}
+#include "json.inl"

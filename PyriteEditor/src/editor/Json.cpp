@@ -1,11 +1,10 @@
-﻿#include "json.h"
+#include "json.h"
 
 #include <fstream>
+#include <iostream>
+#include <numeric>
 
-template<class ...Ts>
-struct overloaded : public Ts... {
-  using Ts::operator()...;
-};
+namespace jsonimpl {
 
 static char peekNonSpace(std::istream &is)
 {
@@ -29,9 +28,61 @@ static void skipText(const char *text, std::istream &is)
   }
 }
 
-static void prettyPrintJson(std::ostream &os, const JsonValue &val, int depth) {
+struct json_fmt_flags {
+  json_fmt_flags() = default;
+
+  explicit json_fmt_flags(std::ostream& os)
+    : os(&os)
+    , flags(os.flags())
+  {
+    os.flags(std::ios_base::dec | std::ios_base::boolalpha);
+  }
+
+  ~json_fmt_flags()
+  {
+    os->flags(flags);
+  }
+
+  std::ostream* os{};
+  std::ios_base::fmtflags flags{};
+  bool prettyPrint{};
+  bool forcePrettyPrint{};
+};
+
+static size_t jsonDeepLength(const JsonValue& val, size_t maxDeepness)
+{
+  return std::visit(jsonimpl::Overloaded{
+    [&](const JsonObject &j) -> size_t
+    {
+      return std::accumulate(j.getFields().begin(), j.getFields().end(), 1, [&](size_t acc, auto& v)
+      { return acc >= maxDeepness ? acc : jsonDeepLength(v.second, maxDeepness - acc) + acc; });
+    },
+    [&](const std::vector<JsonValue> &a) -> size_t
+    {
+      return std::accumulate(a.begin(), a.end(), 1, [&](size_t acc, auto& v)
+      { return acc >= maxDeepness ? acc : jsonDeepLength(v, maxDeepness - acc) + acc; });
+    },
+    [&](const std::string &s) -> size_t
+    {
+      return 1 + s.length() / 10;
+    },
+    [&](double x) -> size_t
+    {
+      return 1;
+    },
+    [&](bool b) -> size_t
+    {
+      return 1;
+    }
+  }, val.getVariant());
+}
+
+static std::ostream& prettyPrintJson(std::ostream &os, const JsonValue &val, json_fmt_flags& flags, int depth)
+{
+  static constexpr size_t minPrettyPrintDeepness = 3;
+  bool doPrettyPrint = flags.forcePrettyPrint || (flags.prettyPrint && jsonDeepLength(val, minPrettyPrintDeepness) >= minPrettyPrintDeepness);
   auto printLine = [&](int d) {
-    if (!(os.flags() & std::ios::boolalpha)) return;
+    if (!doPrettyPrint) return;
     constexpr int maxDepth = 10;
     constexpr char spaces[maxDepth*2+1] = "                    ";
     os << '\n';
@@ -41,9 +92,9 @@ static void prettyPrintJson(std::ostream &os, const JsonValue &val, int depth) {
     }
   };
 
-  std::visit(overloaded{
-    [&](double x) { os << x; },
-    [&](const JsonObject &j) {
+  std::visit(Overloaded{
+    [&](const JsonObject &j)
+    {
       os << '{';
       printLine(depth+1);
       size_t i = 0;
@@ -54,7 +105,7 @@ static void prettyPrintJson(std::ostream &os, const JsonValue &val, int depth) {
       for(std::string &name : fieldNames) {
         os << std::quoted(name);
         os << ": ";
-        prettyPrintJson(os, j.getFields().at(name), depth+1);
+        prettyPrintJson(os, j.getFields().at(name), flags, depth+1);
         if (++i != j.getFields().size()) {
           os << ",";
           printLine(depth+1);
@@ -63,12 +114,13 @@ static void prettyPrintJson(std::ostream &os, const JsonValue &val, int depth) {
       printLine(depth);
       os << '}';
     },
-    [&](const std::vector<JsonValue> &a) {
+    [&](const std::vector<JsonValue> &a)
+    {
       os << '[';
       printLine(depth+1);
       size_t i = 0;
       for(const auto &fieldVal : a) {
-        prettyPrintJson(os, fieldVal, depth+1);
+        prettyPrintJson(os, fieldVal, flags, depth+1);
         if (++i != a.size()) {
           os << ", ";
           printLine(depth+1);
@@ -77,38 +129,23 @@ static void prettyPrintJson(std::ostream &os, const JsonValue &val, int depth) {
       printLine(depth);
       os << ']';
     },
-    [&](const std::string &s) {
+    [&](const std::string &s)
+    {
       os << std::quoted(s);
     },
+    [&](double x)
+    {
+      os << x;
+    },
     [&](bool b) {
-      os << (b ? "true" : "false");
+      os << b;
     }
   }, val.getVariant());
-}
 
-std::ostream& operator<<(std::ostream &os, const JsonValue &val)
-{
-  prettyPrintJson(os, val, 0);
   return os;
 }
 
-namespace json
-{
-
-JsonValue parse(const std::string &text)
-{
-  std::stringstream ss{ text };
-  return parse(ss);
-}
-
-JsonValue parseFile(const std::filesystem::path &filepath)
-{
-  std::ifstream is{ filepath };
-  if (!is) throw json_parser_error("Could not open json file");
-  return parse(is);
-}
-
-JsonValue parse(std::istream &is)
+static std::istream& loadJson(std::istream &is, JsonValue &v)
 {
   char c = peekNonSpace(is);
 
@@ -118,40 +155,37 @@ JsonValue parse(std::istream &is)
     JsonObject object;
     if (c == '}') {
       is.get();
-      return object;
-    }
-    while(true) {
-      c = peekNonSpace(is);
-      std::string fieldName;
-      if (c == '"') {
+      v = std::move(object);
+    } else {
+      while(true) {
+        c = peekNonSpace(is);
+        std::string fieldName;
         is >> std::quoted(fieldName);
-      } else {
-        char nameBuf[256];
-        is.get(nameBuf, sizeof(nameBuf), ':');
-        fieldName = nameBuf;
-        if(fieldName.contains(' ')) throw json_parser_error("Got space in property name: " + fieldName);
+        if ((c = getNonSpace(is)) != ':') throw json_parser_error("Expected ':' for property value", c);
+        if (JsonValue field; is >> field)
+          object.set(fieldName, std::move(field));
+        c = getNonSpace(is);
+        if (c == ',')
+          continue;
+        if (c == '}')
+          break;
+        throw json_parser_error("Expected '}' or ',' in object", c);
       }
-      if ((c = getNonSpace(is)) != ':') throw json_parser_error("Expected ':' for property value", c);
-      object.set(fieldName, parse(is));
-      c = getNonSpace(is);
-      if (c == ',')
-        continue;
-      if (c == '}')
-        break;
-      throw json_parser_error("Expected '}' or ',' in object", c);
     }
-    return object;
 
   } else if(c == '[') {
     is.get();
-    json::array_type arrayValues;
+    JsonArray arrayValues;
     c = peekNonSpace(is);
     if (c == ']') {
       is.get();
-      return arrayValues;
+      v = std::move(arrayValues);
+      return is;
     }
     while(true) {
-      arrayValues.push_back(parse(is));
+      JsonValue field;
+      is >> field;
+      arrayValues.push_back(std::move(field));
       c = getNonSpace(is);
       if (c == ',')
         continue;
@@ -159,24 +193,94 @@ JsonValue parse(std::istream &is)
         break;
       throw json_parser_error("Expected ']' or ',' in array", c);
     }
-    return arrayValues;
+    v = std::move(arrayValues);
+
   } else if(c >= '0' && c <= '9' || c == '-') {
-    json::number_type x;
-    is >> x;
-    return x;
+    if (json::number_type x; is >> x)
+      v = x;
+
   } else if (c == '"') {
-    std::string text;
-    is >> std::quoted(text);
-    return text;
+    if (std::string text; is >> std::quoted(text))
+      v = std::move(text);
+
   } else if (c == 't') {
     skipText("true", is);
-    return true;
+    v = true;
+
   } else if (c == 'f') {
     skipText("false", is);
-    return false;
+    v = false;
+
   } else {
     throw json_parser_error("Unknown json type from begining char " + std::to_string(c));
   }
+
+  if (!is)
+    throw json_parser_error("EOF reached while reading json");
+  return is;
 }
 
+}
+
+namespace json
+{
+
+JsonValue parse(const std::string &text)
+{
+  std::stringstream ss{ text };
+  JsonValue v;
+  ss >> v;
+  return v;
+}
+
+JsonValue parse(const std::filesystem::path &filepath)
+{
+  std::ifstream is{ filepath };
+  if (!is) throw json_parser_error("Could not open json file");
+  JsonValue v;
+  is >> v;
+  return v;
+}
+
+}
+
+
+std::ostream& operator<<(std::ostream &os, const JsonValue &val)
+{
+  jsonimpl::json_fmt_flags flags{ os };
+  return jsonimpl::prettyPrintJson(os, val, flags, 0);
+}
+
+std::ostream& operator<<(std::ostream &os, json::pretty_print val)
+{
+  jsonimpl::json_fmt_flags flags{ os };
+  flags.prettyPrint = true;
+  return jsonimpl::prettyPrintJson(os, val.val, flags, 0);
+}
+
+std::ostream& operator<<(std::ostream &os, json::force_pretty_print val)
+{
+  jsonimpl::json_fmt_flags flags{ os };
+  flags.forcePrettyPrint = true;
+  return jsonimpl::prettyPrintJson(os, val.val, flags, 0);
+}
+
+std::istream& operator>>(std::istream &is, JsonValue &v)
+{
+  return jsonimpl::loadJson(is, v);
+}
+
+
+int main() {
+  JsonValue o;
+  o["ab"] = 3;
+  o["ac"]["d"] = *o["ab"];
+  o["aa"][0] = "5";
+  for (size_t i = 0; i < 3; i++)
+    o["som"][i] = "some very long string";
+
+  std::cout << json::pretty_print(o);
+  std::cout << json::force_pretty_print(o);
+
+  std::cin.get();
 }
