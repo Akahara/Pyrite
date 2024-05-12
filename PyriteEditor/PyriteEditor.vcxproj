@@ -141,10 +141,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\editor\EditorScene.cpp" />
+    <ClCompile Include="src\editor\Json.cpp" />
     <ClCompile Include="src\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\EditorScene.h" />
+    <ClInclude Include="src\editor\EditorScene.h" />
+    <ClInclude Include="src\editor\Json.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
   </ItemGroup>

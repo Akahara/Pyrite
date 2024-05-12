@@ -39,6 +39,7 @@
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\utils\Debug.cpp" />
+    <ClCompile Include="src\world\Actor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -100,6 +101,7 @@
     <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
+    <ClInclude Include="src\world\Actor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

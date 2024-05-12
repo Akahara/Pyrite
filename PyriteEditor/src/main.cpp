@@ -2,7 +2,7 @@
 #include <tchar.h>
 #include <Windows.h>
 
-#include "EditorScene.h"
+#include "editor/EditorScene.h"
 #include "ForwardPassScene.h"
 #include "TriangleScene.h"
 #include "utils/Debug.h"
@@ -23,7 +23,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     pyr::Engine engine{ hInstance, std::move(settings) };
     pyr::SceneManager& scenes = pyr::SceneManager::getInstance();
     scenes.registerScene<pye::TriangleScene>("TriangleScene");
-    scenes.registerScene<pye::EmptyEditorScene>("Empty");
+    scenes.registerScene<pye::EditorScene>("Editor");
     scenes.registerScene<pye::ForwardPassScene>("Forward pass");
 
     // Load the scene that is passed on the command line by default

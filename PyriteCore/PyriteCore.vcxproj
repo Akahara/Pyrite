@@ -110,6 +110,7 @@
     <ClCompile Include="src\utils\Debug.cpp" />
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
+    <ClCompile Include="src\world\Actor.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="src\world\Mesh\Mesh.cpp" />
@@ -165,6 +166,7 @@
     <ClInclude Include="src\utils\StringUtils.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\world\AABB.h" />
+    <ClInclude Include="src\world\Actor.h" />
     <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\world\Mesh\Mesh.h" />

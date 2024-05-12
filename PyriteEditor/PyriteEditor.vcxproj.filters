@@ -2,10 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\editor\EditorScene.cpp" />
+    <ClCompile Include="src\editor\Json.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\EditorScene.h" />
+    <ClInclude Include="src\editor\EditorScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
+    <ClInclude Include="src\editor\Json.h" />
   </ItemGroup>
 </Project>
