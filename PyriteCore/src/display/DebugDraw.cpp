@@ -20,6 +20,7 @@ void DebugDraws::drawDebugLine(const vec3& p0, const vec3& p1, const vec4& color
 void DebugDraws::drawDebugSphere(const vec3& center, float radius, const vec4& color, float duration)
 {
   constexpr int N = 8, M = 6;
+
   for (int j = 1; j < M; j++) {
     float a = PI * j / M;
     float y = std::cos(a);
@@ -30,6 +31,22 @@ void DebugDraws::drawDebugSphere(const vec3& center, float radius, const vec4& c
       m_debugLines.emplace_back(
         center + vec3{ std::cos(t0) * r, y, std::sin(t0) * r } * radius,
         center + vec3{ std::cos(t1) * r, y, std::sin(t1) * r } * radius,
+        color,
+        duration
+      );
+    }
+  }
+
+  for (int i = 0; i < N; i++) {
+    float t = PI * 2.f * i / N;
+    float x = std::cos(t);
+    float z = std::sin(t);
+    for (int j = 0; j < M; j++) {
+      float a0 = PI * j / M;
+      float a1 = PI * (j+1) / M;
+      m_debugLines.emplace_back(
+        center + vec3{ x * std::sin(a0), std::cos(a0), z * std::sin(a0) } *radius,
+        center + vec3{ x * std::sin(a1), std::cos(a1), z * std::sin(a1) } *radius,
         color,
         duration
       );
@@ -126,15 +143,17 @@ void DebugDraws::tick(float deltaTime)
   std::ranges::for_each(m_debugLines, [&](auto &l) { l.remainingDuration -= deltaTime; });
   std::ranges::for_each(m_debugPoints, [&](auto &l) { l.remainingDuration -= deltaTime; });
   m_debugLines.erase(
-    std::partition(std::execution::par, m_debugLines.begin(), m_debugLines.end(), [](auto &l) { return l.remainingDuration < 0; }),
+    std::partition(std::execution::par, m_debugLines.begin(), m_debugLines.end(), [](auto &l) { return l.remainingDuration > 0; }),
     m_debugLines.end());
   m_debugPoints.erase(
-    std::partition(std::execution::par, m_debugPoints.begin(), m_debugPoints.end(), [](auto &l) { return l.remainingDuration < 0; }),
+    std::partition(std::execution::par, m_debugPoints.begin(), m_debugPoints.end(), [](auto &l) { return l.remainingDuration > 0; }),
     m_debugPoints.end());
 }
 
 void DebugDraws::render()
 {
+  if (m_debugLines.empty() && m_debugPoints.empty())
+    return;
   if (!PYR_ENSURE(m_viewportCam, "No debug viewport camera set, did you forget to call drawDebugSetCamera ?"))
     return;
 
@@ -142,8 +161,8 @@ void DebugDraws::render()
   if (!m_debugLines.empty()) {
     m_lineVertexCache.clear();
     for (const DebugLine& line : m_debugLines) {
-      m_lineVertexCache.push_back({ line.p0, line.color });
-      m_lineVertexCache.push_back({ line.p1, line.color });
+      m_lineVertexCache.push_back({ BaseVertex::toPosition(line.p0), line.color });
+      m_lineVertexCache.push_back({ BaseVertex::toPosition(line.p1), line.color });
     }
     if (!m_lineVBO || m_lineVBO->getVerticesCount() < m_lineVertexCache.size()) {
       m_lineVBO = std::make_unique<VertexBuffer>(m_lineVertexCache, true);

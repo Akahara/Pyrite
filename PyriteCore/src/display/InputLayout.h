@@ -74,7 +74,7 @@ namespace pyr
             std::array<D3D11_INPUT_ELEMENT_DESC, std::tuple_size_v<typename T::type_t>> desc{};
             std::apply([&]<class ...Ts>(Ts&&...) constexpr {
                 ((desc[i++] = D3D11_INPUT_ELEMENT_DESC{
-                    labelMap[Ts::type],
+                    labelMap[vpt_traits<Ts>::type],
                     0,
                     formats[sizeof(Ts) / sizeof(float) - 1],
                     0,

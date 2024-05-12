@@ -45,8 +45,8 @@ namespace pyr
 
 					Mesh::mesh_vertex_t computedVertex{};
 
-					computedVertex.position = *reinterpret_cast<Vector3*>(&position) * importScale;
-					computedVertex.texCoords = Vector2{ uv.x, uv.y };
+					computedVertex.position = vec4{ position.x * importScale, position.y * importScale, position.z * importScale, 1.f };
+					computedVertex.texCoords = vec2{ uv.x, uv.y };
 					vertices.push_back(computedVertex);
 				}
 

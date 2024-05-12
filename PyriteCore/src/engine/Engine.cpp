@@ -70,6 +70,7 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
 
   RenderProfiles::initProfiles();
   FrameBufferPipeline::loadGlobalResources(*m_globalGraphicalResources);
+  DebugDraws::get().load(*m_globalGraphicalResources);
 
   m_primaryFrameBuffer = std::make_unique<FrameBuffer>(Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::Target::COLOR_0 | FrameBuffer::Target::DEPTH_STENCIL);
   m_primaryFrameBuffer->bind();

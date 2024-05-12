@@ -28,10 +28,10 @@ namespace pyr
             // -- Vertex buffer
             ZeroMemory(&descriptor, sizeof(descriptor));
 
-            descriptor.Usage = bMutable ? D3D11_USAGE_IMMUTABLE : D3D11_USAGE_DYNAMIC;
+            descriptor.Usage = bMutable ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE;
             descriptor.ByteWidth = static_cast<UINT>(vertices.size()) * sizeof(V);
             descriptor.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            descriptor.CPUAccessFlags = 0;
+            descriptor.CPUAccessFlags = bMutable ? D3D11_CPU_ACCESS_WRITE : 0;
 
             ZeroMemory(&initData, sizeof(initData));
             initData.pSysMem = &vertices[0];

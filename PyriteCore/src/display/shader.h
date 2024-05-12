@@ -80,13 +80,13 @@ public:
   template<class DataStruct>
   void bindConstantBuffer(const std::string& constantBufferName, const ConstantBuffer<DataStruct>& data) const
   {
-	  DXTry(getVariableBinding(constantBufferName)->AsConstantBuffer()->SetConstantBuffer(const_cast<ID3D11Buffer*>(data.getRawBuffer())), "Could not bind a CBuffer to an effect");
+	  DXTry(getConstantBufferBinding(constantBufferName)->SetConstantBuffer(const_cast<ID3D11Buffer *>(data.getRawBuffer())), "Could not bind a CBuffer to an effect");
   }
 
-  template<class T> // bruh this needs specialisation
+  template<class T> requires std::is_floating_point_v<T>
   void setUniform(const std::string& uniformName, const T& data)
   {
-      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(data);
+      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));
   }
 
 private:

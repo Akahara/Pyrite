@@ -28,9 +28,9 @@ namespace pye
         TriangleScene()
         {
             m_vertices.resize(3);
-            m_vertices[0].position = Vector3{ -0.5, -0.5, 0 };
-            m_vertices[1].position = Vector3{ +0.5, -0.5, 0 };
-            m_vertices[2].position = Vector3{ +0, 0.5, 0 };
+            m_vertices[0].position = pyr::BaseVertex::toPosition({ -0.5, -0.5, 0 });
+            m_vertices[1].position = pyr::BaseVertex::toPosition({ +0.5, -0.5, 0 });
+            m_vertices[2].position = pyr::BaseVertex::toPosition({ +0, 0.5, 0 });
 
             m_layout = pyr::InputLayout::MakeLayoutFromVertex<triangle_vertex_t>();
 
