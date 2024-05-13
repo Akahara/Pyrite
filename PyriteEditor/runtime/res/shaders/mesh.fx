@@ -46,9 +46,9 @@ float4 CubePS(VertexOut vsIn) : SV_Target
     float3 dirToSun = normalize(sunPos - vsIn.pos.xyz);
     float diffuseDot = saturate(dot(dirToSun, vsIn.norm.xyz));
     
-    return mat_albedo.Sample(MeshTextureSampler, vsIn.uv)
-     * lerp(0.5, 1 , diffuseDot);
-
+    float4 sample = mat_albedo.Sample(MeshTextureSampler, vsIn.uv);
+    float3 color = sample.xyz *  lerp(0.5, 1 , diffuseDot);
+    return float4(color, sample.a);
 }
 
 technique11 MiniPhong

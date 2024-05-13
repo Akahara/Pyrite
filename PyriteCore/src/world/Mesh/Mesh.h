@@ -16,8 +16,11 @@ namespace pyr
     struct SubMesh
     {
         IndexBuffer::size_type startIndex = 0;
+        IndexBuffer::size_type endIndex = 0;
         int materialIndex = -1;
         std::string matName;
+
+        IndexBuffer::size_type getIndexCount() const noexcept { return endIndex - startIndex; }
     };
 
     /////////////////////////////////////////////////////////////////

@@ -30,7 +30,7 @@ public:
 
     std::shared_ptr<Material> getMaterialOfIndex(int matId) const
     {
-        if (matId <= 0) return nullptr;
+        if (matId < 0 || !m_submeshesMaterial.contains(matId)) return nullptr;
         return m_submeshesMaterial.at(matId); // todo figure out where the indice offset comes from (should be assimp loading starting at index 1)
     }
 

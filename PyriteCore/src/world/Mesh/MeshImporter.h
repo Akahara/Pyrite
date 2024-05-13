@@ -29,7 +29,7 @@ namespace pyr
 
 			// Todo : Once we have actual material support, we have to change this !
 
-			std::vector<SubMesh> submeshes{ SubMesh{} };
+			std::vector<SubMesh> submeshes{};
 
 			std::vector<Mesh::mesh_vertex_t> vertices;
 			std::vector<Mesh::mesh_indice_t> indices;
@@ -39,15 +39,9 @@ namespace pyr
 			for (size_t meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 			{
 				aiMesh* mesh = scene->mMeshes[meshId];
-				aiMaterial* currMeshMaterial = Materials[mesh->mMaterialIndex];
-				aiString* outputpath = new aiString;
+				IndexBuffer::size_type startSubmeshIndex = indices.size();
 
-				if (currMeshMaterial->GetTextureCount(aiTextureType_DIFFUSE) >= 0)
-					currMeshMaterial->GetTexture(aiTextureType_DIFFUSE, 0, outputpath);
-
-				if (currMeshMaterial->GetTextureCount(aiTextureType_BASE_COLOR) >= 0)
-					currMeshMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, outputpath);
-
+				// Vertex processing
 				for (size_t verticeId = 0; verticeId < mesh->mNumVertices; verticeId++)
 				{
 					aiVector3D position = mesh->mVertices[verticeId];
@@ -62,25 +56,25 @@ namespace pyr
 					vertices.push_back(computedVertex);
 				}
 
-				IndexBuffer::size_type curr = static_cast<IndexBuffer::size_type>(indices.size());
+				// Index processing
 				for (size_t faceId = 0; faceId < mesh->mNumFaces; faceId++)
 				{
 					const aiFace& face = mesh->mFaces[faceId];
 					if (face.mNumIndices != 3) continue; // error logging here
 					
-					indices.push_back(curr + face.mIndices[0]);
-					indices.push_back(curr + face.mIndices[1]);
-					indices.push_back(curr + face.mIndices[2]);
+					indices.push_back(startSubmeshIndex + face.mIndices[0]);
+					indices.push_back(startSubmeshIndex + face.mIndices[1]);
+					indices.push_back(startSubmeshIndex + face.mIndices[2]);
 				}
 
-				IndexBuffer::size_type currentIndexStart = static_cast<IndexBuffer::size_type>(indices.size());
+				aiMaterial* currMeshMaterial = Materials[mesh->mMaterialIndex];
+
 				submeshes.push_back(SubMesh{ 
-					.startIndex = static_cast<UINT>(indices.size()),
+					.startIndex = static_cast<UINT>(startSubmeshIndex),
+					.endIndex = static_cast<UINT>(indices.size()),
 					.materialIndex = static_cast<int>(mesh->mMaterialIndex),
 					.matName = currMeshMaterial->GetName().C_Str()
 					});
-
-
 			}
 
 			return Mesh{ vertices, indices, submeshes };
@@ -90,8 +84,7 @@ namespace pyr
 		{
 
 			Assimp::Importer importer;
-			const aiScene* scene = importer.ReadFile(meshPath.string().c_str(), aiProcess_Triangulate);
-
+			const aiScene* scene = importer.ReadFile(meshPath.string().c_str(), 0);
 
 			if (!scene) throw 3; // error log here
 
@@ -101,7 +94,7 @@ namespace pyr
 			std::vector<MaterialMetadata> res;
 			std::set<int> cachedIndices;
 
-			res.resize(scene->mNumMaterials + 1);
+			res.resize(scene->mNumMaterials);
 
 			for (size_t meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 			{
