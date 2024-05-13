@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="src\EditorScene.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
+    <ClInclude Include="src\RayTracingDemoScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

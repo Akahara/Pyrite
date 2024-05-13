@@ -8,7 +8,7 @@ namespace pye
 class EmptyEditorScene : public pyr::Scene
 {
 public:
-	void update(double delta) override {}
+	void update(float delta) override {}
 	void render() override {}
 };
 

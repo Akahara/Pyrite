@@ -4,7 +4,7 @@
 
 namespace pyr {
 
-RayResult pyr::raytrace(const Mesh& mesh, const Ray& ray)
+RayResult raytrace(const Mesh& mesh, const Ray& ray)
 {
 	const std::vector<Mesh::mesh_indice_t>& indices = mesh.getIndices();
 	const std::vector<Mesh::mesh_vertex_t>& vertices = mesh.getVertices();
@@ -17,9 +17,9 @@ RayResult pyr::raytrace(const Mesh& mesh, const Ray& ray)
 	{
     // https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
     constexpr float epsilon = std::numeric_limits<float>::epsilon();
-    const vec3& a = vertices[indices[i+0]].position;
-    const vec3& b = vertices[indices[i+1]].position;
-    const vec3& c = vertices[indices[i+2]].position;
+    vec3 a{ vertices[indices[i+0]].position };
+    vec3 b{ vertices[indices[i+1]].position };
+    vec3 c{ vertices[indices[i+2]].position };
 
     vec3 edge1 = b - a;
     vec3 edge2 = c - a;
@@ -47,7 +47,7 @@ RayResult pyr::raytrace(const Mesh& mesh, const Ray& ray)
     if (dist > epsilon && dist < result.distance)
     {
       result.distance = dist;
-      result.normal = edge1.Cross(edge2);
+      result.normal = edge2.Cross(edge1);
       result.bHit = true;
     }
 	}

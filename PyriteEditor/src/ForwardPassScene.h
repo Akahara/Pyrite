@@ -14,6 +14,7 @@
 #include "world/Mesh/MeshImporter.h"
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
+#include "world/RayCasting.h"
 
 namespace pye
 {
@@ -74,9 +75,9 @@ namespace pye
 
         }
 
-        void update(double delta) override
+        void update(float delta) override
         {
-            static double elapsed = 0;
+            static float elapsed = 0;
             elapsed += delta;
 
             m_camController.processUserInputs(delta);
