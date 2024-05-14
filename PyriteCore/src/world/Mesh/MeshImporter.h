@@ -39,7 +39,7 @@ namespace pyr
 			for (size_t meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 			{
 				aiMesh* mesh = scene->mMeshes[meshId];
-				IndexBuffer::size_type startSubmeshIndex = indices.size();
+				IndexBuffer::size_type startSubmeshIndex = static_cast<IndexBuffer::size_type>(indices.size());
 
 				// Vertex processing
 				for (size_t verticeId = 0; verticeId < mesh->mNumVertices; verticeId++)

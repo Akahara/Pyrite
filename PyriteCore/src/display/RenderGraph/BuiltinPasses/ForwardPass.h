@@ -32,8 +32,6 @@ public:
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
     }
 
-    virtual void clear() override { m_meshes.clear(); }
-
     virtual void apply() override
     {
         // Render all objects 
@@ -43,6 +41,12 @@ public:
             const Effect* effect = material->getEffect();
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+
+            auto optSSAOTexture = getInputResource("ssaoTexture");
+            if (optSSAOTexture)
+            {
+                effect->bindTexture(optSSAOTexture.value().res, "ssaoTexture");
+            }
 
             // todo bind materials and shaders
             std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
@@ -74,7 +78,6 @@ public:
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                 Effect::unbindResources();
             }
-            
             
         }
 

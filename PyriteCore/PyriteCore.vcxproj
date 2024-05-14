@@ -142,7 +142,9 @@
     <ClInclude Include="src\display\IndexBuffer.h" />
     <ClInclude Include="src\display\InputLayout.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\DepthPrePass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\SSAOPass.h" />
     <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
     <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
     <ClInclude Include="src\display\RenderGraph\RenderPass.h" />

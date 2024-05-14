@@ -33,13 +33,13 @@
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
-    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\world\Mesh\Mesh.cpp" />
     <ClCompile Include="src\world\Mesh\Model.cpp" />
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="src\world\RayCasting.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\utils\Debug.cpp" />
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -89,8 +89,6 @@
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\display\ConstantBuffer.h" />
-    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
-    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
     <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
     <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
     <ClInclude Include="src\display\RenderGraph\RenderPass.h" />
@@ -102,6 +100,10 @@
     <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\DepthPrePass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\SSAOPass.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

@@ -1,6 +1,7 @@
-cbuffer ImportedBuffer
+cbuffer InverseCameraBuffer
 {
-	float4 importedValue;
+	float4x4 InverseProj;
+	float4x4 Proj;
 }
 
 cbuffer ActorBuffer 

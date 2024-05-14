@@ -10,6 +10,7 @@
 #include "Texture.h"
 #include "utils/Debug.h"
 #include "utils/StringUtils.h"
+#include <span>
 
 static inline PYR_DEFINELOG(LogShader, VERBOSE);
 
@@ -83,11 +84,51 @@ public:
 	  DXTry(getConstantBufferBinding(constantBufferName)->SetConstantBuffer(const_cast<ID3D11Buffer *>(data.getRawBuffer())), "Could not bind a CBuffer to an effect");
   }
 
-  template<class T> requires std::is_floating_point_v<T>
+  template<class T>
   void setUniform(const std::string& uniformName, const T& data)
   {
-      m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));
+	  setUniformImpl<T>(uniformName, data);
   }
+private:
+
+	template<class T>
+	void setUniformImpl(const std::string& uniformName, const T& data);
+
+	template<>
+	void setUniformImpl<float>(const std::string& uniformName, const float& data)
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));
+	}
+
+	template<>
+	void setUniformImpl<vec2>(const std::string& uniformName, const vec2& data)
+	{
+		const float vals[2] = { data.x, data.y };
+		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
+	}
+
+	template<>
+	void setUniformImpl<vec3>(const std::string& uniformName, const vec3& data)
+	{
+		const float vals[3] = { data.x, data.y, data.z };
+		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
+	}
+
+	template<>
+	void setUniformImpl<vec4>(const std::string& uniformName, const vec4& data)
+	{
+		const float vals[4] = { data.x, data.y, data.z, data.w };
+		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
+	}
+
+	template<>
+	void setUniformImpl<std::vector<vec4>>(const std::string& uniformName, const std::vector<vec4>& data)
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVectorArray(
+			reinterpret_cast<const float*>(data.data()),
+			0, static_cast<uint32_t>(data.size())
+		);
+	}
 
 private:
   ID3DX11EffectVariable *getVariableBinding(const std::string &name) const;
