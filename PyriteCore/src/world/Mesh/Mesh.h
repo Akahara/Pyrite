@@ -2,6 +2,7 @@
 
 #include <span>
 #include <vector>
+#include <string>
 
 #include "display/IndexBuffer.h"
 #include "display/Vertex.h"
@@ -14,16 +15,21 @@ namespace pyr
     // An index that represents at what point/index of the whole ibo we start a new submesh.
     struct SubMesh
     {
-        IndexBuffer::size_type startIndex;
+        IndexBuffer::size_type startIndex = 0;
+        IndexBuffer::size_type endIndex = 0;
+        int materialIndex = -1;
+        std::string matName;
+
+        IndexBuffer::size_type getIndexCount() const noexcept { return endIndex - startIndex; }
     };
 
     /////////////////////////////////////////////////////////////////
     
 class Mesh {
 
-public:
-    using mesh_vertex_t = GenericVertex<POSITION, UV>;
-    using mesh_indice_t = IndexBuffer::size_type;
+    public:
+        using mesh_vertex_t = GenericVertex<POSITION, NORMAL, UV>;
+        using mesh_indice_t = IndexBuffer::size_type;
 
 private:
 

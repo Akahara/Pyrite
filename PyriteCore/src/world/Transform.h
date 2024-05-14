@@ -16,4 +16,5 @@ struct Transform
 
   vec3 transform(const vec3 &localPos) const { return vec3::Transform(localPos * scale, rotation) + position; }
   vec3 rotate(const vec3 &vector) const { return vec3::Transform(vector, rotation); }
+
 };
