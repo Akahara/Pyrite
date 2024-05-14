@@ -55,9 +55,9 @@ public:
   const vec3 &getPosition() const { return m_transform.position; }
   const quat &getRotation() const { return m_transform.rotation; }
 
-  vec3 getRight() const { return m_transform.rotate(vec3::Right); }
-  vec3 getUp() const { return m_transform.rotate(vec3::Up); }
-  vec3 getForward() const { return m_transform.rotate(vec3::Forward); }
+  vec3 getRight() const { return m_transform.transformDirection(vec3::Right); }
+  vec3 getUp() const { return m_transform.transformDirection(vec3::Up); }
+  vec3 getForward() const { return m_transform.transformDirection(vec3::Forward); }
   vec3 getFlatForward() const;
 
 private:

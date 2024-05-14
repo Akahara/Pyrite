@@ -29,22 +29,18 @@ private:
   pyr::Mesh cubeMesh;
   pyr::Model cubeModel;
   pyr::StaticMesh cubeInstance;
-  pyr::Material cubeMat;
 
   pyr::Camera m_camera;
   pyr::FreecamController m_camController;
 
   pyr::GraphicalResourceRegistry m_grr;
-  pyr::Texture m_breadbug;
   pyr::BuiltinPasses::ForwardPass m_forwardPass;
 
   using CameraBuffer = pyr::ConstantBuffer<InlineStruct(mat4 mvp; alignas(sizeof vec4) vec3 pos)>;
   using ColorBuffer = pyr::ConstantBuffer<InlineStruct(vec4 colorShift)>;
   using ImportedBuffer = pyr::ConstantBuffer<InlineStruct(vec4 randomValue)>;
 
-  std::shared_ptr<CameraBuffer>   pcameraBuffer = std::make_shared<CameraBuffer>();
-  std::shared_ptr<ColorBuffer>    pcolorBuffer = std::make_shared<ColorBuffer>();
-  std::shared_ptr<ImportedBuffer> pimportedBuffer = std::make_shared<ImportedBuffer>();
+  std::shared_ptr<CameraBuffer> pcameraBuffer = std::make_shared<CameraBuffer>();
 
 public:
 
@@ -53,15 +49,17 @@ public:
     // Import shader and bind cbuffers
     m_layout = pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>();
     m_baseEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", m_layout);
-    m_baseEffect->addBinding({ .label = "ColorBuffer",    .bufferRef = pcolorBuffer });
-    m_baseEffect->addBinding({ .label = "ImportedBuffer", .bufferRef = pimportedBuffer });
-    m_baseEffect->addBinding({ .label = "CameraBuffer",   .bufferRef = pcameraBuffer });
+    m_baseEffect->addBinding({ .label = "CameraBuffer", .bufferRef = pcameraBuffer });
 
     // Create axes and material (everything is kinda default here)
-    cubeMat = pyr::Material(m_baseEffect);
+    std::vector<pyr::MaterialMetadata> mats = pyr::MeshImporter::FetchMaterialPaths("res/meshes/axes.obj");
     cubeMesh = pyr::MeshImporter::ImportMeshFromFile("res/meshes/axes.obj");
     cubeModel = pyr::Model{ cubeMesh };
-    cubeInstance = pyr::StaticMesh{ cubeModel, cubeMat };
+    cubeInstance = pyr::StaticMesh{ cubeModel };
+    cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
+    cubeInstance.loadSubmeshesMaterial(mats);
+    Transform& cubeTransform = cubeInstance.getTransform();
+    cubeTransform = Transform{ vec3(1,2,3), vec3(1,.5f,2.f), quat::CreateFromAxisAngle(mathf::normalize(vec3(1,2,3)), 1.f) };
 
     // Setup this scene's rendergraph
     m_RDG.addPass(&m_forwardPass);
@@ -72,34 +70,23 @@ public:
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
     drawDebugSetCamera(&m_camera);
-
-    // Other stuff
-    m_breadbug = m_grr.loadTexture(L"res/textures/breadbug.dds");
   }
 
   void update(float delta) override
   {
     static double elapsed = 0;
     elapsed += delta;
-    m_baseEffect->setUniform("u_blue", (sin(elapsed) + 1) / 2.f);
-    m_baseEffect->bindTexture(m_breadbug, "tex_breadbug");
 
     m_camController.processUserInputs(delta);
-
-    // Update Cbuffers
-    pcolorBuffer->setData(ColorBuffer::data_t{ .colorShift = vec4{0,0,1,1} });
-    pimportedBuffer->setData(ImportedBuffer::data_t{ .randomValue = vec4{1,0,0,0} });
-    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
   }
 
   void render() override
   {
-
     ImGui::Begin("raytrace");
     static vec3 p0{ 3,3,3 }, p1{ -2,-3,-4 };
     ImGui::DragFloat3("P0", &p0.x, .25f);
     ImGui::DragFloat3("P1", &p1.x, .25f);
-    pyr::RayResult hit = pyr::raytrace(cubeMesh, { p0, mathf::normalize(p1 - p0) });
+    pyr::RayResult hit = pyr::raytrace(cubeInstance, { p0, mathf::normalize(p1 - p0) });
     pyr::drawDebugLine(p0, p1, vec4{ 1,0,0,1 });
     pyr::drawDebugSphere(p0, .1f, vec4{ 1,.5f,0,1 });
     pyr::drawDebugSphere(p1, .1f, vec4{ 1,0,.5f,1 });
@@ -118,13 +105,13 @@ public:
     pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
     pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
     m_baseEffect->uploadAllBindings();
     m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
     m_RDG.execute();
 
     pyr::RenderProfiles::popDepthProfile();
     pyr::RenderProfiles::popRasterProfile();
-
   }
 
   ~RayTracingDemoScene() override

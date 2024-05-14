@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "Mesh/Mesh.h"
 #include "utils/Math.h"
 
 namespace pyr
 {
+class StaticMesh;
 
 struct Ray
 {
@@ -22,6 +22,6 @@ struct RayResult
 	[[nodiscard]] operator bool() const noexcept { return bHit; }
 };
 	
-RayResult raytrace(const Mesh& mesh, const Ray& ray);
+RayResult raytrace(const StaticMesh &mesh, const Ray& ray);
 
 }

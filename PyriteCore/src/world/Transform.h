@@ -15,6 +15,7 @@ struct Transform
   vec3 getRight() const { return vec3::Transform(vec3::Right, rotation); }
 
   vec3 transform(const vec3 &localPos) const { return vec3::Transform(localPos * scale, rotation) + position; }
-  vec3 rotate(const vec3 &vector) const { return vec3::Transform(vector, rotation); }
-
+  vec3 transformDirection(const vec3 &localDir) const { return mathf::normalize(vec3::Transform(localDir * scale, rotation)); }
+  vec3 inverseTransform(const vec3 &worldPos) const { return vec3::Transform(worldPos - position, mathf::invQuat(rotation)) / scale; }
+  vec3 inverseTransformDirection(const vec3 &worldDir) const { return vec3::Transform(worldDir, mathf::invQuat(rotation)) / scale; }
 };

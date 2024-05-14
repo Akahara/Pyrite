@@ -15,11 +15,10 @@ namespace BuiltinPasses
 class ForwardPass : public RenderPass
 {
 private:
+    GraphicalResourceRegistry m_registry;
 
-    pyr::GraphicalResourceRegistry m_registry;
-
-    pyr::Cubemap m_skybox;
-    pyr::Effect* m_skyboxEffect;
+    Cubemap m_skybox;
+    Effect* m_skyboxEffect;
 
     using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
 
@@ -40,7 +39,7 @@ public:
         // Render all objects 
         for (const StaticMesh* smesh : m_meshes)
         {
-            auto material = smesh->getMaterial();
+            const auto& material = smesh->getMaterial();
             const Effect* effect = material->getEffect();
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
@@ -48,7 +47,7 @@ public:
             // todo bind materials and shaders
             std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
             auto i = 0;
-            for (auto submesh : submeshes)
+            for (auto& submesh : submeshes)
             {
                 smesh->bindModel();
                 smesh->bindMaterial();
@@ -59,7 +58,7 @@ public:
                 {
 
                     auto materialId = submeshes[++i].materialIndex; 
-                    std::shared_ptr<Material> submeshMaterial = smesh->getMaterialOfIndex(materialId);
+                    const std::shared_ptr<Material>& submeshMaterial = smesh->getMaterialOfIndex(materialId);
 
                     if (submeshMaterial)
                     {
@@ -73,7 +72,7 @@ public:
                 }
 
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-                effect->unbindResources();
+                Effect::unbindResources();
             }
             
             
@@ -82,7 +81,7 @@ public:
         renderSkybox();
     }
 
-    void loadSkybox(const pyr::GraphicalResourceRegistry::filepath& path)
+    void loadSkybox(const GraphicalResourceRegistry::filepath& path)
     {
         static constexpr wchar_t DEFAULT_SKYBOX_SHADER[] = L"res/shaders/skybox.fx";
 
@@ -90,7 +89,7 @@ public:
         m_skyboxEffect = m_registry.loadEffect(DEFAULT_SKYBOX_SHADER, InputLayout::MakeLayoutFromVertex<EmptyVertex>());
     }
 
-    const pyr::Effect* getSkyboxEffect() const { return m_skyboxEffect; }
+    const Effect* getSkyboxEffect() const { return m_skyboxEffect; }
 
 private:
 

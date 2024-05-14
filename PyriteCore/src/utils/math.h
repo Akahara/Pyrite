@@ -98,4 +98,9 @@ inline vec3 normalize(vec3 v) {
   return v;
 }
 
+inline quat invQuat(quat q) {
+  q.Inverse(q);
+  return q;
+}
+
 }
