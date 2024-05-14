@@ -13,50 +13,54 @@ namespace pyr
 		TANGENT,
 		UV,
 		COLOR,
+		INSTANCE_COLOR,
+		INSTANCE_TRANSFORM,
 	};
-
-	template <typename T>
-	struct vpt_traits;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	template <VertexParameterType T>
-	struct VertexParameter
-	{
-	};
+	struct VertexParameter {};
 
-	template<VertexParameterType T>
-	struct vpt_traits<VertexParameter<T>> {
-	  static constexpr VertexParameterType type = T;
-	};
-
-	template <>
-	struct VertexParameter<POSITION>
-	{
+	template <> struct VertexParameter<POSITION> {
+	    static constexpr const char* semanticName = "POSITION";
+		static constexpr bool bIsInstanced = false;
 		alignas(sizeof(vec4)) vec4 position;
 	};
 
-	template <>
-	struct VertexParameter<NORMAL>
-	{
+	template <> struct VertexParameter<NORMAL> {
+	    static constexpr const char* semanticName = "NORMAL";
+		static constexpr bool bIsInstanced = false;
 		alignas(sizeof(vec4)) vec3 normal;
 	};
 
-	template <>
-	struct VertexParameter<TANGENT>
-	{
+	template <> struct VertexParameter<TANGENT> {
+	    static constexpr const char* semanticName = "TANGENT";
+		static constexpr bool bIsInstanced = false;
 		alignas(sizeof(vec4)) vec3 tangent;
 	};
 
-	template <>
-	struct VertexParameter<UV>
-	{
+	template <> struct VertexParameter<UV> {
+	    static constexpr const char* semanticName = "UV";
+		static constexpr bool bIsInstanced = false;
 		alignas(sizeof(vec2)) vec2 texCoords;
 	};
 
-	template <>
-	struct VertexParameter<COLOR>
-    {
-	  alignas(sizeof(vec4)) vec4 color;
+	template <> struct VertexParameter<COLOR> {
+	    static constexpr const char* semanticName = "COLOR";
+		static constexpr bool bIsInstanced = false;
+	    alignas(sizeof(vec4)) vec4 color;
+	};
+
+	template <> struct VertexParameter<INSTANCE_COLOR> {
+	    static constexpr const char* semanticName = "INSTANCE_COLOR";
+	    static constexpr bool bIsInstanced = true;
+	    alignas(sizeof(vec4)) vec4 instanceColor;
+	};
+
+	template <> struct VertexParameter<INSTANCE_TRANSFORM> {
+	    static constexpr const char* semanticName = "INSTANCE_TRANSFORM";
+	    static constexpr bool bIsInstanced = true;
+	    alignas(sizeof(vec4)) mat4 instanceTransform;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +68,7 @@ namespace pyr
 	struct BaseVertex
 	{
 	    // Adapt a 3-component vector to the standard 4-component vector that shaders use
-	    static vec4 toPosition(const vec3& p) { return { p.x, p.y, p.z, 1.f };}
+	    static vec4 toPosition(const vec3& p) { return { p.x, p.y, p.z, 1.f }; }
 	};
 
 

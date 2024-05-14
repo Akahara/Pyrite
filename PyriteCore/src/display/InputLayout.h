@@ -20,23 +20,6 @@ namespace pyr
     // 
 
  
-    inline std::unordered_map<VertexParameterType, LPCSTR> labelMap = {
-    { NORMAL, "NORMAL"},
-    { POSITION, "POSITION"},
-    { TANGENT, "TANGENT"},
-    { UV, "TEXCOORD"},
-    { COLOR, "COLOR" },
-    //"BLENDINDICES",
-    //"BLENDWEIGHT",
-    //"BINORMAL",
-    //"POSITION",
-    //"POSITIONT",
-    //"PSIZE",
-    //"TANGENT",
-    //"TEXCOORD",
-    //"COLOR"
-    };
-
     inline const std::array<DXGI_FORMAT, 4> formats {
         DXGI_FORMAT_R32_FLOAT,
         DXGI_FORMAT_R32G32_FLOAT,
@@ -67,26 +50,34 @@ namespace pyr
 
     public:
         // Compile time input layout
-        template<class T> requires std::derived_from<T, BaseVertex>
-        static InputLayout MakeLayoutFromVertex(bool bIsInstanced = false)
+        template<class T, class I=EmptyVertex> requires std::derived_from<T, BaseVertex> and std::derived_from<I, BaseVertex>
+        static InputLayout MakeLayoutFromVertex()
         {
-            int i = 0;
-            std::array<D3D11_INPUT_ELEMENT_DESC, std::tuple_size_v<typename T::type_t>> desc{};
-            std::apply([&]<class ...Ts>(Ts&&...) constexpr {
-                ((desc[i++] = D3D11_INPUT_ELEMENT_DESC{
-                    labelMap[vpt_traits<Ts>::type],
-                    0,
-                    formats[sizeof(Ts) / sizeof(float) - 1],
-                    0,
-                    D3D11_APPEND_ALIGNED_ELEMENT,
-                    (bIsInstanced)
-                        ? D3D11_INPUT_PER_INSTANCE_DATA
-                        : D3D11_INPUT_PER_VERTEX_DATA,
-                    0
-                    }), ...);
-            }, typename T::type_t{});
+            std::vector<D3D11_INPUT_ELEMENT_DESC> desc;
 
-            return InputLayout{ {desc.begin(), desc.end()} };
+            auto appendLayoutItem = [&]<class It>(It, bool bInstanced) constexpr
+            {
+                PYR_ASSERT(It::bIsInstanced == bInstanced, "Either you put vertex data in the instance buffer or instance data in the vertex buffer"); // cannot be made a static assertion because of the compiler
+                UINT rowCount = sizeof(It) == sizeof(mat4) ? 4 : 1;
+                DXGI_FORMAT format = sizeof(It) == sizeof(mat4) ? DXGI_FORMAT_R32G32B32A32_FLOAT : formats[sizeof(It) / sizeof(float) - 1];
+                for (UINT j = 0; j < rowCount; j++) {
+                    desc.push_back(D3D11_INPUT_ELEMENT_DESC{
+                        .SemanticName = It::semanticName,
+                        .SemanticIndex = j,
+                        .Format = format,
+                        .InputSlot = bInstanced ? 1u : 0u,
+                        .AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+                        .InputSlotClass = bInstanced ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA,
+                        .InstanceDataStepRate = bInstanced ? 1u : 0u,
+                    });
+                }
+            };
+
+            auto appendLayout = [&]<class ...Ts>(std::tuple<Ts...>, bool bInstanced) constexpr { (appendLayoutItem(Ts{}, bInstanced), ...); };
+            appendLayout(typename T::type_t{}, false);
+            appendLayout(typename I::type_t{}, true);
+
+            return InputLayout{ std::move(desc) };
         }
     };
 }
