@@ -45,7 +45,7 @@ namespace pyr
         [[nodiscard]] size_t getVerticesCount()			const noexcept { return m_vertexCount; }
         [[nodiscard]] UINT   getStride()			    const noexcept { return m_stride; }
         void setData(const void* data, size_t size, size_t offset);
-        void bind() const noexcept;
+        void bind(bool bAsInstanceBuffer=false) const noexcept;
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
 

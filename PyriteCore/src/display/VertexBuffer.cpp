@@ -16,10 +16,10 @@ void VertexBuffer::setData(const void* data, size_t size, size_t offset)
   Engine::d3dcontext().Unmap(m_vbo, 0);
 }
 
-void VertexBuffer::bind() const noexcept
+void VertexBuffer::bind(bool bAsInstanceBuffer) const noexcept
 {
 	constexpr UINT offset = 0;
-    Engine::d3dcontext().IASetVertexBuffers(0, 1, &m_vbo, &m_stride, &offset);
+    Engine::d3dcontext().IASetVertexBuffers(bAsInstanceBuffer ? 1 : 0, 1, &m_vbo, &m_stride, &offset);
 }
 
 void VertexBuffer::swap(VertexBuffer& other) noexcept {

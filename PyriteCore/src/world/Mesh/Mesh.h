@@ -27,9 +27,9 @@ namespace pyr
     
 class Mesh {
 
-    public:
-        using mesh_vertex_t = GenericVertex<POSITION, NORMAL, UV>;
-        using mesh_indice_t = IndexBuffer::size_type;
+public:
+    using mesh_vertex_t = GenericVertex<POSITION, NORMAL, UV>;
+    using mesh_indice_t = IndexBuffer::size_type;
 
 private:
 
