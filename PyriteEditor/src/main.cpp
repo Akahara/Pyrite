@@ -4,6 +4,7 @@
 
 #include "EditorScene.h"
 #include "ForwardPassScene.h"
+#include "RayTracingDemoScene.h"
 #include "TriangleScene.h"
 #include "utils/Debug.h"
 #include "engine/Engine.h"
@@ -25,6 +26,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::TriangleScene>("TriangleScene");
     scenes.registerScene<pye::EmptyEditorScene>("Empty");
     scenes.registerScene<pye::ForwardPassScene>("Forward pass");
+    scenes.registerScene<pye::RayTracingDemoScene>("RayTracing demo");
 
     // Load the scene that is passed on the command line by default
     scenes.transitionToScene(pyr::widestring2string(lpCmdLine));

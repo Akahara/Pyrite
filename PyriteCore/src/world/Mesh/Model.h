@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Mesh.h"
 #include "display/IndexBuffer.h"
 #include "display/VertexBuffer.h"
@@ -9,8 +9,6 @@ namespace pyr
 class Model
 {
 private:
-    // vbo ibo
-
     const Mesh* m_meshData;
     VertexBuffer m_vbo;
     IndexBuffer m_ibo;

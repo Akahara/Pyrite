@@ -93,4 +93,14 @@ inline auto randomFunction() {
   };
 }
 
+inline vec3 normalize(vec3 v) {
+  v.Normalize();
+  return v;
+}
+
+inline quat invQuat(quat q) {
+  q.Inverse(q);
+  return q;
+}
+
 }

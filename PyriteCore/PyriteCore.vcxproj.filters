@@ -37,6 +37,7 @@
     <ClCompile Include="src\world\Mesh\Mesh.cpp" />
     <ClCompile Include="src\world\Mesh\Model.cpp" />
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
+    <ClCompile Include="src\world\RayCasting.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\utils\Debug.cpp" />
   </ItemGroup>
@@ -97,6 +98,7 @@
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
+    <ClInclude Include="src\world\RayCasting.h" />
     <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />

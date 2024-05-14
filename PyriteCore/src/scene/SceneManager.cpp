@@ -51,7 +51,7 @@ bool SceneManager::doSceneTransition()
 
 void SceneManager::update(double delta)
 {
-  m_activeScene->update(delta);
+  m_activeScene->update(static_cast<float>(delta));
 }
 
 void SceneManager::render()

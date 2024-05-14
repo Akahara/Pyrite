@@ -7,5 +7,6 @@
     <ClInclude Include="src\EditorScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
+    <ClInclude Include="src\RayTracingDemoScene.h" />
   </ItemGroup>
 </Project>

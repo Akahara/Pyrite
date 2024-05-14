@@ -41,7 +41,7 @@ namespace pye
 
         }
 
-        void update(double delta) override
+        void update(float delta) override
         {
 
         }
