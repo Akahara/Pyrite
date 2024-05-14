@@ -39,8 +39,9 @@ private:
   pyr::VertexBuffer m_cubeInstanceBuffer;
   pyr::IndexBuffer m_cubeIB;
 
-public:
+  size_t instances = 500000;
 
+public:
   VoxelisationDemoScene()
   {
     m_layout = pyr::InputLayout::MakeLayoutFromVertex<CubeVertex, CubeInstance>();
@@ -58,18 +59,27 @@ public:
       { vec4(-1, +1, +1, 1) },
     } };
     std::vector<pyr::IndexBuffer::size_type> cubeIndices{ {
-      0, 1, 3, 3, 1, 2,
-      1, 5, 2, 2, 5, 6,
-      5, 4, 6, 6, 4, 7,
-      4, 0, 7, 7, 0, 3,
-      3, 2, 7, 7, 2, 6,
-      4, 5, 0, 0, 5, 1,
+      0, 3, 1, 1, 3, 2,
+      1, 2, 5, 5, 2, 6,
+      5, 6, 4, 4, 6, 7,
+      4, 7, 0, 0, 7, 3,
+      3, 7, 2, 2, 7, 6,
+      4, 0, 5, 5, 0, 1,
     } };
-    std::vector<CubeInstance> cubeInstances{ {
-      { Transform{ vec3(0.f), vec3(1.f), quat::Identity }.getWorldMatrix(), vec4(1,0,1,1) },
-      { Transform{ vec3(0,1,0), vec3(.5f), quat::Identity }.getWorldMatrix(), vec4(1,1,1,1) },
-      { Transform{ vec3(2), vec3(2.f), quat::CreateFromAxisAngle(vec3::Up, PI*.25f) }.getWorldMatrix(), vec4(1,0,0,.25f) }
-    } };
+    //std::vector<CubeInstance> cubeInstances{ {
+    //  { Transform{ vec3(0.f), vec3(1.f), quat::Identity }.getWorldMatrix(), vec4(1,0,1,1) },
+    //  { Transform{ vec3(0,1,0), vec3(.5f), quat::Identity }.getWorldMatrix(), vec4(1,1,1,1) },
+    //  { Transform{ vec3(2), vec3(2.f), quat::CreateFromAxisAngle(vec3::Up, PI*.25f) }.getWorldMatrix(), vec4(1,0,0,.25f) }
+    //} };
+    std::vector<CubeInstance> cubeInstances;
+    Transform t;
+    auto rng = mathf::randomFunction();
+    for (size_t i = 0; i < instances; i++) {
+      t.position = vec3{ rng(-1,1), rng(-1,1), rng(-1,1) } *100;
+      t.scale = vec3{ rng(.5f,2.f) };
+      t.rotation = quat::CreateFromYawPitchRoll(rng(0, PI * 2), rng(0, PI * 2), rng(0, PI * 2));
+      cubeInstances.push_back({ t.getWorldMatrix(), vec4(rng(), rng(), rng(), 1) });
+    }
     m_cubeIB = pyr::IndexBuffer(cubeIndices);
     m_cubeVB = pyr::VertexBuffer(cubeVertices);
     m_cubeInstanceBuffer = pyr::VertexBuffer(cubeInstances, true);
@@ -86,8 +96,7 @@ public:
 
   void render() override
   {
-    pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
-    pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
+    pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
     pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
@@ -96,10 +105,9 @@ public:
     m_cubeVB.bind();
     m_cubeInstanceBuffer.bind(true);
     m_cubeIB.bind();
-    pyr::Engine::d3dcontext().DrawIndexedInstanced(m_cubeIB.getIndicesCount(), 3, 0, 0, 0);
+    pyr::Engine::d3dcontext().DrawIndexedInstanced(m_cubeIB.getIndicesCount(), instances, 0, 0, 0);
 
-    pyr::RenderProfiles::popDepthProfile();
-    pyr::RenderProfiles::popRasterProfile();
+    pyr::RenderProfiles::popBlendProfile();
   }
 };
 }

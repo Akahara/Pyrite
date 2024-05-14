@@ -88,8 +88,8 @@ constexpr T smoothstep(T e0, T e1, K x) {
 }
 
 inline auto randomFunction() {
-  return [rd = std::mt19937{ std::random_device{}() }]() mutable {
-    return inverseLerp(static_cast<float>(std::mt19937::min()), static_cast<float>(std::mt19937::max()), static_cast<float>(rd()));
+  return [rd = std::mt19937{ std::random_device{}() }](float min=0, float max=1) mutable {
+    return lerp(min, max, inverseLerp(static_cast<float>(std::mt19937::min()), static_cast<float>(std::mt19937::max()), static_cast<float>(rd())));
   };
 }
 
