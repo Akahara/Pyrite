@@ -16,22 +16,18 @@ namespace pyr
     protected:
 
 
-        FrameBuffer m_target;
-
         // this is temp. Maybe we should have a resource manager for the whole graph or somtuhing. idk
-        
-        std::vector<NamedOutput> m_outputs; // < this is what this pass can provide
-        std::unordered_map<std::string, std::function<Texture()>> m_resourceGetters; // this is the getters on name res
-        
-        std::unordered_map<std::string, NamedInput> m_inputs; // this is what the pass has as inputs
-        std::set<std::string> m_requirements; // this is which inputs it needs
 
         std::vector<const StaticMesh*> m_meshes;
 
+        std::unordered_map<std::string, NamedInput> m_inputs; // this is what the pass has as inputs
+        std::unordered_map<std::string, ResourceGetter> m_outputs;
+
+        std::set<std::string> m_requirements;
 
     public:
-        bool m_bIsEnabled = true;
 
+        bool m_bIsEnabled = true;
         std::string displayName = "N/A";
 
         void setEnable(bool bEnabled) { m_bIsEnabled = bEnabled; }
@@ -40,45 +36,27 @@ namespace pyr
 
         virtual void apply() = 0;
         virtual void clear() { m_meshes.clear(); };
-        virtual void update(float dt) {};
+        virtual void update(float dt) {}; // should be useless, idk yet
 
-        bool checkInputsRequirements() const {
 
-            for (const std::string& label : m_requirements)
-            {
-                // If a requirement is not met (= not in the inputs list
-                if (!m_inputs.contains(label)) return false;
-            }
-            return true;
+        void producesResource(const char* resName, Texture textureHandle) {
+            m_outputs[resName] = [textureHandle]() -> Texture { return textureHandle; };
         }
 
-
-        void requiresResource(std::string_view resName)
-        {
-            m_requirements.insert(std::string(resName));
-        }
-
-        void producesResource(std::string_view resName, Texture res)
-        {
-            m_outputs.emplace_back(NamedOutput{ 
-                .label = std::string(resName), 
-                .res = res, 
-                .origin = this,
-            });
-        }
-
-        void addNamedOutputs(const NamedOutput& output) { m_outputs.push_back(output); }
         void addNamedInput(const NamedInput& input) { m_inputs[input.label] = input; }
 
-
-        std::optional<NamedOutput> getOutputResource(std::string_view resName) const noexcept
+        // This is bad
+        std::optional<NamedOutput> getOutputResource(const char* resName)  noexcept
         {
-            if (auto it = std::ranges::find_if(m_outputs, [resName](const NamedOutput& r) { return r.label == resName; });
-                it != std::end(m_outputs)                    
-            ) return *it;
+            if (m_outputs.contains(resName)) return NamedOutput 
+            {   
+                .label = resName, 
+                .res = m_outputs[resName](),
+                .origin = this, 
+            };
+
             return std::nullopt;
         }
-
         std::optional<NamedInput> getInputResource(std::string_view resName) const noexcept
         {
             if (m_inputs.contains(std::string(resName)))
@@ -90,8 +68,6 @@ namespace pyr
 
             return std::nullopt;
         }
-
-
 
         void addMeshToPass(const StaticMesh* meshView) { m_meshes.push_back(meshView); }
 

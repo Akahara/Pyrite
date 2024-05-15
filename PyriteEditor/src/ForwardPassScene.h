@@ -85,10 +85,13 @@ namespace pye
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
 
-            m_RDG.linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
-            m_RDG.linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
+            m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
+            m_RDG.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
 
-            m_RDG.ensureGraphValidity();
+            m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
+            m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
+
+            bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
         }
 
         void update(float delta) override

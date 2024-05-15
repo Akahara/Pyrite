@@ -1,4 +1,6 @@
 #pragma once
+
+#include <functional>
 #include <string>
 
 #include "display/texture.h"
@@ -18,4 +20,7 @@ namespace pyr
 
     using NamedOutput = NamedResource;
     using NamedInput = NamedResource;
+
+    using ResourceGetter = std::function<Texture()>;
+
 }

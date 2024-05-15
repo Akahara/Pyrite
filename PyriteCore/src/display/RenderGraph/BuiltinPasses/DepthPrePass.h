@@ -36,11 +36,6 @@ namespace pyr
                 );
 
                 producesResource("depthBuffer", m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL));
-
-                //m_resourceGetters["depthBuffer"] = [this]() -> Texture {
-                //    return m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL);
-                //};
-
             }
 
             virtual void apply() override
