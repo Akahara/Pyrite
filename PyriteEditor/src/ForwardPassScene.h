@@ -86,7 +86,7 @@ namespace pye
             m_camController.setCamera(&m_camera);
 
             m_RDG.linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
-            m_RDG.linkResource(&m_SSAOPass, "ssaoTexture", &m_forwardPass);
+            m_RDG.linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
 
             m_RDG.ensureGraphValidity();
         }

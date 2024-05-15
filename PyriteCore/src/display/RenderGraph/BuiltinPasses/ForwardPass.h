@@ -42,7 +42,7 @@ public:
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
 
-            auto optSSAOTexture = getInputResource("ssaoTexture");
+            auto optSSAOTexture = getInputResource("ssaoTexture_blurred");
             if (optSSAOTexture)
             {
                 effect->bindTexture(optSSAOTexture.value().res, "ssaoTexture");

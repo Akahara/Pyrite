@@ -21,8 +21,11 @@ namespace pyr
             pyr::GraphicalResourceRegistry m_registry;
 
             FrameBuffer m_ssaoTextureTarget{ Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::COLOR_0 };
+            FrameBuffer m_blurredSSAOTarget{ Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::COLOR_0 };
 
             Effect* m_ssaoEffect = nullptr;
+            Effect* m_blurEffect = nullptr;
+
             std::vector<vec4> m_kernel;
             Texture m_blueNoise;
 
@@ -65,11 +68,16 @@ namespace pyr
                     InputLayout::MakeLayoutFromVertex<EmptyVertex>()
                 );
 
+                m_blurEffect = m_registry.loadEffect(
+                    L"res/shaders/gaussianBlur.fx",
+                    InputLayout::MakeLayoutFromVertex<EmptyVertex>()
+                );
+
                 m_kernel = generateKernel(64);
 
                 m_blueNoise = m_registry.loadTexture(L"res/textures/randomNoise.dds");
-                m_ssaoEffect->setUniform<float>("u_sampleRad", 0.5f);
                 producesResource("ssaoTexture", m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0));
+                producesResource("ssaoTexture_blurred", m_blurredSSAOTarget.getTargetAsTexture(FrameBuffer::COLOR_0));
             }
 
             virtual void apply() override
@@ -90,6 +98,15 @@ namespace pyr
                 m_ssaoEffect->unbindResources();
 
                 m_ssaoTextureTarget.unbind();
+                m_blurredSSAOTarget.bind();
+
+                m_blurEffect->bind();
+                m_blurEffect->bindTexture(m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0), "sourceTexture");
+                Engine::d3dcontext().DrawIndexed(3, 0, 0);
+                m_blurEffect->unbindResources();
+
+                m_blurredSSAOTarget.unbind();
+
                 debugWindow();
             }
 
@@ -99,6 +116,7 @@ namespace pyr
 
                 ImGui::Image((void*)m_inputs["depthBuffer"].res.getRawTexture(), ImVec2{ 256,256 });
                 ImGui::Image((void*)m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{256,256});
+                ImGui::Image((void*)m_blurredSSAOTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{256,256});
 
                 static float sampleRad = 1.5f;
                 if (ImGui::SliderFloat("sampleRad", &sampleRad, 0, 5))
@@ -128,6 +146,12 @@ namespace pyr
                 if (ImGui::SliderFloat("u_alpha", &u_alpha, 0, 0.25))
                 {
                     m_ssaoEffect->setUniform<float>("u_alpha", u_alpha);
+                }
+
+                static float u_blurStrength =  1;
+                if (ImGui::SliderFloat("u_blurStrength", &u_blurStrength, 0, 10))
+                {
+                    m_blurEffect->setUniform<float>("u_blurStrength", u_blurStrength);
                 }
 
 
