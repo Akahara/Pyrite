@@ -143,7 +143,7 @@ namespace pye
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
 
-
+            m_RDG.debugWindow();
 
         }
 

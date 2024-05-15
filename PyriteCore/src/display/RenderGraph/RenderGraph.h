@@ -21,7 +21,7 @@ namespace pyr
         {
             for (RenderPass* p : m_passes)
             {
-                p->apply();
+                if (p->isEnabled()) p->apply();
             }
         }
 
@@ -45,6 +45,18 @@ namespace pyr
         {
             for (RenderPass* p : m_passes)
                 if (!p->checkInputsRequirements()) throw InvalidGraph{};
+        }
+
+        void debugWindow()
+        {
+
+            ImGui::Begin("RenderGraph");
+            for (auto& pass : m_passes )
+            {
+                ImGui::Checkbox(pass->displayName.c_str(), &pass->m_bIsEnabled);
+            }
+            ImGui::End();
+
         }
 
     };

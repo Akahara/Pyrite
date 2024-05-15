@@ -5,12 +5,15 @@
 
 namespace pyr
 {
+    class RenderPass;
+   
     struct NamedResource
     {
         using label_t = std::string;
         std::string label;
 
         Texture res; // fuck this shit man
+        RenderPass* origin;
     };
 
     using NamedOutput = NamedResource;

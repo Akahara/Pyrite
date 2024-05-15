@@ -15,6 +15,7 @@ namespace pyr
     {
     protected:
 
+
         FrameBuffer m_target;
 
         // this is temp. Maybe we should have a resource manager for the whole graph or somtuhing. idk
@@ -29,6 +30,12 @@ namespace pyr
 
 
     public:
+        bool m_bIsEnabled = true;
+
+        std::string displayName = "N/A";
+
+        void setEnable(bool bEnabled) { m_bIsEnabled = bEnabled; }
+        bool isEnabled()  const noexcept { return m_bIsEnabled; }
 
 
         virtual void apply() = 0;
@@ -53,7 +60,11 @@ namespace pyr
 
         void producesResource(std::string_view resName, Texture res)
         {
-            m_outputs.emplace_back(NamedOutput{ .label = std::string(resName), .res = res });
+            m_outputs.emplace_back(NamedOutput{ 
+                .label = std::string(resName), 
+                .res = res, 
+                .origin = this,
+            });
         }
 
         void addNamedOutputs(const NamedOutput& output) { m_outputs.push_back(output); }
@@ -70,8 +81,14 @@ namespace pyr
 
         std::optional<NamedInput> getInputResource(std::string_view resName) const noexcept
         {
-            if (m_inputs.contains(std::string(resName))) return m_inputs.at(std::string(resName));
-                return std::nullopt;
+            if (m_inputs.contains(std::string(resName)))
+            {
+                const NamedInput& namedInput = m_inputs.at(std::string(resName));
+                if (!namedInput.origin->m_bIsEnabled) return std::nullopt;
+                return namedInput;
+            }
+
+            return std::nullopt;
         }
 
 

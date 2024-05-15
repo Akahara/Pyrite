@@ -60,7 +60,7 @@ namespace pyr
 
             SSAOPass()
             {
-
+                displayName = "SSAO (Pass + Blur)"; 
                 requiresResource("depthBuffer");
 
                 m_ssaoEffect = m_registry.loadEffect(

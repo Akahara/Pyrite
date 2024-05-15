@@ -28,6 +28,7 @@ public:
 
     ForwardPass()
     {
+        displayName = "Forward";
         static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/skybox.dds"; // todo avoid this as the core engine does not have runtime textures
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
     }

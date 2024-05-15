@@ -29,6 +29,7 @@ namespace pyr
 
             DepthPrePass()
             {
+                displayName = "Depth pre-pass";
                 m_depthOnlyEffect = m_registry.loadEffect(
                         L"res/shaders/depthOnly.fx", 
                         InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>()
