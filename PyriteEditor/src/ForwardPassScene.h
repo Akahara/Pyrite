@@ -44,7 +44,7 @@ namespace pye
         pyr::BuiltinPasses::DepthPrePass m_depthPrePass;
 
         using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseProj; alignas(16) mat4 Proj) > ;
+        using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
 
         std::shared_ptr<CameraBuffer>           pcameraBuffer   = std::make_shared<CameraBuffer>();
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer  = std::make_shared<InverseCameraBuffer>();
@@ -101,6 +101,7 @@ namespace pye
             // Update Cbuffers
             pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition()});
             pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
                 });
@@ -129,6 +130,7 @@ namespace pye
             m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
+            m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_baseEffect->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
 
             m_RDG.execute();

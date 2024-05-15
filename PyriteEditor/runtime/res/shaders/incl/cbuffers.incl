@@ -1,5 +1,6 @@
 cbuffer InverseCameraBuffer
 {
+	float4x4 InverseViewProj;
 	float4x4 InverseProj;
 	float4x4 Proj;
 }

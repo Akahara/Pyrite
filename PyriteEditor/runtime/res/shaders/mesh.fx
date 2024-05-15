@@ -53,7 +53,7 @@ float4 CubePS(VertexOut vsIn, float4 vpos : SV_Position ) : SV_Target
     float diffuseDot = saturate(dot(dirToSun, vsIn.norm.xyz));
     
     float occlusion = ssaoTexture.Load(vpos.xyz);
-    float4 sample = mat_albedo.Sample(MeshTextureSampler, vsIn.uv) * lerp(ao_scale, 1, (1 - occlusion));
+    float4 sample = mat_albedo.Sample(MeshTextureSampler, vsIn.uv) * lerp(ao_scale, 1, (occlusion));
     
     
     float3 color = sample.xyz *  lerp(0.5, 1 , diffuseDot);

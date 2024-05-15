@@ -67,7 +67,7 @@ namespace pyr
 
                 m_kernel = generateKernel(64);
 
-                m_blueNoise = m_registry.loadTexture(L"res/textures/bluenoise.dds");
+                m_blueNoise = m_registry.loadTexture(L"res/textures/randomNoise.dds");
                 m_ssaoEffect->setUniform<float>("u_sampleRad", 0.5f);
                 producesResource("ssaoTexture", m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0));
             }
@@ -90,6 +90,7 @@ namespace pyr
                 m_ssaoEffect->unbindResources();
 
                 m_ssaoTextureTarget.unbind();
+                debugWindow();
             }
 
             void debugWindow()
@@ -99,11 +100,36 @@ namespace pyr
                 ImGui::Image((void*)m_inputs["depthBuffer"].res.getRawTexture(), ImVec2{ 256,256 });
                 ImGui::Image((void*)m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{256,256});
 
-                static float sampleRad = 0.5f;
-                if (ImGui::SliderFloat("sampleRad", &sampleRad, 0, 10))
+                static float sampleRad = 1.5f;
+                if (ImGui::SliderFloat("sampleRad", &sampleRad, 0, 5))
                 {
                     m_ssaoEffect->setUniform<float>("u_sampleRad",sampleRad);
                 }
+
+                static float u_bias = 0.0001f;
+                if (ImGui::SliderFloat("u_bias", &u_bias, -0.001, 0.001))
+                {
+                    m_ssaoEffect->setUniform<float>("u_bias", u_bias);
+                }
+
+                static float u_noiseSclae = 10;
+                if (ImGui::SliderFloat("u_noiseScale", &u_noiseSclae, 0, 10))
+                {
+                    m_ssaoEffect->setUniform<float>("u_noiseScale", u_noiseSclae);
+                }
+
+                static float u_tolerancy = -0.85f;
+                if (ImGui::SliderFloat("u_tolerancy", &u_tolerancy, -1, 1))
+                {
+                    m_ssaoEffect->setUniform<float>("u_tolerancy", u_tolerancy);
+                }
+
+                static float u_alpha = 0.005f;
+                if (ImGui::SliderFloat("u_alpha", &u_alpha, 0, 0.25))
+                {
+                    m_ssaoEffect->setUniform<float>("u_alpha", u_alpha);
+                }
+
 
                 ImGui::End();
 

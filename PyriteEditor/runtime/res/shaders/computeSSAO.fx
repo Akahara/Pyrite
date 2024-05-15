@@ -22,33 +22,52 @@ struct VSOut
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #define MAX_KERNEL_SIZE 64
-#define INV_MAX_KERNEL_SIZE_F 1.f / MAX_KERNEL_SIZE
+#define INV_MAX_KERNEL_SIZE_F (1.f / MAX_KERNEL_SIZE)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+cbuffer CameraBuffer
+{
+    float4x4 ViewProj;
+    float3 cameraPosition;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////
 
     
 float4 u_kernel[MAX_KERNEL_SIZE];
-float u_sampleRad;
+float u_sampleRad = 1.5;
+float u_bias = 0.0001f;
+float u_tolerancy = -0.85f;
+float u_noiseScale = 10.f;
+float u_alpha = 0.005f;
 Texture2D blueNoise;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
+float delinearize_depth(float d, float znear, float zfar)
+{
+    return znear * zfar / (zfar + d * (znear - zfar));
+}
 
-float3 calcViewPosition(float2 uv)
+float3 calcWorldPos(float2 uv)
 {
     float fragmentDepth = depthBuffer.Sample(blitSamplerState, uv).r;
+    
     float4 ndc = float4(
           uv.x * 2.0 - 1.0,
-          uv.y * 2.0 - 1.0,
-          fragmentDepth * 2.0 - 1.0,
+          (1 - uv.y) * 2.0 - 1.0,
+          fragmentDepth,
           1.0
         );
-    float4 vs_pos = mul(InverseProj, ndc);
+     
+    float4 vs_pos = mul(InverseViewProj, ndc);
     vs_pos.xyz = vs_pos.xyz / vs_pos.w;
           
     return vs_pos.xyz;
 }
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,38 +82,58 @@ VSOut vs(uint vertexId : SV_VertexID)
 
 float4 ps(VSOut vs) : SV_Target
 {
-    float3 viewPos = calcViewPosition(vs.texCoord);
-    float3 viewNormal = cross(ddy(viewPos.xyz), ddx(viewPos.xyz));
-    viewNormal = normalize(viewNormal);
+    float3 worldPos = calcWorldPos(vs.texCoord);
+    
+    float3 normal = cross(ddy(worldPos.xyz), ddx(worldPos.xyz));
+    normal = normalize(normal);
+    float localDepth = depthBuffer.Sample(blitSamplerState, vs.texCoord).r;
 
+    float4 whiteNoiseSample = blueNoise.Sample(MeshTextureSampler, vs.texCoord * u_noiseScale);
+    float3 randomVec = whiteNoiseSample.xyz;
+    //float3 randomVec = normalize(float3(1, 2, 3));
     
-    float3 randomVec = blueNoise.Sample(MeshTextureSampler, vs.texCoord).xyz;
+    float3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
+    float3 bitangent = cross(normal, tangent);
+    float3x3 TBN = float3x3(tangent, bitangent, normal);
     
-    float3 tangent = normalize(randomVec - viewNormal * dot(randomVec, viewNormal));
-    float3 bitangent = cross(viewNormal, tangent);
-    float3x3 TBN = float3x3(tangent, bitangent, viewNormal);
-   
-    float occlusion_factor = 0.0;
+    float occlusion_factor = 0.f;
+    
     [loop]
     for (int i = 0; i < MAX_KERNEL_SIZE; i++)
     {
+        
+        float angle = dot(normalize(u_kernel[i].xyz), normal);
+        
+        normal = normal * (step(angle, 0) * 2 - 1);
+        
+        if (dot(normalize(u_kernel[i].xyz), normal) < u_tolerancy)
+            continue;
+        
         float3 samplePos = mul(TBN, u_kernel[i].xyz);
-        samplePos = viewPos + samplePos * u_sampleRad;
+        samplePos = worldPos + samplePos * u_sampleRad * (1 + whiteNoiseSample.a / u_alpha);
+        
         float4 offset = float4(samplePos, 1.0);
-        offset = mul(Proj, offset);
+        offset = mul(ViewProj, offset);
+        
         offset.xy /= offset.w;
-        offset.xy = offset.xy * float2(.5, .5) + float2(.5, .5);
-        float geometryDepth = calcViewPosition(offset.xy).z;
-        float rangeCheck = smoothstep(0.0, 1.0, u_sampleRad / abs(viewPos.z - geometryDepth));
-        occlusion_factor += float(geometryDepth >= samplePos.z + 0.0001) * rangeCheck;
+        offset.xy = offset.xy * .5 + .5;
+        offset.y = 1 - offset.y;
+        
+        float geometryDepth = depthBuffer.Sample(blitSamplerState, offset.xy).r;
+        
+        float deltaDepth = abs(localDepth - geometryDepth);
+        
+        float rangeCheck = smoothstep(0.0, 1.0, u_sampleRad / deltaDepth);
+        
+        occlusion_factor += step(geometryDepth, localDepth + .001 * deltaDepth) * rangeCheck;
     }
 
     float average_occlusion_factor = occlusion_factor * INV_MAX_KERNEL_SIZE_F;
         
     float visibility_factor = 1.0 - average_occlusion_factor;
 
-    visibility_factor = pow(visibility_factor, 2.0);
     return float4(visibility_factor.xxx, 1);
+    visibility_factor = pow(visibility_factor, 2.0);
 
 }
 
