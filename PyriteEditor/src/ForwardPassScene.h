@@ -81,17 +81,20 @@ namespace pye
             m_forwardPass.addMeshToPass(&cubeInstance);
             m_depthPrePass.addMeshToPass(&cubeInstance);
 
-            // Setup the camera
-            m_camera.setProjection(pyr::PerspectiveProjection{});
-            m_camController.setCamera(&m_camera);
-
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
+            m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
+            m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
+
             m_RDG.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
 
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
 
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
+
+            // Setup the camera
+            m_camera.setProjection(pyr::PerspectiveProjection{});
+            m_camController.setCamera(&m_camera);
         }
 
         void update(float delta) override

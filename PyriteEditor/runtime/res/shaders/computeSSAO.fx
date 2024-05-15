@@ -45,6 +45,7 @@ Texture2D blueNoise;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
+
 float delinearize_depth(float d, float znear, float zfar)
 {
     return znear * zfar / (zfar + d * (znear - zfar));
@@ -67,8 +68,6 @@ float3 calcWorldPos(float2 uv)
     return vs_pos.xyz;
 }
 
-
-
 ///////////////////////////////////////////////////////////////////////////////////////
 
 VSOut vs(uint vertexId : SV_VertexID)
@@ -90,7 +89,6 @@ float4 ps(VSOut vs) : SV_Target
 
     float4 whiteNoiseSample = blueNoise.Sample(MeshTextureSampler, vs.texCoord * u_noiseScale);
     float3 randomVec = whiteNoiseSample.xyz;
-    //float3 randomVec = normalize(float3(1, 2, 3));
     
     float3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
     float3 bitangent = cross(normal, tangent);
@@ -102,10 +100,9 @@ float4 ps(VSOut vs) : SV_Target
     for (int i = 0; i < MAX_KERNEL_SIZE; i++)
     {
         
+        // This is an attempt at fixing the bading issues ...
         float angle = dot(normalize(u_kernel[i].xyz), normal);
-        
         normal = normal * (step(angle, 0) * 2 - 1);
-        
         if (dot(normalize(u_kernel[i].xyz), normal) < u_tolerancy)
             continue;
         
@@ -120,11 +117,8 @@ float4 ps(VSOut vs) : SV_Target
         offset.y = 1 - offset.y;
         
         float geometryDepth = depthBuffer.Sample(blitSamplerState, offset.xy).r;
-        
         float deltaDepth = abs(localDepth - geometryDepth);
-        
         float rangeCheck = smoothstep(0.0, 1.0, u_sampleRad / deltaDepth);
-        
         occlusion_factor += step(geometryDepth, localDepth + .001 * deltaDepth) * rangeCheck;
     }
 
