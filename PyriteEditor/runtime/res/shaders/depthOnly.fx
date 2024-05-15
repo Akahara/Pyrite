@@ -12,7 +12,7 @@ struct VertexInput
 {
     float4 Pos : POSITION;
     float3 Normal : NORMAL;
-    float2 uv : TEXCOORD0;
+    float2 uv : UV;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
