@@ -28,11 +28,11 @@ public:
 
     ForwardPass()
     {
+        displayName = "Forward";
+        
         static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/skybox.dds"; // todo avoid this as the core engine does not have runtime textures
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
     }
-
-    virtual void clear() override { m_meshes.clear(); }
 
     virtual void apply() override
     {
@@ -43,6 +43,9 @@ public:
             const Effect* effect = material->getEffect();
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+
+            std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
+            if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
 
             // todo bind materials and shaders
             std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
@@ -74,7 +77,6 @@ public:
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                 Effect::unbindResources();
             }
-            
             
         }
 

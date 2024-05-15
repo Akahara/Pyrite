@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderPass.h"
+#include "RDGResourcesManager.h"
 
 namespace pyr
 {
@@ -8,19 +9,24 @@ namespace pyr
     private:
 
         std::vector<RenderPass*> m_passes;
+        RenderGraphResourceManager m_manager;
 
     public:
 
-        void execute()
-        {
-            for (auto&& p : m_passes) p->apply();
-            // todo blit at the end
-        }
+        RenderGraphResourceManager& getResourcesManager() noexcept { return m_manager; }
 
-        void addPass(RenderPass* pass) { m_passes.emplace_back(pass); }
-        void clearGraph()
+        void execute()                  { for (RenderPass* p : m_passes) if (p->isEnabled()) p->apply(); }
+        void clearGraph()               { for (RenderPass* p : m_passes) p->clear(); }
+        void addPass(RenderPass* pass)  { m_passes.emplace_back(pass); m_manager.addNewPass(pass); }
+
+        void debugWindow()
         {
-            for (RenderPass* p : m_passes) p->clear();
+            ImGui::Begin("RenderGraph");
+            for (auto& pass : m_passes )
+            {
+                ImGui::Checkbox(pass->displayName.c_str(), &pass->m_bIsEnabled);
+            }
+            ImGui::End();
         }
 
     };

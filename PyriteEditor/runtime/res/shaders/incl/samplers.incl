@@ -4,3 +4,10 @@ SamplerState MeshTextureSampler
     AddressU = Wrap;
     AddressV = Wrap;
 };
+
+SamplerState blitSamplerState
+{
+  Filter = MIN_MAG_MIP_LINEAR;
+  AddressU = Clamp;
+  AddressV = Clamp;
+};

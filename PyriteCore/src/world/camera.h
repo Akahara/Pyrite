@@ -123,7 +123,7 @@ public:
   explicit FreecamController(Camera* camera=nullptr)
     : m_camera(camera) {}
 
-  void processUserInputs(float deltaTime);
+  void processUserInputs(double deltaTime);
 
   void setSpeed(float speed) { m_playerSpeed = speed; }
   const Camera *getCamera() const { return m_camera; }
