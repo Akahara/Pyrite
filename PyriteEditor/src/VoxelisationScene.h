@@ -1,62 +1,125 @@
 ﻿#pragma once
 
-#include "imgui.h"
 #include "display/DebugDraw.h"
 #include "display/IndexBuffer.h"
 #include "display/InputLayout.h"
 #include "display/Vertex.h"
 #include "display/VertexBuffer.h"
 #include "display/RenderGraph/RenderGraph.h"
-#include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
 #include "world/camera.h"
-#include "world/Mesh/MeshImporter.h"
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
-#include "world/RayCasting.h"
 
 namespace pye {
 
-class VoxelisationDemoScene : public pyr::Scene {
+struct ivec3
+{
+  int32_t x{}, y{}, z{};
+
+  static ivec3 floor(const vec3 &v) { return { static_cast<int32_t>(v.x), static_cast<int32_t>(v.y), static_cast<int32_t>(v.z) }; }
+
+  operator vec3() const { return { static_cast<float>(x),static_cast<float>(y),static_cast<float>(z) }; }
+};
+
+template<class Cell>
+class VoxelGrid
+{
+public:
+  explicit VoxelGrid(const Transform& transform, const ivec3& dimensions)
+    : m_transform(transform)
+    , m_dimensions(dimensions)
+    , m_cells(dimensions.x * dimensions.y * dimensions.z)
+  {
+    PYR_ASSERT(dimensions.x >= 0 && dimensions.y >= 0 && dimensions.z >= 0);
+  }
+
+  vec3 cellToWorld(const ivec3& cell) const
+  {
+    return m_transform.transform((cell + vec3(.5f)) / m_dimensions - vec3(.5f));
+  }
+
+  ivec3 worldToCell(const vec3& world) const
+  {
+    return ivec3::floor(m_transform.inverseTransform(world));
+  }
+
+  bool isValidCell(const ivec3& cell) const
+  {
+    return cell.x >= 0 && cell.x < m_dimensions.x
+        && cell.y >= 0 && cell.y < m_dimensions.y
+        && cell.z >= 0 && cell.z < m_dimensions.z;
+  }
+
+  Cell& operator[](const ivec3& cell) requires !std::is_same_v<bool, Cell>
+  {
+    PYR_ASSERT(isValidCell(cell));
+    return m_cells[cell.x + m_dimensions.x * (cell.y + m_dimensions.y * cell.z)];
+  }
+
+  auto operator[](const ivec3& cell) requires std::is_same_v<bool, Cell>
+  {
+    PYR_ASSERT(isValidCell(cell));
+    return m_cells[cell.x + m_dimensions.x * (cell.y + m_dimensions.y * cell.z)];
+  }
+
+  Cell& at(int32_t x, int32_t y, int32_t z) requires !std::is_same_v<bool, Cell>
+  {
+    return (*this)[{x, y, z}];
+  }
+
+  auto at(int32_t x, int32_t y, int32_t z) requires std::is_same_v<bool, Cell>
+  {
+    return (*this)[{x, y, z}];
+  }
+
+  const Transform& getTransform() const
+  {
+    return m_transform;
+  }
+
+  const ivec3& getDimensions() const
+  {
+    return m_dimensions;
+  }
+
+  Transform getCellTransform(ivec3 cell) const
+  {
+    Transform t{
+      .position = cellToWorld(cell),
+      .scale = m_transform.scale / m_dimensions,
+      .rotation = m_transform.rotation,
+    };
+    return t;
+  }
+
 private:
+  Transform m_transform;
+  ivec3 m_dimensions;
+  std::vector<Cell> m_cells;
+};
 
-  pyr::InputLayout m_layout;
-  pyr::Effect *m_baseEffect;
+using CameraBuffer = pyr::ConstantBuffer<InlineStruct(mat4 mvp; alignas(sizeof vec4) vec3 pos)>;
 
-  pyr::Camera m_camera;
-  pyr::FreecamController m_camController;
-
-  pyr::GraphicalResourceRegistry m_grr;
-
-  using CameraBuffer = pyr::ConstantBuffer<InlineStruct(mat4 mvp; alignas(sizeof vec4) vec3 pos)>;
-
-  std::shared_ptr<CameraBuffer> pcameraBuffer = std::make_shared<CameraBuffer>();
-
+class InstancedCube
+{
+public:
   using CubeVertex = pyr::GenericVertex<pyr::POSITION>;
   using CubeInstance = pyr::GenericVertex<pyr::INSTANCE_TRANSFORM, pyr::INSTANCE_COLOR>;
-  pyr::VertexBuffer m_cubeVB;
-  pyr::VertexBuffer m_cubeInstanceBuffer;
-  pyr::IndexBuffer m_cubeIB;
-
-  size_t instances = 500000;
 
 public:
-  VoxelisationDemoScene()
+  InstancedCube(pyr::GraphicalResourceRegistry& grr, std::shared_ptr<CameraBuffer> cameraBuf)
   {
-    m_layout = pyr::InputLayout::MakeLayoutFromVertex<CubeVertex, CubeInstance>();
-    m_baseEffect = m_grr.loadEffect(L"res/shaders/debug_cubes.fx", m_layout);
-    m_baseEffect->addBinding({ .label = "CameraBuffer", .bufferRef = pcameraBuffer });
-
     std::vector<CubeVertex> cubeVertices{ {
-      { vec4(-1, -1, -1, 1) },
-      { vec4(+1, -1, -1, 1) },
-      { vec4(+1, +1, -1, 1) },
-      { vec4(-1, +1, -1, 1) },
-      { vec4(-1, -1, +1, 1) },
-      { vec4(+1, -1, +1, 1) },
-      { vec4(+1, +1, +1, 1) },
-      { vec4(-1, +1, +1, 1) },
+      { vec4(-.5f, -.5f, -.5f, 1) },
+      { vec4(+.5f, -.5f, -.5f, 1) },
+      { vec4(+.5f, +.5f, -.5f, 1) },
+      { vec4(-.5f, +.5f, -.5f, 1) },
+      { vec4(-.5f, -.5f, +.5f, 1) },
+      { vec4(+.5f, -.5f, +.5f, 1) },
+      { vec4(+.5f, +.5f, +.5f, 1) },
+      { vec4(-.5f, +.5f, +.5f, 1) },
     } };
     std::vector<pyr::IndexBuffer::size_type> cubeIndices{ {
       0, 3, 1, 1, 3, 2,
@@ -66,27 +129,79 @@ public:
       3, 7, 2, 2, 7, 6,
       4, 0, 5, 5, 0, 1,
     } };
-    //std::vector<CubeInstance> cubeInstances{ {
-    //  { Transform{ vec3(0.f), vec3(1.f), quat::Identity }.getWorldMatrix(), vec4(1,0,1,1) },
-    //  { Transform{ vec3(0,1,0), vec3(.5f), quat::Identity }.getWorldMatrix(), vec4(1,1,1,1) },
-    //  { Transform{ vec3(2), vec3(2.f), quat::CreateFromAxisAngle(vec3::Up, PI*.25f) }.getWorldMatrix(), vec4(1,0,0,.25f) }
-    //} };
-    std::vector<CubeInstance> cubeInstances;
-    Transform t;
-    auto rng = mathf::randomFunction();
-    for (size_t i = 0; i < instances; i++) {
-      t.position = vec3{ rng(-1,1), rng(-1,1), rng(-1,1) } *100;
-      t.scale = vec3{ rng(.5f,2.f) };
-      t.rotation = quat::CreateFromYawPitchRoll(rng(0, PI * 2), rng(0, PI * 2), rng(0, PI * 2));
-      cubeInstances.push_back({ t.getWorldMatrix(), vec4(rng(), rng(), rng(), 1) });
-    }
     m_cubeIB = pyr::IndexBuffer(cubeIndices);
     m_cubeVB = pyr::VertexBuffer(cubeVertices);
-    m_cubeInstanceBuffer = pyr::VertexBuffer(cubeInstances, true);
+    m_baseEffect = grr.loadEffect(L"res/shaders/debug_cubes.fx", pyr::InputLayout::MakeLayoutFromVertex<CubeVertex, CubeInstance>());
+    m_baseEffect->addBinding({ .label = "CameraBuffer", .bufferRef = cameraBuf });
+  }
 
+  void render()
+  {
+    if (m_cubeInstancesDirty) {
+      if (m_cubeInstanceBufferSize >= cubeInstances.size())
+        m_cubeInstanceBuffer.setData(cubeInstances.data(), sizeof(CubeInstance) * cubeInstances.size(), 0);
+      else
+        m_cubeInstanceBuffer = pyr::VertexBuffer(cubeInstances, true);
+      m_cubeInstanceBufferSize = cubeInstances.size();
+    } else {
+      PYR_ENSURE(m_cubeInstanceBufferSize == cubeInstances.size(), "You forgot to call markInstancesDirty after updating instances and before rendering");
+    }
+    if (m_cubeInstanceBufferSize == 0) return;
+    m_baseEffect->uploadAllBindings();
+    m_baseEffect->bind();
+    m_cubeVB.bind();
+    m_cubeInstanceBuffer.bind(true);
+    m_cubeIB.bind();
+    pyr::Engine::d3dcontext().DrawIndexedInstanced(
+      static_cast<UINT>(m_cubeIB.getIndicesCount()),
+      static_cast<UINT>(m_cubeInstanceBufferSize),
+      0, 0, 0);
+  }
+
+public:
+  std::vector<CubeInstance> cubeInstances;
+  void markInstancesDirty() { m_cubeInstancesDirty = true; }
+
+private:
+  pyr::VertexBuffer m_cubeVB;
+  pyr::VertexBuffer m_cubeInstanceBuffer;
+  pyr::IndexBuffer m_cubeIB;
+  pyr::Effect *m_baseEffect;
+
+  size_t m_cubeInstanceBufferSize = 0;
+  bool m_cubeInstancesDirty = false;
+};
+
+class VoxelisationDemoScene : public pyr::Scene {
+private:
+
+  pyr::Camera m_camera;
+  pyr::FreecamController m_camController;
+
+  std::shared_ptr<CameraBuffer> m_cameraBuffer = std::make_shared<CameraBuffer>();
+  pyr::GraphicalResourceRegistry m_grr;
+  InstancedCube m_cubes;
+
+  VoxelGrid<bool> m_voxelGrid;
+
+public:
+  VoxelisationDemoScene()
+    : m_cubes(m_grr, m_cameraBuffer)
+    , m_voxelGrid(Transform{ vec3::Zero, vec3(5.f), quat::Identity }, ivec3{ 10,10,10 })
+  {
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
     drawDebugSetCamera(&m_camera);
+    
+    ivec3 dims = m_voxelGrid.getDimensions();
+    ivec3 p;
+    for (p.x = 0; p.x < dims.x; p.x++)
+    for (p.y = 0; p.y < dims.y; p.y++)
+    for (p.z = 0; p.z < dims.z; p.z++)
+    {
+      m_voxelGrid[p] = (p.x % 3 == 0) && ((p.y + p.z) % 2 == 0);
+    }
+    updateCubesToMatchVoxelGrid();
   }
 
   void update(float delta) override
@@ -94,18 +209,37 @@ public:
     m_camController.processUserInputs(delta);
   }
 
+  void updateCubesToMatchVoxelGrid()
+  {
+    ivec3 dims = m_voxelGrid.getDimensions();
+    m_cubes.cubeInstances.reserve(dims.x * dims.y * dims.z);
+    size_t count = 0;
+    ivec3 p;
+    auto rng = mathf::randomFunction();
+    for (p.x = 0; p.x < dims.x; p.x++)
+    for (p.y = 0; p.y < dims.y; p.y++)
+    for (p.z = 0; p.z < dims.z; p.z++)
+    {
+      if (m_voxelGrid[p]) {
+        m_cubes.cubeInstances.push_back(InstancedCube::CubeInstance{
+          m_voxelGrid.getCellTransform(p).getWorldMatrix(),
+          vec4(1,rng(0,.4f),rng(0,.4f),.2f)
+        });
+        count++;
+      }
+    }
+    m_cubes.cubeInstances.erase(m_cubes.cubeInstances.begin() + count, m_cubes.cubeInstances.end());
+    m_cubes.markInstancesDirty();
+  }
+
   void render() override
   {
     pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
     pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
-    m_baseEffect->uploadAllBindings();
-    m_baseEffect->bind();
-    m_cubeVB.bind();
-    m_cubeInstanceBuffer.bind(true);
-    m_cubeIB.bind();
-    pyr::Engine::d3dcontext().DrawIndexedInstanced(m_cubeIB.getIndicesCount(), instances, 0, 0, 0);
+    m_cameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
+    m_cubes.render();
+    pyr::drawDebugBox(m_voxelGrid.getTransform());
 
     pyr::RenderProfiles::popBlendProfile();
   }

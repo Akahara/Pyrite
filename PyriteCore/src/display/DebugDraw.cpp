@@ -69,6 +69,21 @@ void DebugDraws::drawDebugBox(const vec3& center, const vec3& extent, const vec4
   }
 }
 
+void DebugDraws::drawDebugBox(const Transform& transform, const vec4& color, float duration)
+{
+  vec3 a(-.5f);
+  constexpr float shifter[]{ 0,0,1,0,0,1,0,0 };
+  for (int i = 0; i < 3; i++) {
+    auto &d = reinterpret_cast<const vec3&>(shifter[i]);
+    auto &u = reinterpret_cast<const vec3&>(shifter[i + 1]);
+    auto &v = reinterpret_cast<const vec3&>(shifter[i + 2]);
+    m_debugLines.emplace_back(transform.transform(a),           transform.transform(a + d),           color, duration);
+    m_debugLines.emplace_back(transform.transform(a + u),       transform.transform(a + (d + u)),     color, duration);
+    m_debugLines.emplace_back(transform.transform(a + v),       transform.transform(a + (d + v)),     color, duration);
+    m_debugLines.emplace_back(transform.transform(a + (u + v)), transform.transform(a + (d + u + v)), color, duration);
+  }
+}
+
 void DebugDraws::drawDebugPoint(const vec3& location, const vec4& color, float duration)
 {
   m_debugPoints.emplace_back(location, color, duration);
