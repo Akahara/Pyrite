@@ -1,16 +1,6 @@
 #include "incl/samplers.incl"
 #include "incl/cbuffers.incl"
 
-cbuffer CameraBuffer
-{
-    float4x4 ViewProj;
-    float3 cameraPosition;
-};
-
-
-Texture2D tex : register(t0);
-Texture2D texNormal : register(t1);
-
 // struct to hold materials and sutff should come here
 
 // Explanation and goal of this file : build the Render equation using GGX BRDF.
@@ -39,11 +29,22 @@ Texture2D texNormal : register(t1);
 
 // -- Definition of a material
 
-struct Material
+cbuffer ActorMaterials
 {
-    float Kd;
-    float Ks;
+    float4 Ka; // color
+    float4 Ks; // specular
+    float4 Ke; // emissive
+    float Ns; // specular exponent
+    float Ni; // optical density 
+    float d; // transparency
 };
+
+cbuffer CameraBuffer
+{
+    float4x4 ViewProj;
+    float3 cameraPosition;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,6 +77,8 @@ float4 BRDF(float3 x, float3 incoming, float3 outgoing)
 float4 BRDF_CookTorrance(float3 x, float3 normal, float3 incoming, float3 outgoing)
 {
     return float4(0, 0, 0, 0);
+    
+    //float N = DistributionGGX();
     //return (DistributionGGX(normal, ) * GeometrySchlickGGX() * fresnelSchlick()) / (4 * dot(incoming, normal) * dot(outgoing, normal));
 
 }
@@ -90,7 +93,7 @@ float4 BRDF_Lambertian(float3 x, float3 incoming, float3 outgoing)
 float DistributionGGX(float3 normal, float3 halfway, float roughness)
 {
     float r2 = roughness * roughness;
-    float NdotH = max(dot(normal, halfway), 0.0);
+    float NdotH = dot(normal, halfway);
     float NdotH2 = NdotH * NdotH;
     
     float denom = (NdotH2 * (r2 - 1.0) + 1.0);
@@ -111,8 +114,8 @@ float GeometrySchlickGGX(float NdotV, float roughness)
   
 float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = saturate(dot(N, V));
+    float NdotL = saturate(dot(N, L));
     float ggx1 = GeometrySchlickGGX(NdotV, roughness);
     float ggx2 = GeometrySchlickGGX(NdotL, roughness);
 	
@@ -129,20 +132,26 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-Texture2D mat_albedo;
-Texture2D mat_normal;
-float3 sunPos = float3(0, 100, 100);
+Texture2D mat_albedo : register(t0);
+Texture2D mat_normal : register(t1);
+Texture2D mat_ao : register(t2);
+Texture2D mat_roughness : register(t3);
+Texture2D mat_metalness : register(t4);
+Texture2D mat_height : register(t5);
+
+float3 sunPos = float3(0, 10, 0);
 
 struct VertexInput
 {
     float3 Pos : POSITION;
     float3 Normal : NORMAL;
-    float2 uv : TEXCOORD0;
+    float2 uv : UV;
 };
 
 struct VertexOut
 {
     float4 pos : SV_Position;
+    float4 worldpos : POSITION;
     float4 norm : TEXCOORD0;
     float2 uv : TEXCOORD1;
 };
@@ -152,19 +161,72 @@ VertexOut GGXVertexShader(VertexInput vsIn)
     VertexOut vso;
     float4x4 MVP = mul(ViewProj, ModelMatrix);
     vso.pos = mul(MVP, float4(vsIn.Pos, 1));
+    vso.worldpos = mul(ModelMatrix, float4(vsIn.Pos, 1));
     vso.uv = vsIn.uv;
-    vso.norm = float4(vsIn.Normal, 0);
+    vso.norm = mul(ModelMatrix, normalize(float4(vsIn.Normal, 0)));
+    vso.norm = normalize(vso.norm);
     return vso;
 }
 
+float3 sampleFromTexture(Texture2D source, float2 uv)
+{
+    return source.Sample(MeshTextureSampler, uv).xyz;
+
+}
+
+float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
+{
+    float height = heightmap.Sample(MeshTextureSampler, texCoords).r;
+    float2 p = viewDir.xy / viewDir.z * (height * 0.0002);
+    return texCoords - p;
+}
+
+#define LIGHT_COUNT 1
+#define PI 3.14159
+
+float metallic = 0.2;
+float roughness = 0.1;
+float ao = 0;
+
 float4 GGXPixelShader(VertexOut vsIn) : SV_Target
 {
-    float3 dirToSun = normalize(sunPos - vsIn.pos.xyz);
-    float diffuseDot = saturate(dot(dirToSun, vsIn.norm.xyz));
     
-    float4 sample = mat_albedo.Sample(MeshTextureSampler, vsIn.uv);
-    float3 color = sample.xyz * lerp(0.5, 1, diffuseDot);
-    return float4(color, sample.a);
+    // Get light direction for this fragment
+    float3 lightDir = normalize(sunPos - vsIn.worldpos.xyz);
+
+    // Note: Non-uniform scaling not supported
+    float diffuseLighting = saturate(dot(vsIn.norm.xyz, -lightDir)); // per pixel diffuse lighting
+
+    // Introduce fall-off of light intensity
+    diffuseLighting *= ((length(lightDir) * length(lightDir)) / dot(sunPos - vsIn.worldpos.xyz, sunPos - vsIn.worldpos.xyz));
+
+    // Using Blinn half angle modification for performance over correctness
+    float3 h = normalize(normalize(cameraPosition - vsIn.norm.xyz) - lightDir); // why is this norm
+    float specLighting = pow(saturate(dot(h, vsIn.norm.xyz)), 2.0f);
+
+    return saturate(float4(.1, 0, 0, 1) + (float4(0,1, 0, 1) * diffuseLighting * 0.6f) + (specLighting * 0.5f));
+
+    //////////////////////////////////
+    
+    float3 albedo = Ka; // pow(Ka, 2.2);
+    float3 pixelNormal = normalize(vsIn.norm.xyz);
+    
+    float3 V = normalize(cameraPosition - vsIn.worldpos.xyz);
+    
+    // Go ggx !!
+    
+    float3 F0 = Ni.xxx;
+    F0 = lerp(F0, Ka.xyz, metallic);
+    
+    float NDF = DistributionGGX(pixelNormal, h, roughness);
+    float G = GeometrySmith(pixelNormal, V, lightDir, roughness);
+    float3 F = fresnelSchlick(saturate(dot(h, V)), F0);
+    
+    
+    //return float4(F, 1);
+    return float4(G.xxx * step(-dot(lightDir, pixelNormal), 0), 1);
+    return float4(NDF.xxx, 1);
+
 }
 
 technique11 GGX

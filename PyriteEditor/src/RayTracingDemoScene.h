@@ -56,7 +56,7 @@ public:
     cubeMesh = pyr::MeshImporter::ImportMeshFromFile("res/meshes/axes.obj");
     cubeModel = pyr::Model{ cubeMesh };
     cubeInstance = pyr::StaticMesh{ cubeModel };
-    cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
+    //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
     cubeInstance.loadSubmeshesMaterial(mats);
     Transform& cubeTransform = cubeInstance.getTransform();
     cubeTransform = Transform{ vec3(1,2,3), vec3(1,.5f,2.f), quat::CreateFromAxisAngle(mathf::normalize(vec3(1,2,3)), 1.f) };

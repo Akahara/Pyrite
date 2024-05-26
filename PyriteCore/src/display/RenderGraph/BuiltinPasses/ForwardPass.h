@@ -39,13 +39,10 @@ public:
         // Render all objects 
         for (const StaticMesh* smesh : m_meshes)
         {
-            const auto& material = smesh->getMaterial();
-            const Effect* effect = material->getEffect();
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
 
             std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
-            if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
 
             // todo bind materials and shaders
             std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
@@ -53,20 +50,32 @@ public:
             for (auto& submesh : submeshes)
             {
                 smesh->bindModel();
-                smesh->bindMaterial();
+                auto mat = smesh->getMaterialOfIndex(submesh.materialIndex);
+                auto effect = mat->getEffect();           
+                
+                mat->bind();
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+                effect->bindConstantBuffer("ActorMaterials", mat->coefsToCbuffer());
 
-                // why does sponza need this ??? FIND THIS ALBIN
-                if (i < submeshes.size()-1)
+                if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
+
+                // why does sponza need this ??? FIND THIS ALBIN apparently sponzea is fucked
+                //if (i < submeshes.size()-1)
+                if (i < submeshes.size())
                 {
 
-                    auto materialId = submeshes[++i].materialIndex; 
+                    auto materialId = submeshes[i].materialIndex; 
+                    //auto materialId = submeshes[++i].materialIndex; 
                     const std::shared_ptr<Material>& submeshMaterial = smesh->getMaterialOfIndex(materialId);
 
                     if (submeshMaterial)
                     {
-                        if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex) effect->bindTexture(*tex,"mat_albedo");
-                        if (auto tex = submeshMaterial->getTexture(TextureType::NORMAL); tex) effect->bindTexture(*tex,"mat_normal");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex)    effect->bindTexture(*tex,  "mat_albedo");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::NORMAL); tex)    effect->bindTexture(*tex,  "mat_normal");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::AO); tex)        effect->bindTexture(*tex,  "mat_ao");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::ROUGHNESS); tex) effect->bindTexture(*tex,  "mat_roughness");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::METALNESS); tex) effect->bindTexture(*tex,  "mat_metalness");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::HEIGHT); tex)    effect->bindTexture(*tex,  "mat_height");
                     }
                     else
                     {

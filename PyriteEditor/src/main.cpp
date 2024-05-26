@@ -7,6 +7,7 @@
 #include "RayTracingDemoScene.h"
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
+#include "MaterialScene.h"
 #include "utils/Debug.h"
 #include "engine/Engine.h"
 #include "engine/Device.h"
@@ -29,6 +30,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::ForwardPassScene>("Forward pass");
     scenes.registerScene<pye::RayTracingDemoScene>("RayTracing demo");
     scenes.registerScene<pye::VoxelisationDemoScene>("Voxelisation demo");
+    scenes.registerScene<pye::MaterialScene>("GGX Demo");
 
     // Load the scene that is passed on the command line by default
     scenes.transitionToScene(pyr::widestring2string(lpCmdLine));

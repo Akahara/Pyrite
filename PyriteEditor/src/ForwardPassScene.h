@@ -69,7 +69,9 @@ namespace pye
             cubeMesh        = pyr::MeshImporter::ImportMeshFromFile(PATH, 1);
             cubeModel       = pyr::Model{ cubeMesh };
             cubeInstance    = pyr::StaticMesh{ cubeModel };
-            cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
+
+            // todo redo this
+            //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
 
             cubeInstance.loadSubmeshesMaterial(mats);
 

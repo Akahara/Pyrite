@@ -9,5 +9,6 @@
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\RayTracingDemoScene.h" />
     <ClInclude Include="src\VoxelisationScene.h" />
+    <ClInclude Include="src\MaterialScene.h" />
   </ItemGroup>
 </Project>

@@ -72,7 +72,7 @@ namespace pyr
 				submeshes.push_back(SubMesh{ 
 					.startIndex = static_cast<UINT>(startSubmeshIndex),
 					.endIndex = static_cast<UINT>(indices.size()),
-					.materialIndex = static_cast<int>(mesh->mMaterialIndex),
+					.materialIndex = static_cast<int>(mesh->mMaterialIndex) - 1,
 					.matName = currMeshMaterial->GetName().C_Str()
 					});
 			}
@@ -94,26 +94,45 @@ namespace pyr
 			std::vector<MaterialMetadata> res;
 			std::set<int> cachedIndices;
 
-			res.resize(scene->mNumMaterials);
+			res.resize(scene->mNumMaterials-1);
 
 			for (size_t meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 			{
 				aiMesh* mesh = scene->mMeshes[meshId];
-				unsigned int matId = mesh->mMaterialIndex;
+				unsigned int matId = mesh->mMaterialIndex - 1;
 				if (cachedIndices.contains(matId)) continue;
 
 				cachedIndices.insert(matId);
-				aiMaterial* currMeshMaterial = Materials[matId];
-				res[matId].materialName = currMeshMaterial->GetName().C_Str();
+				aiMaterial* currMeshMaterial = Materials[matId+1];
 
+				res[matId].materialName = currMeshMaterial->GetName().C_Str();
+				
+				MaterialCoefs coefs;
+				aiColor3D color;
+				ai_real factor;
+
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color))
+					coefs.Ka = {color.r, color.g, color.b};
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color))
+					coefs.Ks = {color.r, color.g, color.b};
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color))
+					coefs.Ke = {color.r, color.g, color.b};
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
+					coefs.Ni = factor;
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_OPACITY, factor))
+					coefs.d = factor;
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_SHININESS, factor))
+					coefs.Ns = factor;
+
+				res[matId].coefs = coefs;
 				for (auto [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
 					{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
-					{ aiTextureType_DISPLACEMENT, TextureType::NORMAL},
+					{ aiTextureType_NORMALS, TextureType::NORMAL},
 					{ aiTextureType_METALNESS, TextureType::METALNESS},
 					{ aiTextureType_SPECULAR, TextureType::SPECULAR},
-					{ aiTextureType_AMBIENT_OCCLUSION, TextureType::AO},
+					{ aiTextureType_AMBIENT, TextureType::AO},
 					{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS},
-					//{ aiTextureType_, TextureType::BUMP},
+					{ aiTextureType_DISPLACEMENT, TextureType::BUMP},
 					{ aiTextureType_HEIGHT, TextureType::HEIGHT},
 					})
 				{
