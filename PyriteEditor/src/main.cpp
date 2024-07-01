@@ -2,16 +2,18 @@
 #include <tchar.h>
 #include <Windows.h>
 
+#include "engine/Engine.h"
+#include "engine/Device.h"
+#include "scene/SceneManager.h"
+#include "utils/Debug.h"
+#include "utils/StringUtils.h"
+
 #include "EditorScene.h"
 #include "ForwardPassScene.h"
 #include "RayTracingDemoScene.h"
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
-#include "utils/Debug.h"
-#include "engine/Engine.h"
-#include "engine/Device.h"
-#include "scene/SceneManager.h"
-#include "utils/StringUtils.h"
+#include "editor/ShaderReloader.h"
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
@@ -22,6 +24,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     pyr::EngineSettings settings;
     settings.appTitle = "PyriteEditor";
     settings.bHasTitleBar = true;
+    
+    pye::ShaderAutoReloader shaderAutoReloader; // RAII singleton
+
     pyr::Engine engine{ hInstance, std::move(settings) };
     pyr::SceneManager& scenes = pyr::SceneManager::getInstance();
     scenes.registerScene<pye::TriangleScene>("TriangleScene");

@@ -164,6 +164,7 @@
     <ClInclude Include="src\scene\SceneManager.h" />
     <ClInclude Include="src\utils\Clock.h" />
     <ClInclude Include="src\utils\Debug.h" />
+    <ClInclude Include="src\utils\Hooks.h" />
     <ClInclude Include="src\utils\ImGuiExt.h" />
     <ClInclude Include="src\utils\Logger.h" />
     <ClInclude Include="src\utils\Math.h" />

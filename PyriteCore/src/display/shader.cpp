@@ -19,23 +19,30 @@ struct IncludeManager final : ID3DInclude
 {
   STDMETHOD(Open)(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes) override
   {
-		using namespace std::string_literals;
-	  std::ifstream in{ "res/shaders/"s + pFileName};
-	  std::string contents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-	  auto buf = new char[contents.size()];
-	  std::ranges::copy(contents, buf);
-	  *ppData = buf;
+    using namespace std::string_literals;
+    std::ifstream in{ "res/shaders/"s + pFileName};
+    std::string contents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    auto buf = new char[contents.size()];
+    std::ranges::copy(contents, buf);
+    *ppData = buf;
     *pBytes = static_cast<UINT>(contents.size());
-  	return S_OK;
+    return S_OK;
   }
   STDMETHOD(Close)(LPCVOID pData) override
   {
-	  delete[] static_cast<const char*>(pData);
-	  return S_OK;
+      delete[] static_cast<const char*>(pData);
+      return S_OK;
   }
 };
 
-Effect ShaderManager::makeEffect(const std::wstring &path, const InputLayout& layout)
+struct RawEffect {
+  ID3DX11Effect* effect = nullptr;
+  ID3DX11EffectTechnique* technique = nullptr;
+  ID3DX11EffectPass* pass = nullptr;
+  D3DX11_EFFECT_SHADER_DESC effectVSDesc2{};
+};
+
+RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed)
 {
   auto &device = Engine::d3ddevice();
 
@@ -45,9 +52,17 @@ Effect ShaderManager::makeEffect(const std::wstring &path, const InputLayout& la
 
   HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, 0, 0, &device, &effect, &errors);
 
-  PYR_ASSERT(compilationSuccess == S_OK, errors
-	 ? static_cast<const char *>(errors->GetBufferPointer())
-	 : "Could not compile an effect, no error message");
+  if (compilationSuccess != S_OK) {
+    const char* errorMessage = errors
+      ? static_cast<const char *>(errors->GetBufferPointer())
+      : "Could not compile an effect, no error message";
+    if (mustSucceed) {
+      PYR_ASSERT(false, errorMessage);
+    } else {
+      PYR_LOG(LogShader, WARN, "Could not compile an effect: ", errorMessage);
+      return {};
+    }
+  }
 
   ID3DX11EffectTechnique *technique = effect->GetTechniqueByIndex(0);
   ID3DX11EffectPass *pass = technique->GetPassByIndex(0);
@@ -56,30 +71,47 @@ Effect ShaderManager::makeEffect(const std::wstring &path, const InputLayout& la
   pass->GetVertexShaderDesc(&effectVSDesc);
   D3DX11_EFFECT_SHADER_DESC effectVSDesc2;
   effectVSDesc.pShaderVariable->GetShaderDesc(effectVSDesc.ShaderIndex, &effectVSDesc2);
+
+  return { effect, technique, pass, effectVSDesc2 };
+}
+
+std::shared_ptr<Effect> ShaderManager::makeEffect(const std::wstring &path, const InputLayout& layout)
+{
+  auto [effect, technique, pass, effectVSDesc2] = makeRawEffect(path, true);
   ID3D11InputLayout *inputLayout = createVertexLayout(layout, effectVSDesc2.pBytecode, effectVSDesc2.BytecodeLength);
 
-  Effect e{ effect, technique, pass, inputLayout };
-#ifdef PYR_ISDEBUG
-  e.m_effectFile = path;
-#endif
+  std::shared_ptr<Effect> e = std::make_shared<Effect>(effect, technique, pass, inputLayout);
+  e->m_effectFile = widestring2string(path);
+  creationHooks(e);
   return e;
+}
+
+void ShaderManager::reloadEffect(Effect &e)
+{
+  auto [effect, technique, pass, effectVSDesc2] = makeRawEffect(string2widestring(e.getFilePath()), false);
+  if (effect == nullptr) return; // Invalid shader code
+  DXRelease(e.m_effect);
+  e.clearBindingCache();
+  e.m_effect = effect;
+  e.m_technique = technique;
+  e.m_pass = pass;
 }
 
 ID3D11InputLayout *ShaderManager::createVertexLayout(const InputLayout& layout, const void *shaderBytecode, size_t bytecodeLength)
 {
   if (layout.empty())
-		return nullptr;
+        return nullptr;
 
-	ID3D11InputLayout *inputLayout = nullptr;
+    ID3D11InputLayout *inputLayout = nullptr;
 
   DXTry(
-	  Engine::d3ddevice().CreateInputLayout(
-		  layout,
-		  static_cast<UINT>(layout.count()),
-		  shaderBytecode,
-		  bytecodeLength,
-		  &inputLayout),
-	  "Could not create a vertex input layout");
+      Engine::d3ddevice().CreateInputLayout(
+          layout,
+          static_cast<UINT>(layout.count()),
+          shaderBytecode,
+          bytecodeLength,
+          &inputLayout),
+      "Could not create a vertex input layout");
   return inputLayout;
 }
 
@@ -108,6 +140,12 @@ Effect &Effect::operator=(Effect &&moved) noexcept
   m_effectFile = std::exchange(moved.m_effectFile, {});
 #endif
   return *this;
+}
+
+Effect::~Effect()
+{
+  DXRelease(m_effect);
+  DXRelease(m_inputLayout);
 }
 
 void Effect::bind() const
@@ -149,15 +187,15 @@ ID3DX11EffectVariable *Effect::getVariableBinding(const std::string &name) const
 {
   auto el = m_variableBindingsCache.find(name);
   return el != m_variableBindingsCache.end()
-	  ? el->second 
-	  : (m_variableBindingsCache[name] = m_effect->GetVariableByName(name.c_str()));
+      ? el->second 
+      : (m_variableBindingsCache[name] = m_effect->GetVariableByName(name.c_str()));
 }
 ID3DX11EffectConstantBuffer *Effect::getConstantBufferBinding(const std::string &name) const
 {
   auto el = m_constantBufferBindingsCache.find(name);
   return el != m_constantBufferBindingsCache.end()
-		? el->second
-	  : (m_constantBufferBindingsCache[name] = m_effect->GetConstantBufferByName(name.c_str()));
+        ? el->second
+      : (m_constantBufferBindingsCache[name] = m_effect->GetConstantBufferByName(name.c_str()));
 }
 
 

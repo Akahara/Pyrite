@@ -106,6 +106,7 @@
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\DepthPrePass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\SSAOPass.h" />
     <ClInclude Include="src\display\RenderGraph\RDGResourcesManager.h" />
+    <ClInclude Include="src\utils\Hooks.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

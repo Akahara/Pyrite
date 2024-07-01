@@ -3,6 +3,8 @@
 #include "Device.h"
 #include "utils/Clock.h"
 
+#include <mutex>
+
 namespace pyr
 {
     class GraphicalResourceRegistry;
@@ -28,6 +30,7 @@ public:
   static Device &device() { return *s_engineSingleton->m_device; }
   static ID3D11Device &d3ddevice() { return s_engineSingleton->m_device->getDevice(); }
   static ID3D11DeviceContext &d3dcontext() { return s_engineSingleton->m_device->getImmediateContext(); }
+  static std::mutex &getFrameMutex() { return s_engineSingleton->m_frameMutex; }
 
 private:
   void initAppInstance();
@@ -50,6 +53,8 @@ private:
   std::unique_ptr<GraphicalResourceRegistry> m_globalGraphicalResources;
   std::unique_ptr<FrameBuffer>               m_primaryFrameBuffer;
   std::shared_ptr<ScreenResizeEventHandler>  m_windowResizeEventHandler;
+
+  std::mutex m_frameMutex;
 
   bool m_bShouldExit = false;
 

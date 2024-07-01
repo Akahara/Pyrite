@@ -35,14 +35,12 @@ public:
   Cubemap loadCubemap(const filepath &path);
   Effect *loadEffect(const filepath &path, const InputLayout& layout);
 
-  void reloadShaders();
-
   void swap(GraphicalResourceRegistry& other) noexcept;
 
 private:
   map<filepath, Texture> m_texturesCache;
   map<filepath, Cubemap> m_cubemapsCache;
-  map<filepath, std::pair<Effect, InputLayout>> m_effects;
+  map<filepath, std::pair<std::shared_ptr<Effect>, InputLayout>> m_effects;
 };
 
 }

@@ -4,13 +4,14 @@
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
+#include <span>
 
 #include "ConstantBuffer.h"
 #include "ConstantBufferBinding.h"
 #include "Texture.h"
 #include "utils/Debug.h"
 #include "utils/StringUtils.h"
-#include <span>
+#include "utils/Hooks.h"
 
 static inline PYR_DEFINELOG(LogShader, VERBOSE);
 
@@ -37,13 +38,16 @@ private:
   friend class ShaderManager;
   friend class GraphicalResourceRegistry;
 
+public:
   Effect(ID3DX11Effect *effect, ID3DX11EffectTechnique *technique, ID3DX11EffectPass *pass, ID3D11InputLayout *inputLayout)
 	: m_effect(effect), m_technique(technique), m_pass(pass), m_inputLayout(inputLayout) { }
-public:
 
   Effect() = default;
+  Effect(const Effect &) = delete;
+  Effect& operator=(const Effect &) = delete;
   Effect(Effect &&) noexcept;
   Effect &operator=(Effect &&) noexcept;
+  ~Effect();
 
   void bind() const;
   static void unbindResources();
@@ -51,6 +55,8 @@ public:
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
+
+  const std::string& getFilePath() const { return m_effectFile; }
   
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////:
 
@@ -89,8 +95,8 @@ public:
   {
 	  setUniformImpl<T>(uniformName, data);
   }
-private:
 
+private:
 	template<class T>
 	void setUniformImpl(const std::string& uniformName, const T& data);
 
@@ -133,11 +139,10 @@ private:
 private:
   ID3DX11EffectVariable *getVariableBinding(const std::string &name) const;
   ID3DX11EffectConstantBuffer *getConstantBufferBinding(const std::string &name) const;
+  void clearBindingCache() { m_variableBindingsCache.clear(); m_constantBufferBindingsCache.clear(); }
 
 private:
-#ifdef PYR_ISDEBUG
-  std::wstring m_effectFile;
-#endif
+  std::string m_effectFile;
   ID3DX11Effect          *m_effect;
   ID3DX11EffectTechnique *m_technique;
   ID3DX11EffectPass      *m_pass;
@@ -153,10 +158,15 @@ private:
 class ShaderManager
 {
 public:
-  static Effect makeEffect(const std::wstring &path, const InputLayout& layout);
+  using ShaderCreationHook = std::function<void(std::shared_ptr<Effect> &)>;
+  using ShaderCreationHookHandle = HookSet<ShaderCreationHook>::HookHandle;
+
+  static std::shared_ptr<Effect> makeEffect(const std::wstring& path, const InputLayout& layout);
+  static void reloadEffect(Effect& effect);
+  static inline HookSet<ShaderCreationHook> creationHooks;
 
 private:
-  static ID3D11InputLayout *createVertexLayout(const InputLayout& layout, const void *shaderBytecode, size_t bytecodeLength);
+  static ID3D11InputLayout *createVertexLayout(const InputLayout& layout, const void* shaderBytecode, size_t bytecodeLength);
 };
 
 }

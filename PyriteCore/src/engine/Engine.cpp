@@ -118,8 +118,11 @@ void Engine::run()
     double delta = m_clock.getDeltaSeconds(m_previousTime, currentTime);
     if (delta <= FRAME_DELTA) continue;
 
-    postFrame();
-    runFrame(static_cast<float>(delta));
+    {
+      std::lock_guard _{ m_frameMutex };
+      postFrame();
+      runFrame(static_cast<float>(delta));
+    }
     
     // if scenes need to be created/deleted drop the frames instead of trying to catch back
     if (SceneManager::getInstance().doSceneTransition())

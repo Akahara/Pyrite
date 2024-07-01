@@ -18,7 +18,7 @@ namespace pye
 
         std::vector<triangle_vertex_t> m_vertices;
         pyr::InputLayout m_layout;
-        pyr::Effect m_baseEffect;
+        std::shared_ptr<pyr::Effect> m_baseEffect;
 
         pyr::VertexBuffer m_vbo;
         pyr::IndexBuffer m_ibo;
@@ -51,7 +51,7 @@ namespace pye
         {
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            m_baseEffect.bind();
+            m_baseEffect->bind();
             m_vbo.bind();
             m_ibo.bind();
             pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(m_ibo.getIndicesCount()), 0, 0);

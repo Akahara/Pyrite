@@ -44,10 +44,6 @@ GraphicalResourceRegistry::~GraphicalResourceRegistry()
     cubemap.m_resource->Release();
     cubemap.m_texture->Release();
   }
-  for (auto &[_, effect] : m_effects) {
-    DXRelease(effect.first.m_effect);
-    DXRelease(effect.first.m_inputLayout);
-  }
   // meshes are released on deletion
 }
 
@@ -65,28 +61,11 @@ Cubemap GraphicalResourceRegistry::loadCubemap(const filepath &path)
   return m_cubemapsCache[path] = TextureManager::loadCubemap(path);
 }
 
-void GraphicalResourceRegistry::reloadShaders()
-{
-  for(auto &[file, oldEffect] : m_effects) {
-    try {
-      Effect newEffect = ShaderManager::makeEffect(file, oldEffect.second);
-      DXRelease(oldEffect.first.m_effect);
-      oldEffect.first.m_constantBufferBindingsCache.clear();
-      oldEffect.first.m_variableBindingsCache.clear();
-      oldEffect.first.m_pass = newEffect.m_pass;
-      oldEffect.first.m_effect = newEffect.m_effect;
-      oldEffect.first.m_technique = newEffect.m_technique;
-    } catch (const std::runtime_error &e) {
-      PYR_LOG(GraphicalResourceRegistry, WARN, pyr::widestring2string(file), " compilation error: ", e.what());
-    }
-  }
-}
-
 Effect *GraphicalResourceRegistry::loadEffect(const filepath &path, const InputLayout &layout)
 {
   if (m_effects.contains(path))
-    return &m_effects[path].first;
-  return &(m_effects[path] = { ShaderManager::makeEffect(path, layout), layout }).first;
+    return &*m_effects[path].first;
+  return &*(m_effects[path] = { ShaderManager::makeEffect(path, layout), layout }).first;
 }
 
 }
