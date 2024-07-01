@@ -125,10 +125,10 @@ static void initRasterizerProfiles()
   D3D11_RASTERIZER_DESC rsDesc;
   ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
   rsDesc.MultisampleEnable = true;
-
   rsDesc.FillMode = D3D11_FILL_SOLID;
+
   rsDesc.CullMode = D3D11_CULL_BACK;
-  rsDesc.FrontCounterClockwise = false;
+  rsDesc.FrontCounterClockwise = true;
   DXTry(device.CreateRasterizerState(&rsDesc, &g_renderProfiles.solidCullBackRS), "Could not create a rasterizer state");
   rsDesc.CullMode = D3D11_CULL_NONE;
   DXTry(device.CreateRasterizerState(&rsDesc, &g_renderProfiles.noCullBackRS), "Could not create a rasterizer state");

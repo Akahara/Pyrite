@@ -25,6 +25,7 @@ private:
   pyr::Effect *m_baseEffect;
 
   pyr::RenderGraph m_RDG;
+  pyr::BuiltinPasses::ForwardPass m_forwardPass;
 
   pyr::Mesh cubeMesh;
   pyr::Model cubeModel;
@@ -34,7 +35,6 @@ private:
   pyr::FreecamController m_camController;
 
   pyr::GraphicalResourceRegistry m_grr;
-  pyr::BuiltinPasses::ForwardPass m_forwardPass;
 
   using CameraBuffer = pyr::ConstantBuffer<InlineStruct(mat4 mvp; alignas(sizeof vec4) vec3 pos)>;
   using ColorBuffer = pyr::ConstantBuffer<InlineStruct(vec4 colorShift)>;

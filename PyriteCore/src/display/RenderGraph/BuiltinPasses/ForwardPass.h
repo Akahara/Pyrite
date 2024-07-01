@@ -2,6 +2,7 @@
 
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
+#include "display/RenderProfiles.h"
 #include "world/Mesh/Mesh.h"
 #include "world/Mesh/StaticMesh.h"
 
@@ -36,6 +37,7 @@ public:
 
     virtual void apply() override
     {
+        Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         // Render all objects 
         for (const StaticMesh* smesh : m_meshes)
         {
@@ -43,6 +45,8 @@ public:
             const Effect* effect = material->getEffect();
 
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+            effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+            effect->uploadAllBindings();
 
             std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
             if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
@@ -54,7 +58,6 @@ public:
             {
                 smesh->bindModel();
                 smesh->bindMaterial();
-                effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
                 // why does sponza need this ??? FIND THIS ALBIN
                 if (i < submeshes.size()-1)
@@ -91,16 +94,21 @@ public:
         m_skyboxEffect = m_registry.loadEffect(DEFAULT_SKYBOX_SHADER, InputLayout::MakeLayoutFromVertex<EmptyVertex>());
     }
 
-    const Effect* getSkyboxEffect() const { return m_skyboxEffect; }
+    Effect* getSkyboxEffect() { return m_skyboxEffect; }
 
 private:
 
     void renderSkybox()
     {
+        RenderProfiles::pushRasterProfile(RasterizerProfile::NOCULL_RASTERIZER);
+        RenderProfiles::pushDepthProfile(DepthProfile::TESTWRITE_DEPTH);
         m_skyboxEffect->bind();
         m_skyboxEffect->bindCubemap(m_skybox, "cubemap");
+        m_skyboxEffect->uploadAllBindings();
         Engine::d3dcontext().Draw(36, 0);
         m_skyboxEffect->unbindResources();
+        RenderProfiles::popDepthProfile();
+        RenderProfiles::popRasterProfile();
     }
 };
 }

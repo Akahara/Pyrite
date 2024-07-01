@@ -143,6 +143,7 @@ public:
       else
         m_cubeInstanceBuffer = pyr::VertexBuffer(cubeInstances, true);
       m_cubeInstanceBufferSize = cubeInstances.size();
+      m_cubeInstancesDirty = false;
     } else {
       PYR_ENSURE(m_cubeInstanceBufferSize == cubeInstances.size(), "You forgot to call markInstancesDirty after updating instances and before rendering");
     }
@@ -174,13 +175,18 @@ private:
 
 class VoxelisationDemoScene : public pyr::Scene {
 private:
-
   pyr::Camera m_camera;
   pyr::FreecamController m_camController;
 
   std::shared_ptr<CameraBuffer> m_cameraBuffer = std::make_shared<CameraBuffer>();
   pyr::GraphicalResourceRegistry m_grr;
   InstancedCube m_cubes;
+
+  pyr::RenderGraph m_RDG;
+  pyr::BuiltinPasses::ForwardPass m_forwardPass;
+  pyr::Mesh m_meshMesh;
+  pyr::Model m_meshModel;
+  pyr::StaticMesh m_mesh;
 
   VoxelGrid<bool> m_voxelGrid;
 
@@ -192,15 +198,20 @@ public:
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
     drawDebugSetCamera(&m_camera);
-    
-    ivec3 dims = m_voxelGrid.getDimensions();
-    ivec3 p;
-    for (p.x = 0; p.x < dims.x; p.x++)
-    for (p.y = 0; p.y < dims.y; p.y++)
-    for (p.z = 0; p.z < dims.z; p.z++)
-    {
-      m_voxelGrid[p] = (p.x % 3 == 0) && ((p.y + p.z) % 2 == 0);
-    }
+
+    fs::path meshFile = "res/meshes/axes.obj";
+    pyr::Effect* meshEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>());
+    meshEffect->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
+    m_forwardPass.getSkyboxEffect()->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
+    m_meshMesh = pyr::MeshImporter::ImportMeshFromFile(meshFile);
+    m_meshModel = pyr::Model{ m_meshMesh };
+    m_mesh = pyr::StaticMesh{ m_meshModel };
+    m_mesh.setBaseMaterial(std::make_shared<pyr::Material>(meshEffect));
+    m_mesh.loadSubmeshesMaterial(pyr::MeshImporter::FetchMaterialPaths(meshFile));
+    m_RDG.addPass(&m_forwardPass);
+    m_forwardPass.addMeshToPass(&m_mesh);
+
+    voxeliseMesh();
     updateCubesToMatchVoxelGrid();
   }
 
@@ -209,9 +220,33 @@ public:
     m_camController.processUserInputs(delta);
   }
 
+  void voxeliseMesh()
+  {
+    ivec3 dims = m_voxelGrid.getDimensions();
+    ivec3 p;
+    vec3 d{ 1,2,3 };
+    d.Normalize();
+    for (p.x = 0; p.x < dims.x; p.x++)
+    for (p.y = 0; p.y < dims.y; p.y++)
+    for (p.z = 0; p.z < dims.z; p.z++)
+    {
+      pyr::Ray ray{ m_voxelGrid.cellToWorld(p), d, 10.f };
+      pyr::RayResult result = pyr::raytrace(m_mesh, ray);
+      //pyr::drawDebugLine(
+      //  ray.origin,
+      //  ray.origin + ray.direction * (result.bHit ? result.distance : ray.maxDistance),
+      //  result.bHit ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1),
+      //  15.f);
+      //if (result.bHit)
+      //  pyr::drawDebugLine(result.position, result.position + result.normal, vec4{ 1,1,.2f,1.f }, 15.f);
+      m_voxelGrid[p] = result.bHit && (result.normal.Dot(d) > 0);
+    }
+  }
+
   void updateCubesToMatchVoxelGrid()
   {
     ivec3 dims = m_voxelGrid.getDimensions();
+    m_cubes.cubeInstances.clear();
     m_cubes.cubeInstances.reserve(dims.x * dims.y * dims.z);
     size_t count = 0;
     ivec3 p;
@@ -228,20 +263,45 @@ public:
         count++;
       }
     }
-    m_cubes.cubeInstances.erase(m_cubes.cubeInstances.begin() + count, m_cubes.cubeInstances.end());
     m_cubes.markInstancesDirty();
   }
 
   void render() override
   {
-    pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
-    pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    ImGui::Begin("Voxelization");
+    static ivec3 dims = m_voxelGrid.getDimensions();
+    static vec3 position = m_voxelGrid.getTransform().position;
+    static vec3 scale = m_voxelGrid.getTransform().scale;
+    static bool autogen = true;
+    static bool showMesh = true;
+    ImGui::Checkbox("Autogen", &autogen);
+    if (ImGui::Checkbox("ShowMesh", &showMesh)) {
+      m_forwardPass.clear();
+      if (showMesh) m_forwardPass.addMeshToPass(&m_mesh);
+    }
+    if ((ImGui::DragInt3("Dimensions", &dims.x, 1, 1, 100)
+        + ImGui::DragFloat3("Position", &position.x)
+        + ImGui::DragFloat3("Scale", &scale.x)) * autogen
+        + ImGui::Button("Regenerate")
+        ) {
+      m_voxelGrid = VoxelGrid<bool>{ Transform{ position, scale }, dims };
+      voxeliseMesh();
+      updateCubesToMatchVoxelGrid();
+    }
+    ImGui::End();
 
     m_cameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
-    m_cubes.render();
-    pyr::drawDebugBox(m_voxelGrid.getTransform());
+    pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
+    m_RDG.execute();
+    pyr::RenderProfiles::popRasterProfile();
 
+    pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
+    pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
+    m_cubes.render();
     pyr::RenderProfiles::popBlendProfile();
+    pyr::RenderProfiles::popDepthProfile();
+
+    pyr::drawDebugBox(m_voxelGrid.getTransform());
   }
 };
 }

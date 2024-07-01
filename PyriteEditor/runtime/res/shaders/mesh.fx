@@ -57,7 +57,7 @@ float4 CubePS(VertexOut vsIn, float4 vpos : SV_Position ) : SV_Target
     
     
     float3 color = sample.xyz *  lerp(0.5, 1 , diffuseDot);
-    
+    color = vsIn.norm.xyz;
     
     return float4(color, sample.a) ;
 }

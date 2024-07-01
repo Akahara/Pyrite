@@ -10,6 +10,7 @@ struct Ray
 {
 	vec3 origin;
 	vec3 direction;
+	float maxDistance = std::numeric_limits<float>::infinity();
 };
 
 struct RayResult
