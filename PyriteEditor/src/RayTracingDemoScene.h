@@ -53,9 +53,9 @@ public:
 
     // Create axes and material (everything is kinda default here)
     std::vector<pyr::MaterialMetadata> mats = pyr::MeshImporter::FetchMaterialPaths("res/meshes/axes.obj");
-    cubeMesh = pyr::MeshImporter::ImportMeshFromFile("res/meshes/axes.obj");
-    cubeModel = pyr::Model{ cubeMesh };
-    cubeInstance = pyr::StaticMesh{ cubeModel };
+    cubeMesh = pyr::MeshImporter::ImportMeshesFromFile("res/meshes/axes.obj").at(0);
+    cubeModel = pyr::Model{ &cubeMesh };
+    cubeInstance = pyr::StaticMesh{ &cubeModel };
     //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
     cubeInstance.loadSubmeshesMaterial(mats);
     Transform& cubeTransform = cubeInstance.getTransform();

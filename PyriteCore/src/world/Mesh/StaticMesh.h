@@ -1,5 +1,9 @@
 ﻿#pragma once
+
+#include <filesystem>
+
 #include "Model.h"
+
 #include "world/Material.h"
 #include "world/Transform.h"
 
@@ -18,19 +22,27 @@ private:
 public:
 
     StaticMesh() = default;
-    StaticMesh(const Model& model) 
-        : m_model(&model)
+    StaticMesh(const Model* model) 
+        : m_model(model)
     {}
 
     std::shared_ptr<Material> getMaterialOfIndex(int matId) const
     {
-        if (matId < 0 || !m_submeshesMaterial.contains(matId)) return nullptr;
+        
+        if (matId < 0 || !m_submeshesMaterial.contains(matId))
+            return Material::GetDefaultMaterial();
         return m_submeshesMaterial.at(matId); // todo figure out where the indice offset comes from (should be assimp loading starting at index 1)
     }
 
     void setMaterialOfIndex(int matId, std::shared_ptr<Material> mat)
     {
         m_submeshesMaterial[matId] = mat;
+    }
+
+
+    void setShaderOfMat(int matId, Effect* shader)
+    {
+        if (m_submeshesMaterial.contains(matId)) m_submeshesMaterial[matId]->setEffect(shader);
     }
 
     void loadSubmeshesMaterial(const std::vector<MaterialMetadata>& inOrderMetadata)

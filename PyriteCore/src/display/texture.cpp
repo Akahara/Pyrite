@@ -2,10 +2,12 @@
 
 #include <stdexcept>
 
+#include "ddstextureloader/WICTextureLoader11.h"
 #include "ddstextureloader/DDSTextureLoader11.h"
 #include "engine/Directxlib.h"
 #include "engine/Engine.h"
 #include "utils/StringUtils.h"
+#include <filesystem>
 
 namespace pyr
 {
@@ -18,13 +20,30 @@ Texture TextureManager::loadTexture(const std::wstring &path)
   ID3D11Resource *resource;
   ID3D11ShaderResourceView *texture;
   ID3D11Texture2D *textureInterface;
-  if (DirectX::CreateDDSTextureFromFile(
-	  &device,
-	  &Engine::d3dcontext(),
-	  path.c_str(),
-	  &resource,
-	  &texture) != S_OK)
-	throw std::runtime_error("Could not load texture " + pyr::widestring2string(path));
+  std::filesystem::path fspath = path;
+  auto extension = fspath.extension();
+
+  if (extension == ".dds")
+  {
+	  if (DirectX::CreateDDSTextureFromFile(
+		  &device,
+		  &Engine::d3dcontext(),
+		  fspath.c_str(),
+		  &resource,
+		  &texture) != S_OK)
+		throw std::runtime_error("Could not load texture " + pyr::widestring2string(path));
+  }
+  else
+  {
+	if (DirectX::CreateWICTextureFromFile(
+		  &device,
+		  &Engine::d3dcontext(),
+		  fspath.c_str(),
+		  &resource,
+		  &texture
+	) != S_OK)
+		throw std::runtime_error("Could not load texture " + pyr::widestring2string(path));
+  }
 
   resource->QueryInterface<ID3D11Texture2D>(&textureInterface);
   D3D11_TEXTURE2D_DESC desc;

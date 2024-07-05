@@ -24,7 +24,8 @@ namespace pyr
     };
 
 /////////////////////////////////////////////////////////////////
-    
+   
+// Contains the actual 3D geometry, vertices and indices and submeshes.
 class Mesh {
 
 public:

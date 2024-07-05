@@ -17,10 +17,10 @@ public:
 
 
     Model() = default;
-    Model(const Mesh& rawMeshData) : m_meshData(&rawMeshData)
+    Model(const Mesh* rawMeshData) : m_meshData(rawMeshData)
     {
-        m_vbo = VertexBuffer(rawMeshData.getVertices());
-        m_ibo = IndexBuffer(rawMeshData.getIndices());
+        m_vbo = VertexBuffer(rawMeshData->getVertices());
+        m_ibo = IndexBuffer(rawMeshData->getIndices());
     }
 
     void bind() const

@@ -55,7 +55,7 @@ namespace pyr
                     m_depthOnlyEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
                     std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
-                    for (auto submesh : submeshes)
+                    for (auto& submesh : submeshes)
                     {
                         Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                     }

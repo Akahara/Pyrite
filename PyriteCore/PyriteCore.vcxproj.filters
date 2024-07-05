@@ -41,6 +41,7 @@
     <ClCompile Include="src\utils\Debug.cpp" />
     <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\display\RenderGraph\RDGResourcesManager.cpp" />
+    <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -106,6 +107,7 @@
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\DepthPrePass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\SSAOPass.h" />
     <ClInclude Include="src\display\RenderGraph\RDGResourcesManager.h" />
+    <ClInclude Include="vendor\ddstextureloader\WICTextureLoader11.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

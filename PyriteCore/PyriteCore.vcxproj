@@ -118,6 +118,7 @@
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="src\world\RayCasting.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
+    <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
     <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
     <ClCompile Include="vendor\imguizmo\ImCurveEdit.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="src\world\RayCasting.h" />
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
+    <ClInclude Include="vendor\ddstextureloader\WICTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />
     <ClInclude Include="vendor\Effects11\d3dxGlobal.h" />

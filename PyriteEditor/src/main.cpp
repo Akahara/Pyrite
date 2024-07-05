@@ -33,7 +33,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::MaterialScene>("GGX Demo");
 
     // Load the scene that is passed on the command line by default
-    scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
+    //scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG

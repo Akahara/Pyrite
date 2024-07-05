@@ -23,6 +23,7 @@ private:
     using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
 
     std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
+    Effect* m_defaultGGXEffect;
 
 public:
 
@@ -32,26 +33,29 @@ public:
         
         static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/skybox.dds"; // todo avoid this as the core engine does not have runtime textures
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
+        m_defaultGGXEffect = m_registry.loadEffect(L"res/shaders/ggx.fx", InputLayout::MakeLayoutFromVertex<Mesh::mesh_vertex_t>());
     }
 
     virtual void apply() override
     {
         // Render all objects 
-        for (const StaticMesh* smesh : m_meshes)
+        for (const StaticMesh* mesh : m_meshes)
         {
 
-            pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+            pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->getTransform().getWorldMatrix() });
 
             std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
 
             // todo bind materials and shaders
-            std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
+            std::span<const SubMesh> submeshes = mesh->getModel()->getRawMeshData()->getSubmeshes();
             auto i = 0;
             for (auto& submesh : submeshes)
             {
-                smesh->bindModel();
-                auto mat = smesh->getMaterialOfIndex(submesh.materialIndex);
-                auto effect = mat->getEffect();           
+                mesh->bindModel();
+                const auto& mat = mesh->getMaterialOfIndex(submesh.materialIndex);
+                if (!mat) break;
+                const Effect* effect = mat->getEffect();  
+                if (!effect) effect = m_defaultGGXEffect;
                 
                 mat->bind();
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
@@ -59,19 +63,17 @@ public:
 
                 if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
 
-                // why does sponza need this ??? FIND THIS ALBIN apparently sponzea is fucked
-                //if (i < submeshes.size()-1)
                 if (i < submeshes.size())
                 {
 
-                    auto materialId = submeshes[i].materialIndex; 
-                    //auto materialId = submeshes[++i].materialIndex; 
-                    const std::shared_ptr<Material>& submeshMaterial = smesh->getMaterialOfIndex(materialId);
+                    auto materialId = submeshes[i++].materialIndex; 
+                    const std::shared_ptr<Material>& submeshMaterial = mesh->getMaterialOfIndex(materialId);
 
                     if (submeshMaterial)
                     {
                         if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex)    effect->bindTexture(*tex,  "mat_albedo");
                         if (auto tex = submeshMaterial->getTexture(TextureType::NORMAL); tex)    effect->bindTexture(*tex,  "mat_normal");
+                        if (auto tex = submeshMaterial->getTexture(TextureType::BUMP); tex)    effect->bindTexture(*tex,  "mat_normal");
                         if (auto tex = submeshMaterial->getTexture(TextureType::AO); tex)        effect->bindTexture(*tex,  "mat_ao");
                         if (auto tex = submeshMaterial->getTexture(TextureType::ROUGHNESS); tex) effect->bindTexture(*tex,  "mat_roughness");
                         if (auto tex = submeshMaterial->getTexture(TextureType::METALNESS); tex) effect->bindTexture(*tex,  "mat_metalness");
@@ -84,7 +86,7 @@ public:
                 }
 
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-                Effect::unbindResources();
+                effect->unbindResources();
             }
             
         }

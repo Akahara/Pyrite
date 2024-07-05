@@ -83,8 +83,9 @@ float4 ps(VSOut vs) : SV_Target
 {
     float3 worldPos = calcWorldPos(vs.texCoord);
     
-    float3 normal = cross(ddy(worldPos.xyz), ddx(worldPos.xyz));
+    float3 normal = cross(ddy_fine(worldPos.xyz), ddx_fine(worldPos.xyz));
     normal = normalize(normal);
+
     float localDepth = depthBuffer.Sample(blitSamplerState, vs.texCoord).r;
 
     float4 whiteNoiseSample = blueNoise.Sample(MeshTextureSampler, vs.texCoord * u_noiseScale);
