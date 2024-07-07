@@ -74,7 +74,6 @@ public:
   {
 	  ID3DX11EffectConstantBuffer* pCB = m_effect->GetConstantBufferByName(constantBufferName.c_str());
 	  pCB->SetConstantBuffer(data->getRawBuffer());
-	  DXRelease(pCB);
   }
 
   // This is the direct way of settings cbuffers value. Consider using a cbufferBinding that basically does this under the hood when calling uploadAllCbuffers
@@ -85,44 +84,44 @@ public:
   }
 
   template<class T>
-  void setUniform(const std::string& uniformName, const T& data)
+  void setUniform(const std::string& uniformName, const T& data) const
   {
 	  setUniformImpl<T>(uniformName, data);
   }
 private:
 
 	template<class T>
-	void setUniformImpl(const std::string& uniformName, const T& data);
+	void setUniformImpl(const std::string& uniformName, const T& data) const;
 
 	template<>
-	void setUniformImpl<float>(const std::string& uniformName, const float& data)
+	void setUniformImpl<float>(const std::string& uniformName, const float& data) const
 	{
 		m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));
 	}
 
 	template<>
-	void setUniformImpl<vec2>(const std::string& uniformName, const vec2& data)
+	void setUniformImpl<vec2>(const std::string& uniformName, const vec2& data) const
 	{
 		const float vals[2] = { data.x, data.y };
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
 	}
 
 	template<>
-	void setUniformImpl<vec3>(const std::string& uniformName, const vec3& data)
+	void setUniformImpl<vec3>(const std::string& uniformName, const vec3& data) const
 	{
 		const float vals[3] = { data.x, data.y, data.z };
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
 	}
 
 	template<>
-	void setUniformImpl<vec4>(const std::string& uniformName, const vec4& data)
+	void setUniformImpl<vec4>(const std::string& uniformName, const vec4& data) const
 	{
 		const float vals[4] = { data.x, data.y, data.z, data.w };
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
 	}
 
 	template<>
-	void setUniformImpl<std::vector<vec4>>(const std::string& uniformName, const std::vector<vec4>& data)
+	void setUniformImpl<std::vector<vec4>>(const std::string& uniformName, const std::vector<vec4>& data) const
 	{
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVectorArray(
 			reinterpret_cast<const float*>(data.data()),

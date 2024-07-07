@@ -23,22 +23,12 @@ namespace pye
     {
     private:
 
-        pyr::InputLayout m_layout;
-        pyr::Effect* m_baseEffect;
-
-        pyr::RenderGraph m_RDG;
-
-        pyr::Mesh cubeMesh;
-        pyr::Model cubeModel;
-        pyr::StaticMesh cubeInstance;
-        pyr::Material cubeMat;
-
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
-
+        
         pyr::GraphicalResourceRegistry m_grr;
-        pyr::Texture m_breadbug;
 
+        pyr::RenderGraph m_RDG;
         pyr::BuiltinPasses::ForwardPass m_forwardPass;
         pyr::BuiltinPasses::SSAOPass m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass m_depthPrePass;
@@ -49,7 +39,6 @@ namespace pye
         std::shared_ptr<CameraBuffer>           pcameraBuffer   = std::make_shared<CameraBuffer>();
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer  = std::make_shared<InverseCameraBuffer>();
 
-        std::vector<pyr::Model> sceneModels;
         std::vector<pyr::StaticMesh> sceneMeshes;
 
     public:
@@ -58,37 +47,24 @@ namespace pye
         {
             drawDebugSetCamera(&m_camera);
             // Import shader and bind cbuffers
-            m_layout = pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>();
-            m_baseEffect = m_grr.loadEffect(L"res/shaders/ggx.fx", m_layout); // todo say this is the default shader of materials
-
-            auto bb = m_grr.loadTexture(L"res/textures/breadbug.jpg");
-
-            m_baseEffect->addBinding({ .label = "CameraBuffer", .bufferRef = pcameraBuffer });
-
-            // Create axes and material (everything is kinda default here)
+            
             const char PATH[] = "res/meshes/chess_set_4k.gltf";
-
-            std::vector<pyr::MaterialMetadata> mats  = pyr::MeshImporter::FetchMaterialPaths(PATH);
-
-            static std::vector<pyr::Mesh> meshesOfFile = pyr::MeshImporter::ImportMeshesFromFile(PATH);
+            static std::vector<std::shared_ptr<pyr::Model>> modelsOfFile = pyr::MeshImporter::ImportMeshesFromFile(PATH);
 
             // Setup this scene's rendergraph
             m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
 
-            sceneModels.reserve(meshesOfFile.size());
-            sceneMeshes.reserve(meshesOfFile.size());
+            sceneMeshes.reserve(modelsOfFile.size());
 
-            for (const pyr::Mesh& meshRawData : meshesOfFile)
+            int i = 0;
+            for (const std::shared_ptr<pyr::Model>& model : modelsOfFile)
             {
-                sceneModels.emplace_back(pyr::Model{ &meshRawData });
-                sceneMeshes.emplace_back(pyr::StaticMesh{ &sceneModels.back() });
-                sceneMeshes.back().setMaterialOfIndex(0, pyr::Material::GetDefaultMaterial());
-                sceneMeshes.back().getTransform().scale = { 10,10,10 };
+                sceneMeshes.emplace_back(pyr::StaticMesh{ model });
+                sceneMeshes.back().getTransform().scale = { 300,300, 300 };
                 m_forwardPass.addMeshToPass(&sceneMeshes.back());
                 m_depthPrePass.addMeshToPass(&sceneMeshes.back());
-
             }
 
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
@@ -105,6 +81,7 @@ namespace pye
             // Setup the camera
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
+            m_forwardPass.boundCamera = &m_camera;
         }
 
         void update(float delta) override
@@ -124,34 +101,23 @@ namespace pye
         }
         
         void render() override
-
         {
-          
-            //ImGui::Begin("cam");
-            //static vec3 sunPos = vec3{ 0,-10,0 };
-            //if (ImGui::SliderFloat3("sunPos", &sunPos.x, -3000, 3000))
-            //    m_baseEffect->setUniform<vec3>("sunPos", sunPos);
-            //static float ao_scale = 0.5f;
-            //if (vec3 euler = m_camera.getRotation().ToEuler(); ImGui::DragFloat3("rot", &euler.x, .1f))
-            //  m_camera.setRotation(quat::CreateFromYawPitchRoll(euler));
-            //if (vec3 p = m_camera.getPosition(); ImGui::DragFloat3("pos", &p.x))
-            //  m_camera.setPosition(p);
-            //if (ImGui::SliderFloat("Ambiant occlusion scale", &ao_scale, 0, 1))
-            //    m_baseEffect->setUniform<float>("ao_scale", ao_scale);
-            //ImGui::End();
 
-            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
+            ImGui::Begin("Forward Pass Scene");
+            static vec3 sunPos = vec3{ 0,100,0 };
+            if (ImGui::SliderFloat3("sunPos", &sunPos.x, -300, 300))
+                pyr::MaterialBank::GetDefaultGGXShader()->setUniform<vec3>("sunPos", sunPos);
+
+            ImGui::End();
+
+
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
+            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            m_baseEffect->uploadAllBindings();
-
-            m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            pyr::Material::GetDefaultMaterial()->getEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            m_baseEffect->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
 
             m_RDG.execute();
 

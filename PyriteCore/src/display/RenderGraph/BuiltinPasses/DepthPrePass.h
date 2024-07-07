@@ -2,7 +2,7 @@
 
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
-#include "world/Mesh/Mesh.h"
+#include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 
 
@@ -32,7 +32,7 @@ namespace pyr
                 displayName = "Depth pre-pass";
                 m_depthOnlyEffect = m_registry.loadEffect(
                         L"res/shaders/depthOnly.fx", 
-                        InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>()
+                        InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
                 );
 
                 producesResource("depthBuffer", m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL));

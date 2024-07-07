@@ -120,7 +120,7 @@ void Effect::bind() const
 void Effect::unbindResources()
 {
   auto &context = Engine::d3dcontext();
-  constexpr ID3D11ShaderResourceView *emptyResources[10]{};
+  constexpr ID3D11ShaderResourceView *emptyResources[20]{};
   context.PSSetShaderResources(0, static_cast<UINT>(std::size(emptyResources)), emptyResources);
 }
 

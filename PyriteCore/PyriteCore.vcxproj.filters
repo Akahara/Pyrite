@@ -33,7 +33,7 @@
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
-    <ClCompile Include="src\world\Mesh\Mesh.cpp" />
+    <ClCompile Include="src\world\Mesh\RawMeshData.cpp" />
     <ClCompile Include="src\world\Mesh\Model.cpp" />
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="src\world\RayCasting.cpp" />
@@ -94,7 +94,7 @@
     <ClInclude Include="src\display\RenderGraph\NamedResources.h" />
     <ClInclude Include="src\display\RenderGraph\RenderGraph.h" />
     <ClInclude Include="src\display\RenderGraph\RenderPass.h" />
-    <ClInclude Include="src\world\Mesh\Mesh.h" />
+    <ClInclude Include="src\world\Mesh\RawMeshData.h" />
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />

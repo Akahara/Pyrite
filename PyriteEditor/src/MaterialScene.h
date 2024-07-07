@@ -19,8 +19,6 @@
 #define IMGUI_DECLARE_FLOAT_UNIFORM(name,shader,a,b) static float name;\
     if (ImGui::SliderFloat(#name, &name, a, b))\
         shader->setUniform<float>(#name, name);    
- 
-
 
 namespace pye
 {
@@ -33,20 +31,15 @@ namespace pye
         pyr::GraphicalResourceRegistry m_registry;
         pyr::Effect* m_ggxShader;
 
-        pyr::Mesh m_ballMesh = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/boule.obj").at(0); 
-        pyr::MaterialMetadata m_pbrMatMetadata{
-            .paths = {
+        std::shared_ptr<pyr::Model> m_ballModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/boule.obj").at(0);
+        pyr::MaterialTexturePathsCollection m_pbrMatMetadata{
                 {pyr::TextureType::ALBEDO,      "res/textures/pbr/rock-slab-wall_albedo.dds"},
                 {pyr::TextureType::AO,          "res/textures/pbr/rock-slab-wall_ao.dds"},
                 {pyr::TextureType::HEIGHT,      "res/textures/pbr/rock-slab-wall_height.dds"},
                 {pyr::TextureType::NORMAL,      "res/textures/pbr/rock-slab-wall_normal-dx.dds"},
                 {pyr::TextureType::METALNESS,   "res/textures/pbr/rock-slab-wall_metallic.dds"},
                 {pyr::TextureType::ROUGHNESS,   "res/textures/pbr/rock-slab-wall_roughness.dds"},
-        }
         };
-
-
-        pyr::Model m_ballModel;
 
         std::vector<pyr::StaticMesh> m_balls;
         std::vector<std::shared_ptr<pyr::Material>> m_materials;
@@ -68,25 +61,22 @@ namespace pye
 
         MaterialScene()
         {
-            m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>());
-
-            m_ballModel = pyr::Model{ &m_ballMesh };
+            m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
 
             int gridSize = 7;
-            m_balls.resize(gridSize * gridSize, pyr::StaticMesh{ &m_ballModel });
+            m_balls.resize(gridSize * gridSize, pyr::StaticMesh{ m_ballModel });
             m_materials.resize(gridSize * gridSize);
             
             for (int i = 0; i < m_materials.size(); i++)
             {
                 m_balls[i].getTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
-                m_materials[i] = std::make_shared<pyr::Material>(m_ggxShader);
-                m_materials[i]->loadMaterialFromMetadata(m_pbrMatMetadata);
                 
-                m_materials[i]->getMaterialCoefs().Ka = {  1,0,1 };
-                m_materials[i]->getMaterialCoefs().Metallic = (i % gridSize) /  (gridSize-1.f );
-                m_materials[i]->getMaterialCoefs().Roughness = std::clamp((i / gridSize) / (gridSize-1.f), 0.05f, 1.f);
-                m_balls[i].setMaterialOfIndex(0, m_materials[i]);         
-                
+                pyr::MaterialRenderingCoefficients coefs;
+                coefs.Ka = { 1,0,1 };
+                coefs.Metallic = (i % gridSize) / (gridSize - 1.f);
+                coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
+                auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
+                m_balls[i].overrideSubmeshMaterial(0, mat);
                 m_forwardPass.addMeshToPass(&m_balls[i]);
                 m_depthPrePass.addMeshToPass(&m_balls[i]);
             }
@@ -114,6 +104,8 @@ namespace pye
 
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
 
+            m_forwardPass.boundCamera = &m_camera;
+
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 
         }
@@ -136,29 +128,9 @@ namespace pye
 
         {
             ImGui::Begin("MaterialScene");
-            //static vec3 sunPos = vec3{ 0,-10,0 };
-            //if (ImGui::SliderFloat3("sunPos", &sunPos.x, -30, 30))
-            //    m_ggxShader->setUniform<vec3>("sunPos", sunPos);
-
-            for (size_t i = 0; i < m_balls.size(); i++)
-            {
-                ImGui::PushID(i);
-                if (ImGui::CollapsingHeader(std::format("Ball #{}", i).c_str()))
-                {
-                    auto mat = m_materials[i];
-                    pyr::MaterialCoefs coefs = mat->getMaterialCoefs();
-
-                    ImGui::SliderFloat3("Albedo", &coefs.Ka.x, 0 , 1);
-                    ImGui::SliderFloat3("Emissive", &coefs.Ke.x, 0 , 1);
-                    ImGui::SliderFloat3("Specular", &coefs.Ks.x, 0 , 1);
-                    ImGui::SliderFloat("Roughness", &coefs.Roughness, 0 , 1);
-                    ImGui::SliderFloat("Metallic", &coefs.Metallic, 0 , 1);
-                    ImGui::SliderFloat("IOR", &coefs.Ni, 0 , 1);
-                    mat->setMaterialCoefs(coefs);
-                }
-                ImGui::PopID();
-            }
-
+            static vec3 sunPos = vec3{ 0,100,0 };
+            if (ImGui::SliderFloat3("sunPos", &sunPos.x, -300, 300))
+                m_ggxShader->setUniform<vec3>("sunPos", sunPos);
 
             ImGui::End();
 

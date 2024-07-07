@@ -4,7 +4,7 @@
 
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
-#include "world/Mesh/Mesh.h"
+#include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 #include "utils/math.h"
 

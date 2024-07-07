@@ -61,6 +61,8 @@ Cubemap TextureManager::loadCubemap(const std::wstring &path)
   ID3D11Resource *resource;
   ID3D11ShaderResourceView *texture;
 
+  // TODO : also import png here
+
   if (DirectX::CreateDDSTextureFromFileEx(
 	  &device,
 	  &context,

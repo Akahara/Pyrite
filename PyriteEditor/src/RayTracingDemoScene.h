@@ -26,8 +26,7 @@ private:
 
   pyr::RenderGraph m_RDG;
 
-  pyr::Mesh cubeMesh;
-  pyr::Model cubeModel;
+  std::shared_ptr<pyr::Model> cubeModel;
   pyr::StaticMesh cubeInstance;
 
   pyr::Camera m_camera;
@@ -47,17 +46,14 @@ public:
   RayTracingDemoScene()
   {
     // Import shader and bind cbuffers
-    m_layout = pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>();
+    m_layout = pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>();
     m_baseEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", m_layout);
     m_baseEffect->addBinding({ .label = "CameraBuffer", .bufferRef = pcameraBuffer });
 
     // Create axes and material (everything is kinda default here)
-    std::vector<pyr::MaterialMetadata> mats = pyr::MeshImporter::FetchMaterialPaths("res/meshes/axes.obj");
-    cubeMesh = pyr::MeshImporter::ImportMeshesFromFile("res/meshes/axes.obj").at(0);
-    cubeModel = pyr::Model{ &cubeMesh };
-    cubeInstance = pyr::StaticMesh{ &cubeModel };
+    cubeModel = pyr::MeshImporter::ImportMeshesFromFile("res/meshes/axes.obj").at(0);
+    cubeInstance = pyr::StaticMesh{ cubeModel };
     //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
-    cubeInstance.loadSubmeshesMaterial(mats);
     Transform& cubeTransform = cubeInstance.getTransform();
     cubeTransform = Transform{ vec3(1,2,3), vec3(1,.5f,2.f), quat::CreateFromAxisAngle(mathf::normalize(vec3(1,2,3)), 1.f) };
 

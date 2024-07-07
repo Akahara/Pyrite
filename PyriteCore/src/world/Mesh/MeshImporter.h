@@ -6,8 +6,9 @@
 #include <assimp/material.h>
 #include <filesystem>
 
-#include "Mesh.h"
+#include "RawMeshData.h"
 #include "../Material.h"
+#include "Model.h"
 #include <set>
 
 namespace fs = std::filesystem;
@@ -19,109 +20,60 @@ namespace pyr
 	class MeshImporter
 	{
 	public:
-		static std::vector<Mesh> ImportMeshesFromFile(const fs::path& filePath)
+		static std::vector<std::shared_ptr<pyr::Model>> ImportMeshesFromFile(const fs::path& filePath)
 		{
 			Assimp::Importer importer;
 
 			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate | aiProcess_PreTransformVertices);
 			PYR_ASSERT(scene, "Could not load mesh ", filePath);
-			std::vector<Mesh> outMeshes;
-			ProcessNode(scene->mRootNode, scene, outMeshes);
-			return outMeshes;
-		}
-	
-		static std::vector<MaterialMetadata> FetchMaterialPaths(const fs::path& meshPath)
-		{
+			std::vector<std::shared_ptr<pyr::RawMeshData>> outMeshes;
+			Model::SubmeshesMaterialTable defaultMaterials;
+			defaultMaterials.resize(scene->mNumMaterials);
+			ProcessNode(scene->mRootNode, scene, outMeshes, defaultMaterials);
 
-			Assimp::Importer importer;
-			const aiScene* scene = importer.ReadFile(meshPath.string().c_str(), 0);
-
-			if (!scene) throw 3; // error log here
-
-			aiMaterial** Materials = scene->mMaterials;
-			aiString* outputPath = new aiString;
-
-			std::vector<MaterialMetadata> res;
-			std::set<int> cachedIndices;
-
-			res.resize(scene->mNumMaterials - 1);
-
-			for (size_t meshId = 0; meshId < scene->mNumMeshes; ++meshId)
+			std::vector<std::shared_ptr<pyr::Model>> outModels;
+			for (auto& meshData : outMeshes)
 			{
-				aiMesh* mesh = scene->mMeshes[meshId];
-				unsigned int matId = mesh->mMaterialIndex;
-				if (cachedIndices.contains(matId)) continue;
-
-				cachedIndices.insert(matId);
-				aiMaterial* currMeshMaterial = Materials[matId];
-
-				res[matId].materialName = currMeshMaterial->GetName().C_Str();
+				auto Model = std::make_shared<pyr::Model>(meshData, defaultMaterials);
 				
-				MaterialCoefs coefs;
-				aiColor3D color;
-				ai_real factor;
-
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color))
-					coefs.Ka = {color.r, color.g, color.b};
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color))
-					coefs.Ks = {color.r, color.g, color.b};
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color))
-					coefs.Ke = {color.r, color.g, color.b};
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
-					coefs.Ni = factor;
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_OPACITY, factor))
-					coefs.d = factor;
-				//if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_SHININESS, factor))
-				//	coefs.Metallic = factor;
-				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
-					coefs.Roughness = factor / 1000.f;
-
-				res[matId].coefs = coefs;
-				for (auto [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
-					{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
-					{ aiTextureType_NORMALS, TextureType::NORMAL},
-					{ aiTextureType_METALNESS, TextureType::METALNESS},
-					{ aiTextureType_SPECULAR, TextureType::SPECULAR},
-					{ aiTextureType_AMBIENT, TextureType::AO},
-					{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS},
-					{ aiTextureType_DISPLACEMENT, TextureType::BUMP},
-					{ aiTextureType_HEIGHT, TextureType::HEIGHT},
-					})
-				{
-
-					if (currMeshMaterial->GetTextureCount(assimpType) >= 1)
-					{
-						aiReturn ref = currMeshMaterial->GetTexture(assimpType, 0, outputPath);
-						res[matId].paths[pyrType] = outputPath->C_Str();
-					}
-				}
+				outModels.emplace_back(Model);
 			}
-
-			delete outputPath;
-			return res;
+			return outModels;
 		}
 private:
-			static void ProcessNode(aiNode* node, const aiScene* scene, std::vector<Mesh>& outMeshes)
+			static void ProcessNode(
+						aiNode* node, const aiScene* scene, 
+						std::vector<std::shared_ptr<pyr::RawMeshData>>& outMeshes, 
+						Model::SubmeshesMaterialTable& outDefaultMaterials
+						)
 			{
 				// process all the node's meshes (if any)
 				for (unsigned int i = 0; i < node->mNumMeshes; i++)
 				{
 					aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 					outMeshes.push_back(ProcessMeshFromAssimp(mesh, scene));
+
+					if (outDefaultMaterials[mesh->mMaterialIndex] == nullptr)
+					{
+						MaterialBank::mat_id_t matGlobalId = CreateMaterialFromMesh(mesh, scene);
+						const std::shared_ptr<Material>& computedDefaultMaterial = MaterialBank::GetMaterialReference(matGlobalId);
+						outDefaultMaterials[mesh->mMaterialIndex] = computedDefaultMaterial;
+					}
+
 				}
 				// then do the same for each of its children
 				for (unsigned int i = 0; i < node->mNumChildren; i++)
 				{
-					ProcessNode(node->mChildren[i], scene, outMeshes);
+					ProcessNode(node->mChildren[i], scene, outMeshes, outDefaultMaterials);
 				}
 			}
-
-			static pyr::Mesh ProcessMeshFromAssimp(aiMesh* aimesh, const aiScene* scene)
+			
+			// This should actually process submeshes
+			static std::shared_ptr<pyr::RawMeshData> ProcessMeshFromAssimp(aiMesh* aimesh, const aiScene* scene)
 			{
 				std::vector<SubMesh> submeshes{};
-				std::vector<Mesh::mesh_vertex_t> vertices;
-				std::vector<Mesh::mesh_indice_t> indices;
-
+				std::vector<RawMeshData::mesh_vertex_t> vertices;
+				std::vector<RawMeshData::mesh_indice_t> indices;
 
 				IndexBuffer::size_type startSubmeshIndex = static_cast<IndexBuffer::size_type>(indices.size());
 
@@ -132,11 +84,13 @@ private:
 					aiVector3D normal = aimesh->HasNormals() ? aimesh->mNormals[verticeId] : aiVector3D{ 0, 0, 0 };
 					aiVector3D uv = aimesh->HasTextureCoords(0) ? aimesh->mTextureCoords[0][verticeId] : aiVector3D{ 0, 0, 0 };
 
-					Mesh::mesh_vertex_t computedVertex{};
+					RawMeshData::mesh_vertex_t computedVertex{};
 
-					computedVertex.position = vec4{ position.x, position.y , -position.z , 1.f };
+					computedVertex.position = vec4{ -position.x, position.y , -position.z , 1.f };
 					computedVertex.normal = *reinterpret_cast<Vector3*>(&normal);
 					computedVertex.normal.z *= -1;
+					computedVertex.normal.x *= -1;
+					computedVertex.normal.y *= -1;
 					computedVertex.texCoords = vec2{ uv.x, uv.y };
 					vertices.push_back(computedVertex);
 				}
@@ -153,15 +107,64 @@ private:
 				}
 
 				aiMaterial* currMeshMaterial = scene->mMaterials[aimesh->mMaterialIndex];
-
 				submeshes.push_back(SubMesh{
 					.startIndex = static_cast<UINT>(startSubmeshIndex),
 					.endIndex = static_cast<UINT>(indices.size()),
-					.materialIndex = static_cast<int>(aimesh->mMaterialIndex) ,
+					.materialIndex = static_cast<size_t>(aimesh->mMaterialIndex) ,
 					.matName = currMeshMaterial->GetName().C_Str()
 					});
 			
-				return Mesh{ vertices, indices, submeshes };
+				return std::make_shared<RawMeshData>(vertices, indices, submeshes);
+			}
+
+			static pyr::MaterialBank::mat_id_t CreateMaterialFromMesh(aiMesh* aimesh, const aiScene* scene)
+			{
+			
+				aiMaterial* currMeshMaterial = scene->mMaterials[aimesh->mMaterialIndex];
+
+				aiString* outputPath = new aiString;
+
+				std::string materialName = currMeshMaterial->GetName().C_Str();
+				MaterialTexturePathsCollection paths;
+				MaterialRenderingCoefficients coefs;
+
+				aiColor3D color; ai_real factor;
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color))
+					coefs.Ka = { color.r, color.g, color.b };
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color))
+					coefs.Ks = { color.r, color.g, color.b };
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color))
+					coefs.Ke = { color.r, color.g, color.b };
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
+					coefs.Ni = factor;
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_OPACITY, factor))
+					coefs.d = factor;
+				//if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_SHININESS, factor))
+				//	coefs.Metallic = factor;
+				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
+					coefs.Roughness = factor / 1000.f;
+
+				for (auto [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
+					{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
+					{ aiTextureType_NORMALS, TextureType::NORMAL},
+					{ aiTextureType_METALNESS, TextureType::METALNESS},
+					{ aiTextureType_SPECULAR, TextureType::SPECULAR},
+					{ aiTextureType_AMBIENT, TextureType::AO},
+					{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS},
+					{ aiTextureType_DISPLACEMENT, TextureType::BUMP},
+					{ aiTextureType_HEIGHT, TextureType::HEIGHT},
+					})
+				{
+
+					if (currMeshMaterial->GetTextureCount(assimpType) >= 1)
+					{
+						aiReturn ref = currMeshMaterial->GetTexture(assimpType, 0, outputPath);
+						paths[pyrType] = outputPath->C_Str();
+					}
+				}
+				delete outputPath;
+				std::shared_ptr<Material> toRegister = Material::MakeRegisteredMaterial( paths, coefs, pyr::MaterialBank::GetDefaultGGXShader(), materialName);
+				return pyr::MaterialBank::GetMaterialGlobalId(materialName);
 			}
 
 	};

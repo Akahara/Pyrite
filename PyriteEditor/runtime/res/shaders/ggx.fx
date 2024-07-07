@@ -88,7 +88,7 @@ float DistributionGGX(float3 normal, float3 halfway, float roughness)
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float nom = NdotV;
-    float denom = NdotV * (1.0 - roughness) + roughness  +0.0001;
+    float denom = NdotV * (1.0 - roughness) + roughness  + 0.00001;
 	
     return nom / denom;
 }
@@ -118,7 +118,7 @@ Texture2D mat_roughness : register(t3);
 Texture2D mat_metalness : register(t4);
 Texture2D mat_height : register(t5);
 
-float3 sunPos = float3(0, 100, -100);
+float3 sunPos = float3(0, 100, 0);
 
 struct VertexInput
 {
@@ -176,9 +176,7 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 albedo = Ka;
     float4 sampleAlbedo = mat_albedo.Sample(MeshTextureSampler, vsIn.uv);
     if (sampleAlbedo.a != 0)
-    {
-        albedo = sampleAlbedo.xyz;
-    }
+        albedo *= sampleAlbedo.xyz;
     albedo = pow(albedo, 2.2);
     
     float4 sampleNormal = mat_normal.Sample(MeshTextureSampler, vsIn.uv);
@@ -190,8 +188,18 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     }
     pixelNormal = normalize(pixelNormal);
     
-    float computed_metallic =  metallic    ;// * sampleFromTexture(mat_metalness, vsIn.uv).x;
-    float computed_roughness = roughness; // * sampleFromTexture(mat_roughness, vsIn.uv).x;
+    float qsd = saturate(dot(pixelNormal, normalize(sunPos - vsIn.worldpos.xyz)));
+    float computed_metallic = metallic; 
+    if (sampleFromTexture(mat_metalness, vsIn.uv).g > 0)
+    {
+        computed_metallic = sampleFromTexture(mat_metalness, vsIn.uv).g;
+    }
+    float computed_roughness = roughness;
+    if (sampleFromTexture(mat_roughness, vsIn.uv).b > 0)
+    {
+        computed_roughness = sampleFromTexture(mat_roughness, vsIn.uv).b;
+    }
+    
     // Go ggx !!
     float3 F0 = Ni.xxx; // Ni
     F0 = lerp(F0, albedo.xyz, computed_metallic);
@@ -214,19 +222,19 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
         kD *= 1.f - computed_roughness;
         
         float3 numerator = NDF * G * F;
-        float denominator = 4 * saturate(dot(V, pixelNormal)) * saturate(dot(L, pixelNormal)) + 0.0001;
+        float denominator = 4 * saturate(dot(V, pixelNormal)) * saturate(dot(L, pixelNormal)) + 1;
         float3 specular = numerator / denominator;
         Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
     }
     
-    float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).x;
+    float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
     float occlusion = ssaoTexture.Load(vpos.xyz);
     if (matOcclusion > 0)
     {
         occlusion *= matOcclusion;
     }
     float3 ambient = 0.03.xxx * albedo;
-    float3 OutColor = (ambient + Lo) * occlusion; // * matOcclusion;
+    float3 OutColor = (ambient + Lo) * occlusion;
    
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
