@@ -14,7 +14,7 @@
 // Lambertian bdrf is straightforward c/pi 
 // But what is BRDF_cook_torrance ?
 //
-//      BRDF_ct = (D * F * G) / 4*(w_o.dot(n))*(w_i.dot(n))   
+//      BRDF_ct = (D * F * G) / (4*(w_o.dot(n))*(w_i.dot(n)))   
 //      
 //      where D, F and G are functions
 //
@@ -73,40 +73,44 @@ float4 BRDF_Lambertian(float3 x, float3 incoming, float3 outgoing)
 // -- Normal distribution function 
 float DistributionGGX(float3 normal, float3 halfway, float roughness)
 {
-    float r2 = roughness * roughness;
+    float a = roughness * roughness;
+    float a2 = a * a;
     float NdotH = dot(normal, halfway);
     float NdotH2 = NdotH * NdotH;
     
-    float denom = (NdotH2 * (r2 - 1.0) + 1.0);
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = 3.14159265 * denom * denom;
 
-    return r2 / denom;
+    return a2 / denom;
 }
 
 // -- Geometry function
 
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
-    float nom = NdotV;
-    float denom = NdotV * (1.0 - roughness) + roughness  + 0.00001;
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
 	
-    return nom / denom;
+    return num / denom;
 }
   
 float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 {
-    float NdotV = saturate(dot(N, V));
-    float NdotL = saturate(dot(N, L));
-    float ggx1 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx2 = GeometrySchlickGGX(NdotL, roughness);
-	
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
     return ggx1 * ggx2;
 }
 // -- Fresnel
 
-float3 fresnelSchlick(float cosTheta, float3 F0)
+float3 fresnelSchlick(float3 H, float3 V, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(saturate(1.0 - dot(H, V)), 5.0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,77 +172,66 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
 #define PI 3.14159
 Texture2D ssaoTexture;
 
+//float3 F_SchlickFROSTBITE(in float3 f0, in float f90, in float u)
+//{
+//    return f0 + ( f90 - f0 ) * pow (1. f - u , 5. f);
+//}
+
 float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
 {
     float3 V = normalize(cameraPosition - vsIn.worldpos.xyz);
     vsIn.uv.y = 1 - vsIn.uv.y;
-    
     float3 albedo = Ka;
     float4 sampleAlbedo = mat_albedo.Sample(MeshTextureSampler, vsIn.uv);
-    if (sampleAlbedo.a != 0)
-        albedo *= sampleAlbedo.xyz;
+    albedo *= sampleAlbedo.xyz;
     albedo = pow(albedo, 2.2);
     
     float4 sampleNormal = mat_normal.Sample(MeshTextureSampler, vsIn.uv);
+    sampleNormal.y *= -1;
     float3 pixelNormal = vsIn.norm.xyz;
-    if (sampleNormal.a != 0)
-    {
-        pixelNormal *= (sampleFromTexture(mat_normal, vsIn.uv) * 2.f - 1.f.xxx);
-
-    }
     pixelNormal = normalize(pixelNormal);
     
-    float qsd = saturate(dot(pixelNormal, normalize(sunPos - vsIn.worldpos.xyz)));
     float computed_metallic = metallic; 
-    if (sampleFromTexture(mat_metalness, vsIn.uv).g > 0)
-    {
-        computed_metallic = sampleFromTexture(mat_metalness, vsIn.uv).g;
-    }
+    computed_metallic *= sampleFromTexture(mat_metalness, vsIn.uv).b;
     float computed_roughness = roughness;
-    if (sampleFromTexture(mat_roughness, vsIn.uv).b > 0)
-    {
-        computed_roughness = sampleFromTexture(mat_roughness, vsIn.uv).b;
-    }
+    computed_roughness *= sampleFromTexture(mat_roughness, vsIn.uv).g;
     
     // Go ggx !!
-    float3 F0 = Ni.xxx; // Ni
+    float3 F0 = 0.04.xxx; //Ni.xxx; // Ni
     F0 = lerp(F0, albedo.xyz, computed_metallic);
-    
     float3 Lo = float3(0,0,0);
-    for (int i = 0; i < 1; i++)
-    {
-        float3 radiance = float3(4, 4, 4); // should be lights color and attenuation
-        
-        float3 L = normalize(sunPos - vsIn.worldpos.xyz);
-        float3 H = normalize(L + V);
-        float NDotL = saturate(dot(pixelNormal, L));
-        
-        float NDF = DistributionGGX(pixelNormal, H, computed_roughness);
-        float G = GeometrySmith(pixelNormal, V, L, computed_roughness);
-        float3 F = fresnelSchlick(saturate(dot(H, V)), F0);
-        
-        float3 kS = F;
-        float3 kD = float3(1,1,1) - kS;
-        kD *= 1.f - computed_roughness;
-        
-        float3 numerator = NDF * G * F;
-        float denominator = 4 * saturate(dot(V, pixelNormal)) * saturate(dot(L, pixelNormal)) + 1;
-        float3 specular = numerator / denominator;
-        Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
-    }
+    float3 radiance = 5.0.xxx;; // should be lights color and attenuation
+    
+    float3 L = normalize(sunPos - vsIn.worldpos.xyz);
+    float3 H = normalize(L + V);
+    float NDotL = saturate(dot(pixelNormal, L));
+    
+    float NDF = DistributionGGX(pixelNormal, H, computed_roughness);
+    float G = GeometrySmith(pixelNormal, V, L, computed_roughness);
+    float3 F = fresnelSchlick(H, V, F0);
+    //return float4(NDF.xxx, 1);
+    //return float4((pixelNormal * 0.5) + .5f.xxx, 1);
+    float3 kS = F;
+    float3 kD = float3(1,1,1) - kS;
+    kD *= 1.f - computed_metallic;
+    
+    float3 numerator = NDF * G * F;
+    float denominator = 4.0 * saturate(dot(V, pixelNormal)) * NDotL;
+    float3 specular = numerator / (denominator + 0.0001);
+    //return float4(specular, 1);
+    Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
     float occlusion = ssaoTexture.Load(vpos.xyz);
-    if (matOcclusion > 0)
-    {
-        occlusion *= matOcclusion;
-    }
-    float3 ambient = 0.03.xxx * albedo;
-    float3 OutColor = (ambient + Lo) * occlusion;
-   
+    //if (matOcclusion > 0)
+    //{
+    //    occlusion *= matOcclusion;
+    //}
+    float3 ambient = 0.03.xxx * albedo * occlusion;
+    float3 OutColor = ambient + Lo;
+    
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
-   
     
     return float4(OutColor, 1);
 }

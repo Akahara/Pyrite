@@ -90,7 +90,6 @@ private:
 					computedVertex.normal = *reinterpret_cast<Vector3*>(&normal);
 					computedVertex.normal.z *= -1;
 					computedVertex.normal.x *= -1;
-					computedVertex.normal.y *= -1;
 					computedVertex.texCoords = vec2{ uv.x, uv.y };
 					vertices.push_back(computedVertex);
 				}

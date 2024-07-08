@@ -30,20 +30,11 @@ namespace pye
 
         pyr::GraphicalResourceRegistry m_registry;
         pyr::Effect* m_ggxShader;
+        pyr::Effect* m_equiproj;
 
         std::shared_ptr<pyr::Model> m_ballModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/boule.obj").at(0);
-        pyr::MaterialTexturePathsCollection m_pbrMatMetadata{
-                {pyr::TextureType::ALBEDO,      "res/textures/pbr/rock-slab-wall_albedo.dds"},
-                {pyr::TextureType::AO,          "res/textures/pbr/rock-slab-wall_ao.dds"},
-                {pyr::TextureType::HEIGHT,      "res/textures/pbr/rock-slab-wall_height.dds"},
-                {pyr::TextureType::NORMAL,      "res/textures/pbr/rock-slab-wall_normal-dx.dds"},
-                {pyr::TextureType::METALNESS,   "res/textures/pbr/rock-slab-wall_metallic.dds"},
-                {pyr::TextureType::ROUGHNESS,   "res/textures/pbr/rock-slab-wall_roughness.dds"},
-        };
-
+        std::shared_ptr<pyr::Model> m_cubeModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/cube.obj").at(0);
         std::vector<pyr::StaticMesh> m_balls;
-        std::vector<std::shared_ptr<pyr::Material>> m_materials;
-
 
         using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
         std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
@@ -56,18 +47,21 @@ namespace pye
         pyr::FreecamController m_camController;
         using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
+        pyr::Texture m_hdrMap;
 
     public:
 
         MaterialScene()
         {
+            m_hdrMap = m_registry.loadTexture(L"textures/HDR/2.hdr");
+            
+            m_equiproj = m_registry.loadEffect(L"res/shaders/EquirectangularProjection.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
 
+#pragma region BALLS
             int gridSize = 7;
             m_balls.resize(gridSize * gridSize, pyr::StaticMesh{ m_ballModel });
-            m_materials.resize(gridSize * gridSize);
-            
-            for (int i = 0; i < m_materials.size(); i++)
+            for (int i = 0; i < m_balls.size(); i++)
             {
                 m_balls[i].getTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
                 
@@ -80,34 +74,27 @@ namespace pye
                 m_forwardPass.addMeshToPass(&m_balls[i]);
                 m_depthPrePass.addMeshToPass(&m_balls[i]);
             }
+#pragma endregion BALLS
 
+#pragma region RDG
             m_RDG.addPass(&m_forwardPass);
-
             m_camera.setPosition(vec3{  (float)gridSize,(float)gridSize,  - 10});
             m_camera.lookAt(vec3{ (float)gridSize,(float)gridSize,0.f});
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
-
             m_ggxShader->addBinding({ .label = "CameraBuffer",   .bufferRef = pcameraBuffer });
-
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
             m_RDG.addPass(&m_depthPrePass);
-
-
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
-
             m_RDG.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
-
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
-
             m_forwardPass.boundCamera = &m_camera;
-
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
-
+#pragma endregion RDG
         }
 
         void update(float delta) override
@@ -134,11 +121,20 @@ namespace pye
 
             ImGui::End();
 
-            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
-            pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            
+            
+            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
 
-            //m_ggxShader->uploadAllBindings();
+            m_equiproj->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+            m_equiproj->bind();
+            m_cubeModel->bind();
+            m_equiproj->bindTexture(m_hdrMap, "mat_hdr");
+            pyr::Engine::d3dcontext().DrawIndexed(36,0, 0);
+            m_equiproj->unbindResources();
+
+
+            pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
             m_ggxShader->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);

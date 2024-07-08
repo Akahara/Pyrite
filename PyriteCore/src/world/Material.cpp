@@ -53,6 +53,8 @@ pyr::Material::Material(
     for (TextureType type = TextureType::ALBEDO; type < TextureType::__COUNT; (*(int*)&type)++)
         if (pathsCollection.contains(type) && !pathsCollection.at(type).empty())
             m_textures[type] = m_grr.loadTexture(string2widestring(pathsCollection.at(type)));
+        else
+            m_textures[type] = Texture::getDefaultTextureSet().WhitePixel;
 
     m_shader = renderShader;
     coefs = matCoefs;

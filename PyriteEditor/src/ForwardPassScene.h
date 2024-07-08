@@ -62,7 +62,7 @@ namespace pye
             for (const std::shared_ptr<pyr::Model>& model : modelsOfFile)
             {
                 sceneMeshes.emplace_back(pyr::StaticMesh{ model });
-                sceneMeshes.back().getTransform().scale = { 300,300, 300 };
+                sceneMeshes.back().getTransform().scale = { 30,30, 30 };
                 m_forwardPass.addMeshToPass(&sceneMeshes.back());
                 m_depthPrePass.addMeshToPass(&sceneMeshes.back());
             }

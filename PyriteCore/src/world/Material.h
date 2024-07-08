@@ -19,7 +19,7 @@ namespace pyr
 
     struct MaterialRenderingCoefficients
     {
-        vec4 Ka = vec4{1.f,1.f,1.f,1.F}; // color
+        vec4 Ka = vec4{1.f,.0f,1.f,1.F}; // color
         vec4 Ks = vec4{ 1.f,1.f,1.f,1.F }; // specular
         vec4 Ke; // emissive
         float Roughness = 0.3f; // specular exponent

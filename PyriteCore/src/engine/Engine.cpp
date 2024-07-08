@@ -67,9 +67,9 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
   m_device = std::make_unique<Device>(DeviceMode::WINDOWED, m_mainWindowHandle);
   m_previousTime = m_clock.getTimeAsCount();
   m_globalGraphicalResources = std::make_unique<GraphicalResourceRegistry>();
-
   RenderProfiles::initProfiles();
   FrameBufferPipeline::loadGlobalResources(*m_globalGraphicalResources);
+  Texture::initDefaultTextureSet(*m_globalGraphicalResources);
   DebugDraws::get().load(*m_globalGraphicalResources);
 
   m_primaryFrameBuffer = std::make_unique<FrameBuffer>(Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::Target::COLOR_0 | FrameBuffer::Target::DEPTH_STENCIL);

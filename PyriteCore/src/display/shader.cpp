@@ -43,11 +43,11 @@ Effect ShaderManager::makeEffect(const std::wstring &path, const InputLayout& la
   ID3DBlob *errors = nullptr;
   IncludeManager includes{};
 
-  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, 0, 0, &device, &effect, &errors);
+  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 2, &device, &effect, &errors);
 
   PYR_ASSERT(compilationSuccess == S_OK, errors
-	 ? static_cast<const char *>(errors->GetBufferPointer())
-	 : "Could not compile an effect, no error message");
+   ? static_cast<const char *>(errors->GetBufferPointer())
+   : "Could not compile an effect, no error message");
 
   ID3DX11EffectTechnique *technique = effect->GetTechniqueByIndex(0);
   ID3DX11EffectPass *pass = technique->GetPassByIndex(0);

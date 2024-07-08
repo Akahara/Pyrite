@@ -195,8 +195,6 @@ size_t FrameBuffer::targetTypeToIndex(Target target)
   return mathf::firstBitIndex(static_cast<target_t>(target));
 }
 
-
-
 struct GlobalResources {
   Effect *simpleBlitEffect;
   Effect *simpleMSAABlitEffect;
@@ -305,6 +303,7 @@ void FrameBufferPipeline::loadGlobalResources(GraphicalResourceRegistry &resourc
   s_globalResources = new GlobalResources;
   s_globalResources->simpleBlitEffect = resources.loadEffect(L"res/shaders/blit_copy.fx", getBlitVertexLayout());
   s_globalResources->simpleMSAABlitEffect = resources.loadEffect(L"res/shaders/blit_mscopy.fx", getBlitVertexLayout());
+
 }
 
 void FrameBufferPipeline::unloadGlobalResources()
