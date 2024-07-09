@@ -54,7 +54,6 @@ namespace pye
         MaterialScene()
         {
             m_hdrMap = m_registry.loadTexture(L"textures/HDR/2.hdr");
-            
             m_equiproj = m_registry.loadEffect(L"res/shaders/EquirectangularProjection.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
 
@@ -71,8 +70,8 @@ namespace pye
                 coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
                 auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
                 m_balls[i].overrideSubmeshMaterial(0, mat);
-                m_forwardPass.addMeshToPass(&m_balls[i]);
-                m_depthPrePass.addMeshToPass(&m_balls[i]);
+                //m_forwardPass.addMeshToPass(&m_balls[i]);
+                //m_depthPrePass.addMeshToPass(&m_balls[i]);
             }
 #pragma endregion BALLS
 
