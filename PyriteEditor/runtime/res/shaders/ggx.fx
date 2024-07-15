@@ -48,28 +48,6 @@ cbuffer CameraBuffer
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// -- Compute BRDF
-
-float4 BRDF(float3 x, float3 incoming, float3 outgoing)
-{
-    return float4(0, 0, 0, 0);
-}
-
-// -- Compute Cook-Torrance BRDF
-
-float4 BRDF_CookTorrance(float3 x, float3 normal, float3 incoming, float3 outgoing)
-{
-    return float4(0, 0, 0, 0);
-    //float N = DistributionGGX();
-    //return (DistributionGGX(normal, ) * GeometrySchlickGGX() * fresnelSchlick()) / (4 * dot(incoming, normal) * dot(outgoing, normal));
-}
-
-// -- Compute Lambertian BRDF
-float4 BRDF_Lambertian(float3 x, float3 incoming, float3 outgoing)
-{
-    return float4(0, 0, 0, 0);
-}
-
 // -- Normal distribution function 
 float DistributionGGX(float3 normal, float3 halfway, float roughness)
 {
@@ -108,9 +86,15 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 }
 // -- Fresnel
 
+float3 fresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(saturate(1.0 - cosTheta), 5.0);
+}
+
 float3 fresnelSchlick(float3 H, float3 V, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(saturate(1.0 - dot(H, V)), 5.0);
+    float cosTheta = dot(H, V);
+    return fresnelSchlick(cosTheta, F0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +106,7 @@ Texture2D mat_roughness : register(t3);
 Texture2D mat_metalness : register(t4);
 Texture2D mat_height : register(t5);
 
-float3 sunPos = float3(0, 100, 0);
+float3 sunPos = float3(300, 1000, 300);
 
 struct VertexInput
 {
@@ -171,11 +155,7 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
 #define LIGHT_COUNT 1
 #define PI 3.14159
 Texture2D ssaoTexture;
-
-//float3 F_SchlickFROSTBITE(in float3 f0, in float f90, in float u)
-//{
-//    return f0 + ( f90 - f0 ) * pow (1. f - u , 5. f);
-//}
+TextureCube irrandiance_map;
 
 float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
 {
@@ -197,42 +177,50 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     computed_roughness *= sampleFromTexture(mat_roughness, vsIn.uv).g;
     
     // Go ggx !!
-    float3 F0 = 0.04.xxx; //Ni.xxx; // Ni
+    float3 F0 = Ni.xxx; //Ni.xxx; // Ni
     F0 = lerp(F0, albedo.xyz, computed_metallic);
     float3 Lo = float3(0,0,0);
-    float3 radiance = 5.0.xxx;; // should be lights color and attenuation
+    // -- For each light, compute the specular --//
+    {
+            
+        float3 radiance = 5.0.xxx;; // should be lights color and attenuation
+        
+        float3 L = normalize(sunPos - vsIn.worldpos.xyz);
+        float3 H = normalize(L + V);
+        
+        float NDF = DistributionGGX(pixelNormal, H, computed_roughness);
+        float G = GeometrySmith(pixelNormal, V, L, computed_roughness);
+        float3 F = fresnelSchlick(H, V, F0);
+        
+        
+        
+        float3 kS = F;
+        float3 kD = float3(1,1,1) - kS;
+        kD *= 1.f - computed_metallic;
+        
+        float NDotL = saturate(dot(pixelNormal, L));
+        float3 numerator = NDF * G * F;
+        float denominator = 4.0 * saturate(dot(V, pixelNormal)) * NDotL;
+        float3 specular = numerator / (denominator + 0.0001);
+        
+        Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
+    }
     
-    float3 L = normalize(sunPos - vsIn.worldpos.xyz);
-    float3 H = normalize(L + V);
-    float NDotL = saturate(dot(pixelNormal, L));
-    
-    float NDF = DistributionGGX(pixelNormal, H, computed_roughness);
-    float G = GeometrySmith(pixelNormal, V, L, computed_roughness);
-    float3 F = fresnelSchlick(H, V, F0);
-    //return float4(NDF.xxx, 1);
-    //return float4((pixelNormal * 0.5) + .5f.xxx, 1);
-    float3 kS = F;
-    float3 kD = float3(1,1,1) - kS;
-    kD *= 1.f - computed_metallic;
-    
-    float3 numerator = NDF * G * F;
-    float denominator = 4.0 * saturate(dot(V, pixelNormal)) * NDotL;
-    float3 specular = numerator / (denominator + 0.0001);
-    //return float4(specular, 1);
-    Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
+    // -- Ambiant coloring -- //
+    float3 kS = fresnelSchlick(saturate(dot(pixelNormal, V)), F0);
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    float3 irradiance = irrandiance_map.Sample(blitSamplerState, pixelNormal).rgb;
+    float3 diffuse = irradiance * albedo;
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
     float occlusion = ssaoTexture.Load(vpos.xyz);
-    //if (matOcclusion > 0)
-    //{
-    //    occlusion *= matOcclusion;
-    //}
-    float3 ambient = 0.03.xxx * albedo * occlusion;
-    float3 OutColor = ambient + Lo;
+    float3 ambient = (kD * diffuse) * occlusion;
     
+    // -- Tonemapping -- //
+    float3 OutColor = ambient + Lo;
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
-    
     return float4(OutColor, 1);
 }
 

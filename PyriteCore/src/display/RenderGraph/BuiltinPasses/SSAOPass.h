@@ -61,10 +61,10 @@ namespace pyr
                 m_ssaoTextureTarget.clearTargets();
                 m_ssaoTextureTarget.bind();
 
-                m_ssaoEffect->bind();
                 m_ssaoEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
                 m_ssaoEffect->bindTexture(m_randomTexture, "blueNoise");
                 m_ssaoEffect->setUniform<std::vector<vec4>>("u_kernel", m_kernel);
+                m_ssaoEffect->bind();
                 
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
 
@@ -73,8 +73,8 @@ namespace pyr
                 // Blur pass
                 m_ssaoTextureTarget.unbind();
                 m_blurredSSAOTarget.bind();
-                m_blurEffect->bind();
                 m_blurEffect->bindTexture(m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0), "sourceTexture");
+                m_blurEffect->bind();
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
                 m_blurEffect->unbindResources();
                 m_blurredSSAOTarget.unbind();

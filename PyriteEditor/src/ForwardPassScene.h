@@ -40,6 +40,7 @@ namespace pye
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer  = std::make_shared<InverseCameraBuffer>();
 
         std::vector<pyr::StaticMesh> sceneMeshes;
+        pyr::Cubemap m_irradianceMap;
 
     public:
 
@@ -50,6 +51,8 @@ namespace pye
             
             const char PATH[] = "res/meshes/chess_set_4k.gltf";
             static std::vector<std::shared_ptr<pyr::Model>> modelsOfFile = pyr::MeshImporter::ImportMeshesFromFile(PATH);
+            m_irradianceMap = m_grr.loadCubemap(L"res/textures/pbr/irradiance_cubemap.dds");
+            pyr::MaterialBank::GetDefaultGGXShader()->bindCubemap(m_irradianceMap, "irrandiance_map");
 
             // Setup this scene's rendergraph
             m_RDG.addPass(&m_depthPrePass);

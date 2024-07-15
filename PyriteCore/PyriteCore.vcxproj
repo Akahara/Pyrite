@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\display\CubemapBuilder.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="src\display\ConstantBuffer.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
+    <ClInclude Include="src\display\CubemapBuilder.h" />
     <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\display\FrameBuffer.h" />
     <ClInclude Include="src\display\GraphicalResource.h" />

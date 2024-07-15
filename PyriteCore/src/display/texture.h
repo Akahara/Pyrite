@@ -19,6 +19,7 @@ struct Texture
   Texture() : m_resource(nullptr), m_texture(nullptr), m_width(0), m_height(0) {}
 
   ID3D11ShaderResourceView *getRawTexture() const { return m_texture; }
+  ID3D11Resource *getRawResource() const { return m_resource; }
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
 
@@ -45,7 +46,6 @@ private:
 
   Texture(float* data, size_t width, size_t height);
 
-
   size_t m_width, m_height;
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
@@ -59,13 +59,13 @@ struct GlobalTextureSet {
 struct Cubemap
 {
   Cubemap() : m_resource(nullptr), m_texture(nullptr) {}
+  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {} // dont ùake this public
 
   ID3D11ShaderResourceView *getRawCubemap() const { return m_texture; }
 
 private:
   friend class TextureManager;
   friend class GraphicalResourceRegistry;
-  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {}
 
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;

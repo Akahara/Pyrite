@@ -144,6 +144,7 @@
     <ClCompile Include="src\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CubemapBuilderScene.h" />
     <ClInclude Include="src\EditorScene.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\MaterialScene.h" />

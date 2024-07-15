@@ -48,14 +48,15 @@ namespace pye
         using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
         pyr::Texture m_hdrMap;
+        pyr::Cubemap m_irradianceMap;
 
     public:
 
         MaterialScene()
         {
-            m_hdrMap = m_registry.loadTexture(L"textures/HDR/2.hdr");
-            m_equiproj = m_registry.loadEffect(L"res/shaders/EquirectangularProjection.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
+            m_irradianceMap = m_registry.loadCubemap(L"res/textures/pbr/irradiance_cubemap.dds");
+            m_ggxShader->bindCubemap(m_irradianceMap, "irrandiance_map");
 
 #pragma region BALLS
             int gridSize = 7;
@@ -70,15 +71,15 @@ namespace pye
                 coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
                 auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
                 m_balls[i].overrideSubmeshMaterial(0, mat);
-                //m_forwardPass.addMeshToPass(&m_balls[i]);
-                //m_depthPrePass.addMeshToPass(&m_balls[i]);
+                m_forwardPass.addMeshToPass(&m_balls[i]);
+                m_depthPrePass.addMeshToPass(&m_balls[i]);
             }
 #pragma endregion BALLS
 
 #pragma region RDG
             m_RDG.addPass(&m_forwardPass);
-            m_camera.setPosition(vec3{  (float)gridSize,(float)gridSize,  - 10});
-            m_camera.lookAt(vec3{ (float)gridSize,(float)gridSize,0.f});
+            m_camera.setPosition(vec3{ 0,0,0});
+            m_camera.lookAt(vec3{ 0,0,0.f});
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
             m_ggxShader->addBinding({ .label = "CameraBuffer",   .bufferRef = pcameraBuffer });
@@ -94,6 +95,17 @@ namespace pye
             m_forwardPass.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
+            auto& device = pyr::Engine::device();
+
+            std::array<pyr::FrameBuffer, 6> framebuffers;
+            for (int i = 0; i < 6; i++)
+            {
+
+                framebuffers[i] = pyr::FrameBuffer{ device.getWinWidth(), device.getWinHeight(), pyr::FrameBuffer::COLOR_0 };
+            }
+
+            update(0.0F);
+
         }
 
         void update(float delta) override
@@ -113,37 +125,21 @@ namespace pye
         void render() override
 
         {
-            ImGui::Begin("MaterialScene");
-            static vec3 sunPos = vec3{ 0,100,0 };
-            if (ImGui::SliderFloat3("sunPos", &sunPos.x, -300, 300))
-                m_ggxShader->setUniform<vec3>("sunPos", sunPos);
-
-            ImGui::End();
-
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            
-            
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
-
-            m_equiproj->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            m_equiproj->bind();
-            m_cubeModel->bind();
-            m_equiproj->bindTexture(m_hdrMap, "mat_hdr");
-            pyr::Engine::d3dcontext().DrawIndexed(36,0, 0);
-            m_equiproj->unbindResources();
-
-
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
+ 
             m_ggxShader->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+            
             m_RDG.execute();
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
-            m_RDG.debugWindow();
+            //m_RDG.debugWindow();
 
         }
 

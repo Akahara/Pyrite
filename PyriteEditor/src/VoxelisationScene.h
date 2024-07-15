@@ -105,7 +105,7 @@ public:
     m_cubeVB.bind();
     m_cubeInstanceBuffer.bind(true);
     m_cubeIB.bind();
-    pyr::Engine::d3dcontext().DrawIndexedInstanced(m_cubeIB.getIndicesCount(), instances, 0, 0, 0);
+    pyr::Engine::d3dcontext().DrawIndexedInstanced(static_cast<UINT>(m_cubeIB.getIndicesCount()), instances, 0, 0, 0);
 
     pyr::RenderProfiles::popBlendProfile();
   }

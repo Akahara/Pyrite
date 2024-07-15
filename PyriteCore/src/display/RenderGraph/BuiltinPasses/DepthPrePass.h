@@ -48,12 +48,12 @@ namespace pyr
                 for (const StaticMesh* smesh : m_meshes)
                 {
 
-                    m_depthOnlyEffect->bind();
                     smesh->bindModel();
 
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
                     m_depthOnlyEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
+                    m_depthOnlyEffect->bind();
                     std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
                     for (auto& submesh : submeshes)
                     {

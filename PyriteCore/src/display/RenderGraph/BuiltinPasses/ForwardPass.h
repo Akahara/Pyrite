@@ -37,7 +37,7 @@ public:
     {
         displayName = "Forward";
         
-        static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/skybox.dds"; // todo avoid this as the core engine does not have runtime textures
+        static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/pbr/testhdr.dds"; // todo avoid this as the core engine does not have runtime textures
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
         m_defaultGGXEffect = m_registry.loadEffect(L"res/shaders/ggx.fx", InputLayout::MakeLayoutFromVertex<RawMeshData::mesh_vertex_t>());
     }
@@ -65,7 +65,6 @@ public:
                 const Effect* effect = submeshMaterial->getEffect();
                 if (!effect) break;
                 
-                effect->bind();
                 effect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
