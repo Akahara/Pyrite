@@ -82,7 +82,7 @@ Cubemap TextureManager::loadCubemap(const std::wstring &path)
 	  0,
 	  D3D11_USAGE_DEFAULT,
 	  D3D11_BIND_SHADER_RESOURCE,
-	  0,
+	  D3D11_CPU_ACCESS_READ,
 	  D3D11_RESOURCE_MISC_TEXTURECUBE,
 	  DirectX::DDS_LOADER_DEFAULT,
 	  &resource,
@@ -133,7 +133,7 @@ Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_h
 	srcDesc.SampleDesc.Quality = 0;
 	srcDesc.Usage = D3D11_USAGE_DEFAULT;  
 	srcDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;  
-	srcDesc.CPUAccessFlags = 0;
+	srcDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 	srcDesc.MiscFlags = 0;
 
 	D3D11_SUBRESOURCE_DATA initialData;

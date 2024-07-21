@@ -15,7 +15,13 @@
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
+#include "RenderDoc/renderdoc_app.h"
 #include <display/CubemapBuilder.h>
+
+#include "RenderDoc/renderdoc_app.h"
+
+RENDERDOC_API_1_1_2* rdoc_api = NULL;
+
 
 #define IMGUI_DECLARE_FLOAT_UNIFORM(name,shader,a,b) static float name;\
     if (ImGui::SliderFloat(#name, &name, a, b))\
@@ -53,6 +59,7 @@ namespace pye
         pyr::Effect* m_skyboxEffect;
         pyr::Effect* m_irradiancePrecompute;
         pyr::Effect* m_specularPreFilter;
+        pyr::Effect* m_specularBRDF;
 
         std::shared_ptr<pyr::Cubemap> computedCubemap;
         std::shared_ptr<pyr::Cubemap> computedCubemap_irradiance;
@@ -69,10 +76,22 @@ namespace pye
 
         CubemapBuilderScene()
         {
+            // At init, on windows
+            if (HMODULE mod = LoadLibraryA("renderdoc.dll"))
+            {
+                pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+                    (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+                int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&rdoc_api);
+                assert(ret == 1);
+                if (rdoc_api) rdoc_api->SetCaptureFilePathTemplate("test.rdc");
+            }
+
+
             m_skyboxEffect              = m_registry.loadEffect(L"res/shaders/skybox.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
             m_equiproj                  = m_registry.loadEffect(L"res/shaders/EquirectangularProjection.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
             m_irradiancePrecompute      = m_registry.loadEffect(L"res/shaders/irradiancePreCompute.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
             m_specularPreFilter         = m_registry.loadEffect(L"res/shaders/specularIBL_mips.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
+            m_specularBRDF              = m_registry.loadEffect(L"res/shaders/specularIBL_BRDFPrecompute.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
 
             m_hdrMap = m_registry.loadTexture(L"textures/HDR/2.hdr");
 
@@ -82,6 +101,7 @@ namespace pye
 
         void takePicturesOfSurroundings()
         {
+            if (rdoc_api) rdoc_api->StartFrameCapture(NULL, NULL);
             bSkipImgui = true;
 
             //=============================================================================//
@@ -175,9 +195,24 @@ namespace pye
 
             computedCubemap_filtered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
 
+            //=============================================================================//
+            // Specular brdf
+            framebuffers[0] = pyr::FrameBuffer{ 512, 512, pyr::FrameBuffer::COLOR_0 };
+            framebuffers[0].bind();
+            m_specularBRDF->bind();
+            pyr::Engine::d3dcontext().Draw(6, 0);
+            m_specularBRDF->unbindResources();
+            framebuffers[0].unbind();
+
+            m_registry.keepHandleToTexture(framebuffers[0].getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
+            //=============================================================================//
             // -- Reset render mode
             bSkipImgui = false;
             renderMode = RenderMode::SKYBOX;
+            if (rdoc_api)
+            {
+                auto res = rdoc_api->EndFrameCapture(NULL, NULL);
+            }
         }
 
         void update(float delta) override
@@ -332,7 +367,7 @@ namespace pye
             if (bRuntimeFramebufferPrefilterCapture && renderMode == RenderMode::SPECULAR)
             {
                 computedCubemap_filtered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
-                bRuntimeFramebufferPrefilterCapture = false;
+                //bRuntimeFramebufferPrefilterCapture = false;
             }
 
             ImGui::Checkbox("Skybox render using irradiance compute :", &bRenderIrradianceMap);

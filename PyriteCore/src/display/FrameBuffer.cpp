@@ -39,6 +39,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 	renderTextureDesc.SampleDesc.Quality = 0;
 	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	renderTextureDesc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
+	renderTextureDesc.CPUAccessFlags = 0;
 	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
 	m_textures.push_back(renderTexture);
 

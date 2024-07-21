@@ -156,6 +156,8 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
 #define PI 3.14159
 Texture2D ssaoTexture;
 TextureCube irrandiance_map;
+Texture2D brdfLUT;
+TextureCube prefilterMap;
 
 float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
 {
@@ -207,11 +209,17 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     }
     
     // -- Ambiant coloring -- //
-    float3 kS = fresnelSchlick(saturate(dot(pixelNormal, V)), F0);
+    float3 F = fresnelSchlick(saturate(dot(pixelNormal, V)), F0);
+    float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
     float3 irradiance = irrandiance_map.Sample(blitSamplerState, pixelNormal).rgb;
     float3 diffuse = irradiance * albedo;
+    
+    const float MAX_REFLECTION_LOD = 4.0;
+    float3 prefilteredColor = prefilterMap.SampleLevel(blitSamplerState, R, roughness * MAX_REFLECTION_LOD).rgb;
+    float2 envBRDF = brdfLUT.Sample(blitSamplerState, float2(saturate(dot(pixelNormal, V)), roughness)).rg;
+    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
     float occlusion = ssaoTexture.Load(vpos.xyz);
