@@ -24,13 +24,14 @@ namespace pyr
 		{
 			return CubemapBuilder::MakeCubemapFromTexturesLOD<1>(textures);
 		}
+
 	};
 
 	template<size_t M>
 	inline Cubemap CubemapBuilder::MakeCubemapFromTexturesLOD(const std::span<pyr::Texture>& textures)
 	{
-		size_t mipCount = M;
 		// -- Ensure texture count 
+		UINT mipCount = M;
 		assert(textures.size() == mipCount * 6); 
 		
 		// -- Ensure main texture is squared
@@ -55,7 +56,7 @@ namespace pyr
 		DXTry(Engine::d3ddevice().CreateTexture2D(&textureDesc, nullptr, &cubeTexture), "Failed to create a texture 2D");
 		
 		// -- For each face
-		for (int faceID = 0; faceID  < 6; ++faceID) {
+		for (UINT faceID = 0; faceID  < 6; ++faceID) {
 			
 			// -- For each mip level
 			for (UINT mipLevel = 0; mipLevel < mipCount; mipLevel++)

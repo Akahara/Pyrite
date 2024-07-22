@@ -67,16 +67,18 @@ namespace pyr
                 m_ssaoEffect->bind();
                 
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
-
+                
                 m_ssaoEffect->unbindResources();
+                m_ssaoTextureTarget.unbind();
 
                 // Blur pass
-                m_ssaoTextureTarget.unbind();
                 m_blurredSSAOTarget.bind();
+
                 m_blurEffect->bindTexture(m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0), "sourceTexture");
                 m_blurEffect->bind();
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
                 m_blurEffect->unbindResources();
+                
                 m_blurredSSAOTarget.unbind();
 
                 debugWindow();
@@ -105,8 +107,6 @@ namespace pyr
                 if (ImGui::SliderFloat("u_blurStrength", &u_blurStrength, 0, 10))   m_blurEffect->setUniform<float>("u_blurStrength", u_blurStrength);
 
                 ImGui::End();
-
-
             }
 
         private:

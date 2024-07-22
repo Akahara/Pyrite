@@ -124,8 +124,8 @@ Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_h
 	D3D11_TEXTURE2D_DESC srcDesc;
 	ZeroMemory(&srcDesc, sizeof(srcDesc));
 
-	srcDesc.Width = width;
-	srcDesc.Height = height;
+	srcDesc.Width = static_cast<UINT>(width);
+	srcDesc.Height = static_cast<UINT>(height);
 	srcDesc.MipLevels = 1;
 	srcDesc.ArraySize = 1;
 	srcDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -138,7 +138,7 @@ Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_h
 
 	D3D11_SUBRESOURCE_DATA initialData;
 	initialData.pSysMem = data;
-	initialData.SysMemPitch = width * 4 * sizeof(float);
+	initialData.SysMemPitch = static_cast<UINT>(width) * 4 * sizeof(float);
 	initialData.SysMemSlicePitch = 0; // 0 is for tex2D, create SRV fails otherwise...
 
 	ID3D11Texture2D* resource;

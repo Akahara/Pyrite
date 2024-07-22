@@ -89,7 +89,7 @@ float3 ImportanceSampleGGX(float2 Xi, float3 N, float roughness)
     H.z = cosTheta;
 	
 	// from tangent-space H vector to world-space sample vector
-    float3 up = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+    float3 up = abs(N.z) < 0.9999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
     float3 tangent = normalize(cross(up, N));
     float3 bitangent = cross(N, tangent);
 	
@@ -106,9 +106,9 @@ float4 SkyboxPS(VSOut vs) : SV_Target
     float3 R = N;
     float3 V = R;
 
-    const uint SAMPLE_COUNT = 1024u;
+    const uint SAMPLE_COUNT = 1024;
     float3 prefilteredColor = 0.0.xxx;
-    float totalWeight = 0.0;
+    float totalWeight = 0.0001;
     
     for (uint i = 0u; i < SAMPLE_COUNT; ++i)
     {
@@ -137,7 +137,7 @@ float4 SkyboxPS(VSOut vs) : SV_Target
         }
     }
 
-    prefilteredColor = prefilteredColor / totalWeight;
+    prefilteredColor = prefilteredColor / totalWeight ;
 
     return float4(prefilteredColor, 1.0);
 }

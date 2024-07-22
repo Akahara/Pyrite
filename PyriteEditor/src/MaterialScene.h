@@ -10,6 +10,7 @@
 #include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
+#include "CubemapBuilderScene.h"
 #include "world/camera.h"
 #include "world/Mesh/MeshImporter.h"
 #include "display/GraphicalResource.h"
@@ -26,7 +27,6 @@ namespace pye
     class MaterialScene : public pyr::Scene
     {
     private:
-
 
         pyr::GraphicalResourceRegistry m_registry;
         pyr::Effect* m_ggxShader;
@@ -47,16 +47,32 @@ namespace pye
         pyr::FreecamController m_camController;
         using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
-        pyr::Texture m_hdrMap;
-        pyr::Cubemap m_irradianceMap;
+        
+        pyr::Texture brdfLUT;
+
+        std::shared_ptr<pyr::Cubemap> specularCubemap;
+        std::shared_ptr<pyr::Cubemap> m_irradianceMap;
 
     public:
 
         MaterialScene()
         {
+
+            CubemapBuilderScene* cubemapScene = new CubemapBuilderScene();
+            cubemapScene->hdrMapPath = L"res/textures/pbr/hdr2.hdr";
+            cubemapScene->takePicturesOfSurroundings();
+            specularCubemap = cubemapScene->computedCubemap_specularFiltered;
+            m_irradianceMap = cubemapScene->computedCubemap_irradiance;
+            m_registry.keepHandleToCubemap(*cubemapScene->computedCubemap);
+            m_forwardPass.m_skybox = *cubemapScene->computedCubemap;
+            brdfLUT = cubemapScene->computed_BRDF;
+            delete cubemapScene;
+
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
-            m_irradianceMap = m_registry.loadCubemap(L"res/textures/pbr/irradiance_cubemap.dds");
-            m_ggxShader->bindCubemap(m_irradianceMap, "irrandiance_map");
+            brdfLUT = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png");
+            m_ggxShader->bindTexture(brdfLUT, "brdfLUT");
+            m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
+            m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
 
 #pragma region BALLS
             int gridSize = 7;

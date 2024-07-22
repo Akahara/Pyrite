@@ -22,17 +22,11 @@
 
 RENDERDOC_API_1_1_2* rdoc_api = NULL;
 
-
-#define IMGUI_DECLARE_FLOAT_UNIFORM(name,shader,a,b) static float name;\
-    if (ImGui::SliderFloat(#name, &name, a, b))\
-        shader->setUniform<float>(#name, name);    
-
 namespace pye
 {
-
+    // This scene is an actual mess
     class CubemapBuilderScene : public pyr::Scene
     {
-
         std::array<vec3, 6> lookAtDirs{ {
                             {1,0,0},                // right
                             {-1,0,0},               // left   
@@ -40,39 +34,43 @@ namespace pye
                             {0,-1,0},               // down
                             {0,0, 1},               // front
                             {0,0,-1},               // behind
-                        } };
+        }};
 
     private:
         
         enum RenderMode { SKYBOX, EQUIPROJ, IRRADIANCE, SPECULAR };
-
+        RenderMode renderMode = SKYBOX;
 
         pyr::GraphicalResourceRegistry m_registry;
-        pyr::Effect* m_equiproj;
-        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
+        std::shared_ptr<pyr::DefaultBufferCollection::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::DefaultBufferCollection::CameraBuffer>();
+
         pyr::Camera m_camera;
         pyr::Texture m_hdrMap;
         std::array<pyr::FrameBuffer, 6> framebuffers;
-        std::array<pyr::FrameBuffer, 6> framebuffers_irradiance;
-        bool bSkipImgui = false;
+        
+        pyr::Effect* m_equiproj;
         pyr::Effect* m_skyboxEffect;
         pyr::Effect* m_irradiancePrecompute;
         pyr::Effect* m_specularPreFilter;
         pyr::Effect* m_specularBRDF;
-
-        std::shared_ptr<pyr::Cubemap> computedCubemap;
-        std::shared_ptr<pyr::Cubemap> computedCubemap_irradiance;
-        std::shared_ptr<pyr::Cubemap> computedCubemap_filtered;
         
         pyr::FreecamController m_camController;
+        
+        float m_currentPrefilterRougness = 0.0F;
         bool bRuntimeFramebufferIrradianceCapture = false;
         bool bRuntimeFramebufferPrefilterCapture = false;
         bool bRenderIrradianceMap = false;
-        float m_currentPrefilterRougness = 0.0F;
-        RenderMode renderMode = SKYBOX;
+        bool bShouldEndRenderDocCapture = false;
+        bool bSkipImgui = false;
 
     public:
+
+        std::shared_ptr<pyr::Cubemap> computedCubemap;
+        std::shared_ptr<pyr::Cubemap> computedCubemap_irradiance;
+        std::shared_ptr<pyr::Cubemap> computedCubemap_specularFiltered;
+        std::filesystem::path hdrMapPath = L"res/textures/pbr/hdr2.hdr";
+
+        pyr::Texture computed_BRDF;
 
         CubemapBuilderScene()
         {
@@ -86,14 +84,13 @@ namespace pye
                 if (rdoc_api) rdoc_api->SetCaptureFilePathTemplate("test.rdc");
             }
 
-
+            m_hdrMap = m_registry.loadTexture(hdrMapPath);
             m_skyboxEffect              = m_registry.loadEffect(L"res/shaders/skybox.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
             m_equiproj                  = m_registry.loadEffect(L"res/shaders/EquirectangularProjection.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
             m_irradiancePrecompute      = m_registry.loadEffect(L"res/shaders/irradiancePreCompute.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
             m_specularPreFilter         = m_registry.loadEffect(L"res/shaders/specularIBL_mips.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
             m_specularBRDF              = m_registry.loadEffect(L"res/shaders/specularIBL_BRDFPrecompute.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
 
-            m_hdrMap = m_registry.loadTexture(L"textures/HDR/2.hdr");
 
             m_camera.setProjection(pyr::PerspectiveProjection{ .fovy = 3.141592f/2.f, .aspect = 1.F} ); // this gives an FOVx of 90 in radians...
             m_camController.setCamera(&m_camera);
@@ -101,23 +98,25 @@ namespace pye
 
         void takePicturesOfSurroundings()
         {
+
             if (rdoc_api) rdoc_api->StartFrameCapture(NULL, NULL);
             bSkipImgui = true;
 
             //=============================================================================//
             // Diffuse irradiance
             // -- Convert the equiproj map to a cubemap
+
             renderMode = RenderMode::EQUIPROJ;
             auto& device = pyr::Engine::device();
             for (int i = 0; i < 6; i++)
             {
                 m_camera.lookAt(lookAtDirs[i]);
-                if (i == 2) m_camera.rotate(0, 3.14159, 0); // why ? it works
-                if (i == 3) m_camera.rotate(0, 3.14159, 0); // 
-                pcameraBuffer->setData(CameraBuffer::data_t{
+                if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f); // why ? it works
+                if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f); // 
+                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
-                    });
+                });
                 framebuffers[i] = pyr::FrameBuffer{ 1024, 1024, pyr::FrameBuffer::COLOR_0 };
                 framebuffers[i].bind();
                 render();
@@ -134,7 +133,7 @@ namespace pye
             computedCubemap = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTextures(textures));
 
             // -- Convert the HDR cubemap to a precomputed irradiance cubemap
-            pcameraBuffer->setData(CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
                 });
@@ -142,9 +141,9 @@ namespace pye
             for (int i = 0; i < 6; i++)
             {
                 m_camera.lookAt(lookAtDirs[i]);
-                if (i == 2) m_camera.rotate(0, 3.14159, 0); 
-                if (i == 3) m_camera.rotate(0, 3.14159, 0);  
-                pcameraBuffer->setData(CameraBuffer::data_t{
+                if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f); 
+                if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f);
+                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
                 });
@@ -166,20 +165,22 @@ namespace pye
             //=============================================================================//
             // Specular pre-filter
             renderMode = RenderMode::SPECULAR;
+            static constexpr size_t REFLECTION_RESOLUTION = 2048;
+
             constexpr size_t mipCount = 5;
-            uint32_t baseWidth = 256;
+            uint32_t baseWidth = REFLECTION_RESOLUTION;
             std::array<pyr::Texture, mipCount * 6> prefiltered;
             for (size_t mipLevel = 0; mipLevel < mipCount; mipLevel++)
             {
-                m_currentPrefilterRougness = (float)mipLevel / (float)mipCount;
+                m_currentPrefilterRougness = (float)mipLevel / (float)(mipCount);
                 // Fill the 6 framebuffers
                 uint32_t framebufferWidth = baseWidth / std::pow(2, mipLevel);
                 for (int i = 0; i < 6; i++)
                 {
                     m_camera.lookAt(lookAtDirs[i]);
-                    if (i == 2) m_camera.rotate(0, 3.14159, 0);
-                    if (i == 3) m_camera.rotate(0, 3.14159, 0);
-                    pcameraBuffer->setData(CameraBuffer::data_t{
+                    if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f);
+                    if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f);
+                    pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                         .mvp = m_camera.getViewProjectionMatrix(),
                         .pos = m_camera.getPosition()
                         });
@@ -193,11 +194,11 @@ namespace pye
                 }
             }
 
-            computedCubemap_filtered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
+            computedCubemap_specularFiltered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
 
             //=============================================================================//
             // Specular brdf
-            framebuffers[0] = pyr::FrameBuffer{ 512, 512, pyr::FrameBuffer::COLOR_0 };
+            framebuffers[0] = pyr::FrameBuffer{ REFLECTION_RESOLUTION, REFLECTION_RESOLUTION, pyr::FrameBuffer::COLOR_0 };
             framebuffers[0].bind();
             m_specularBRDF->bind();
             pyr::Engine::d3dcontext().Draw(6, 0);
@@ -205,20 +206,21 @@ namespace pye
             framebuffers[0].unbind();
 
             m_registry.keepHandleToTexture(framebuffers[0].getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
+            computed_BRDF = framebuffers[0].getTargetAsTexture(pyr::FrameBuffer::COLOR_0);
             //=============================================================================//
             // -- Reset render mode
             bSkipImgui = false;
             renderMode = RenderMode::SKYBOX;
             if (rdoc_api)
             {
-                auto res = rdoc_api->EndFrameCapture(NULL, NULL);
+                bShouldEndRenderDocCapture = true;
             }
         }
 
         void update(float delta) override
         {
             m_camController.processUserInputs(delta);
-            pcameraBuffer->setData(CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                 .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
             });
@@ -244,7 +246,15 @@ namespace pye
                 {
                     if (!computedCubemap_irradiance || !computedCubemap) break;
                     m_skyboxEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-                    m_skyboxEffect->bindCubemap(bRenderIrradianceMap ? *computedCubemap_irradiance : *computedCubemap, "cubemap");
+                    m_skyboxEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    if (computedCubemap_specularFiltered)
+                    {
+                        m_skyboxEffect->bindCubemap(*computedCubemap_specularFiltered, "cubemap");
+                    }
+                    else
+                    {
+                        m_skyboxEffect->bindCubemap(bRenderIrradianceMap ? *computedCubemap_irradiance : *computedCubemap, "cubemap");
+                    }
                     m_skyboxEffect->bind();
                     break;
                 }
@@ -303,7 +313,7 @@ namespace pye
                                 m_camera.lookAt(lookAtDirs[i]);
                                 if (i == 2) m_camera.rotate(0, 3.14159, 0);
                                 if (i == 3) m_camera.rotate(0, 3.14159, 0);
-                                pcameraBuffer->setData(CameraBuffer::data_t{
+                                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                                     .mvp = m_camera.getViewProjectionMatrix(),
                                     .pos = m_camera.getPosition()
                                     });
@@ -342,6 +352,13 @@ namespace pye
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
 
+            if (rdoc_api && bShouldEndRenderDocCapture)
+            {
+                static int frameCount = 0;
+                if (frameCount++ == 3)
+                    rdoc_api->EndFrameCapture(0, 0);
+            }
+
             if (bSkipImgui) return;
             ImGui::Begin("Cubemap Processing");
             if (ImGui::Button("Produce cubemap"))
@@ -366,8 +383,7 @@ namespace pye
 
             if (bRuntimeFramebufferPrefilterCapture && renderMode == RenderMode::SPECULAR)
             {
-                computedCubemap_filtered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
-                //bRuntimeFramebufferPrefilterCapture = false;
+                computedCubemap_specularFiltered = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTexturesLOD<mipCount>(prefiltered));
             }
 
             ImGui::Checkbox("Skybox render using irradiance compute :", &bRenderIrradianceMap);

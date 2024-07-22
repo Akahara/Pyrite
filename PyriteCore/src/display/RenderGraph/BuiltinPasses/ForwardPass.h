@@ -18,7 +18,6 @@ class ForwardPass : public RenderPass
 private:
     GraphicalResourceRegistry m_registry;
 
-    Cubemap m_skybox;
     Effect* m_skyboxEffect;
 
     using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
@@ -31,6 +30,7 @@ private:
 
 public:
 
+    Cubemap m_skybox;
     pyr::Camera* boundCamera = nullptr;
 
     ForwardPass()
@@ -104,9 +104,9 @@ private:
     void renderSkybox()
     {
         assert(boundCamera);
-        m_skyboxEffect->bind();
         m_skyboxEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
         m_skyboxEffect->bindCubemap(m_skybox, "cubemap");
+        m_skyboxEffect->bind();
         Engine::d3dcontext().Draw(36, 0);
         m_skyboxEffect->unbindResources();
     }

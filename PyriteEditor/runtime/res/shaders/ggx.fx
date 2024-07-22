@@ -154,6 +154,7 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
 
 #define LIGHT_COUNT 1
 #define PI 3.14159
+
 Texture2D ssaoTexture;
 TextureCube irrandiance_map;
 Texture2D brdfLUT;
@@ -177,6 +178,8 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     computed_metallic *= sampleFromTexture(mat_metalness, vsIn.uv).b;
     float computed_roughness = roughness;
     computed_roughness *= sampleFromTexture(mat_roughness, vsIn.uv).g;
+    
+    float3 R = reflect(-V, pixelNormal);
     
     // Go ggx !!
     float3 F0 = Ni.xxx; //Ni.xxx; // Ni
@@ -219,11 +222,11 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     const float MAX_REFLECTION_LOD = 4.0;
     float3 prefilteredColor = prefilterMap.SampleLevel(blitSamplerState, R, roughness * MAX_REFLECTION_LOD).rgb;
     float2 envBRDF = brdfLUT.Sample(blitSamplerState, float2(saturate(dot(pixelNormal, V)), roughness)).rg;
-    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) + 0.001;
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
     float occlusion = ssaoTexture.Load(vpos.xyz);
-    float3 ambient = (kD * diffuse) * occlusion;
+    float3 ambient = (kD * diffuse + specular) * occlusion;
     
     // -- Tonemapping -- //
     float3 OutColor = ambient + Lo;

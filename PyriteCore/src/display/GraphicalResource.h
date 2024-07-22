@@ -34,6 +34,7 @@ public:
 
   Texture loadTexture(const filepath &path);
   void keepHandleToTexture(Texture texture);
+  void keepHandleToCubemap(Cubemap cubemap);
   Cubemap loadCubemap(const filepath &path);
   Effect *loadEffect(const filepath &path, const InputLayout& layout);
 
@@ -46,6 +47,7 @@ private:
   map<filepath, Cubemap> m_cubemapsCache;
   map<filepath, std::pair<Effect, InputLayout>> m_effects;
   vector<Texture> m_ownedTextures;
+  vector<Cubemap> m_ownedCubemaps;
 };
 
 }
