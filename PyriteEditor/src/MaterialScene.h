@@ -16,14 +16,10 @@
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
-
-#define IMGUI_DECLARE_FLOAT_UNIFORM(name,shader,a,b) static float name;\
-    if (ImGui::SliderFloat(#name, &name, a, b))\
-        shader->setUniform<float>(#name, name);    
+#include <imfilebrowser.h>
 
 namespace pye
 {
-
     class MaterialScene : public pyr::Scene
     {
     private:
@@ -35,12 +31,14 @@ namespace pye
         std::shared_ptr<pyr::Model> m_ballModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/boule.obj").at(0);
         std::shared_ptr<pyr::Model> m_cubeModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/cube.obj").at(0);
         std::vector<pyr::StaticMesh> m_balls;
+        pyr::StaticMesh m_helmetStaticMesh;
 
         using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
-        pyr::BuiltinPasses::ForwardPass m_forwardPass;
-        pyr::BuiltinPasses::SSAOPass m_SSAOPass;
-        pyr::BuiltinPasses::DepthPrePass m_depthPrePass;
+        std::shared_ptr<CameraBuffer>       pcameraBuffer = std::make_shared<CameraBuffer>();
+
+        pyr::BuiltinPasses::ForwardPass     m_forwardPass;
+        pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
+        pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
         pyr::RenderGraph m_RDG;
 
         pyr::Camera m_camera;
@@ -53,23 +51,23 @@ namespace pye
         std::shared_ptr<pyr::Cubemap> specularCubemap;
         std::shared_ptr<pyr::Cubemap> m_irradianceMap;
 
+        ImGui::FileBrowser fileDialog;
+        CubemapBuilderScene cubemapScene = CubemapBuilderScene();
+
     public:
 
         MaterialScene()
         {
 
-            CubemapBuilderScene* cubemapScene = new CubemapBuilderScene();
-            cubemapScene->hdrMapPath = L"res/textures/pbr/hdr2.hdr";
-            cubemapScene->takePicturesOfSurroundings();
-            specularCubemap = cubemapScene->computedCubemap_specularFiltered;
-            m_irradianceMap = cubemapScene->computedCubemap_irradiance;
-            m_registry.keepHandleToCubemap(*cubemapScene->computedCubemap);
-            m_forwardPass.m_skybox = *cubemapScene->computedCubemap;
-            brdfLUT = cubemapScene->computed_BRDF;
-            delete cubemapScene;
+            cubemapScene.ComputeIBLCubemaps();
+            specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
+            m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
+            m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
+            m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+            brdfLUT = cubemapScene.BRDF_Lut;
 
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
-            brdfLUT = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png");
+            brdfLUT = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png"); 
             m_ggxShader->bindTexture(brdfLUT, "brdfLUT");
             m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
             m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
@@ -113,14 +111,11 @@ namespace pye
 #pragma endregion RDG
             auto& device = pyr::Engine::device();
 
-            std::array<pyr::FrameBuffer, 6> framebuffers;
-            for (int i = 0; i < 6; i++)
-            {
-
-                framebuffers[i] = pyr::FrameBuffer{ device.getWinWidth(), device.getWinHeight(), pyr::FrameBuffer::COLOR_0 };
-            }
-
             update(0.0F);
+
+            fileDialog.SetTitle("Choose an HDR background");
+            fileDialog.SetTypeFilters({ ".hdr" });
+
 
         }
 
@@ -157,8 +152,25 @@ namespace pye
             pyr::RenderProfiles::popRasterProfile();
             //m_RDG.debugWindow();
 
+            if (ImGui::Button("open file dialog"))
+                fileDialog.Open();
+
+            fileDialog.Display();
+
+            if (fileDialog.HasSelected())
+            {
+                std::string Selected = fileDialog.GetSelected().string();
+                fileDialog.ClearSelected();
+                cubemapScene.SetHDRBackground(Selected.c_str());
+                cubemapScene.ComputeIBLCubemaps();
+                specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
+                m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
+                m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
+                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+                m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
+                m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
+            }
         }
 
-        ~MaterialScene() { m_RDG.clearGraph(); }
     };
 }

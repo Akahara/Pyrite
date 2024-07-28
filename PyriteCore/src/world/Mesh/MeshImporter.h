@@ -20,11 +20,14 @@ namespace pyr
 	class MeshImporter
 	{
 	public:
-		static std::vector<std::shared_ptr<pyr::Model>> ImportMeshesFromFile(const fs::path& filePath)
+		static std::vector<std::shared_ptr<pyr::Model>> ImportMeshesFromFile(const fs::path& filePath, bool bFlipUVs = false)
 		{
 			Assimp::Importer importer;
 
-			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate | aiProcess_PreTransformVertices);
+			bool bExists = std::filesystem::exists(filePath);
+			if (!bExists) return {};
+
+			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate | aiProcess_PreTransformVertices | (bFlipUVs ? aiProcess_FlipUVs : 0));
 			PYR_ASSERT(scene, "Could not load mesh ", filePath);
 			std::vector<std::shared_ptr<pyr::RawMeshData>> outMeshes;
 			Model::SubmeshesMaterialTable defaultMaterials;
