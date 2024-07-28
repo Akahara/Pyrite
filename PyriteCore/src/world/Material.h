@@ -153,14 +153,14 @@ public:
         return nextId;
     }
 
-    static const std::shared_ptr<Material>& GetMaterialReference(mat_id_t materialGlobalId)
+    static std::shared_ptr<Material> GetMaterialReference(mat_id_t materialGlobalId)
     {
         auto& bank = Get();
         if (!bank.elements.contains(materialGlobalId)) return nullptr;
         return bank.elements[materialGlobalId];
     }
 
-    static const std::shared_ptr<Material>& GetMaterialReference(const std::string& materialName)
+    static std::shared_ptr<Material> GetMaterialReference(const std::string& materialName)
     {
         mat_id_t globalMaterialId = GetMaterialGlobalId(materialName);
         if (globalMaterialId == -1) return nullptr; // todo handle error

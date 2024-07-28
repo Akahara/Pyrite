@@ -27,7 +27,7 @@ namespace pyr
 			bool bExists = std::filesystem::exists(filePath);
 			if (!bExists) return {};
 
-			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate | aiProcess_PreTransformVertices | (bFlipUVs ? aiProcess_FlipUVs : 0));
+			const aiScene* scene = importer.ReadFile(filePath.string().c_str(), aiProcess_Triangulate | aiProcess_PreTransformVertices | (bFlipUVs ? aiProcess_FlipUVs : 0) | aiProcess_FlipWindingOrder);
 			PYR_ASSERT(scene, "Could not load mesh ", filePath);
 			std::vector<std::shared_ptr<pyr::RawMeshData>> outMeshes;
 			Model::SubmeshesMaterialTable defaultMaterials;
@@ -89,10 +89,8 @@ private:
 
 					RawMeshData::mesh_vertex_t computedVertex{};
 
-					computedVertex.position = vec4{ -position.x, position.y , -position.z , 1.f };
+					computedVertex.position = vec4{ position.x, position.y , position.z , 1.f };
 					computedVertex.normal = *reinterpret_cast<Vector3*>(&normal);
-					computedVertex.normal.z *= -1;
-					computedVertex.normal.x *= -1;
 					computedVertex.texCoords = vec2{ uv.x, uv.y };
 					vertices.push_back(computedVertex);
 				}

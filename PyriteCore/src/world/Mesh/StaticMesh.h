@@ -42,7 +42,7 @@ namespace pyr
 
         }
 
-        const std::shared_ptr<const Material>& getMaterial(size_t submeshLocalIndex) const
+        std::shared_ptr<const Material> getMaterial(size_t submeshLocalIndex) const
         {
             if (submeshLocalIndex < 0 || submeshLocalIndex >= m_submeshesMaterials.size())
             {
@@ -52,7 +52,7 @@ namespace pyr
         }
 
 
-        const std::shared_ptr<const Model>& getModel()       const { return m_model; }
+        std::shared_ptr<const Model> getModel() const { return m_model; }
         std::shared_ptr<Model> getModel() { return m_model; }
 
         Transform& getTransform() { return m_transform; }

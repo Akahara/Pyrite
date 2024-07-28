@@ -66,6 +66,7 @@ public:
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
     drawDebugSetCamera(&m_camera);
+    m_forwardPass.boundCamera = &m_camera;
   }
 
   void update(float delta) override
@@ -97,7 +98,7 @@ public:
       pyr::drawDebugLine(hit.position, hit.position + hit.normal);
     }
 
-    pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
+    pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
     pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
     pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

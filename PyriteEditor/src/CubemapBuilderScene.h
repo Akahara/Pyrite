@@ -186,7 +186,7 @@ namespace pye
             {
                 m_currentPrefilterRougness = (float)mipLevel / (float)(mipCount);
                 // Fill the 6 framebuffers
-                uint32_t framebufferWidth = baseWidth / std::pow(2, mipLevel);
+                uint32_t framebufferWidth = baseWidth / static_cast<uint32_t>(std::pow(2, mipLevel));
                 for (int i = 0; i < 6; i++)
                 {
                     m_camera.lookAt(lookAtDirs[i]);
@@ -319,12 +319,12 @@ namespace pye
                         for (size_t mipLevel = 0; mipLevel < mipCount; mipLevel++)
                         {
                             m_currentPrefilterRougness = (float)mipLevel / (float)mipCount;
-                            uint32_t framebufferWidth = baseWidth / std::pow(2, mipLevel);
+                            uint32_t framebufferWidth = baseWidth / static_cast<uint32_t>(std::pow(2, mipLevel));
                             for (int i = 0; i < 6; i++)
                             {
                                 m_camera.lookAt(lookAtDirs[i]);
-                                if (i == 2) m_camera.rotate(0, 3.14159, 0);
-                                if (i == 3) m_camera.rotate(0, 3.14159, 0);
+                                if (i == 2) m_camera.rotate(0, 3.14159f, 0);
+                                if (i == 3) m_camera.rotate(0, 3.14159f, 0);
                                 pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
                                     .mvp = m_camera.getViewProjectionMatrix(),
                                     .pos = m_camera.getPosition()
