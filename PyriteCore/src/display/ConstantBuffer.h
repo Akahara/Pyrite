@@ -40,6 +40,10 @@ namespace pyr
 
         void setData(const DataStruct& data);
     };
+
+    namespace DefaultBufferCollection {
+        using CameraBuffer = pyr::ConstantBuffer <InlineStruct(mat4 mvp; alignas(16) vec3 pos)>;
+    }
 }
 
 #include "ConstantBuffer.inl"

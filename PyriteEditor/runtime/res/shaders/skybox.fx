@@ -1,4 +1,3 @@
-
 TextureCube cubemap;
 SamplerState cubemapSampler;
 

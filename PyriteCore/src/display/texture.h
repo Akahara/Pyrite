@@ -9,12 +9,17 @@ struct ID3D11SamplerState;
 
 namespace pyr
 {
+struct GlobalTextureSet ;
+class GraphicalResourceRegistry;
+
 
 struct Texture
 {
+
   Texture() : m_resource(nullptr), m_texture(nullptr), m_width(0), m_height(0) {}
 
   ID3D11ShaderResourceView *getRawTexture() const { return m_texture; }
+  ID3D11Resource *getRawResource() const { return m_resource; }
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
 
@@ -29,6 +34,9 @@ struct Texture
   bool operator==(const Texture &other) const { return m_texture == other.m_texture; }
   bool operator!=(const Texture &other) const { return m_texture != other.m_texture; }
 
+  static void initDefaultTextureSet(GraphicalResourceRegistry& registry);
+  static const GlobalTextureSet& getDefaultTextureSet();
+
 private:
   friend class TextureManager;
   friend class GraphicalResourceRegistry;
@@ -36,21 +44,28 @@ private:
   Texture(ID3D11Resource *resource, ID3D11ShaderResourceView *raw, size_t width, size_t height)
     : m_resource(resource), m_texture(raw), m_width(width), m_height(height) { }
 
+  Texture(float* data, size_t width, size_t height);
+
   size_t m_width, m_height;
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
 };
 
+struct GlobalTextureSet {
+    Texture WhitePixel;
+    Texture BlackPixel;
+};
+
 struct Cubemap
 {
   Cubemap() : m_resource(nullptr), m_texture(nullptr) {}
+  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {} // dont ùake this public
 
   ID3D11ShaderResourceView *getRawCubemap() const { return m_texture; }
 
 private:
   friend class TextureManager;
   friend class GraphicalResourceRegistry;
-  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {}
 
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
@@ -89,5 +104,8 @@ private:
   static std::array<SamplerState, SamplerState::SamplerType::_COUNT> s_samplers;
 
 };
+
+
+
 
 }

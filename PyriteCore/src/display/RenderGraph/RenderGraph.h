@@ -15,6 +15,7 @@ namespace pyr
 
         RenderGraphResourceManager& getResourcesManager() noexcept { return m_manager; }
 
+        ~RenderGraph() { clearGraph(); }
         void execute()                  { for (RenderPass* p : m_passes) if (p->isEnabled()) p->apply(); }
         void clearGraph()               { for (RenderPass* p : m_passes) p->clear(); }
         void addPass(RenderPass* pass)  { m_passes.emplace_back(pass); m_manager.addNewPass(pass); }

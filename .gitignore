@@ -3,3 +3,4 @@ build/
 x64/
 *.user
 imgui.ini
+/PyriteEditor/runtime/textures/HDR/2.hdr

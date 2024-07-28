@@ -11,8 +11,15 @@
 #include "EditorScene.h"
 #include "ForwardPassScene.h"
 #include "RayTracingDemoScene.h"
+#include "CubemapBuilderScene.h"
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
+#include "MaterialScene.h"
+#include "utils/Debug.h"
+#include "engine/Engine.h"
+#include "engine/Device.h"
+#include "scene/SceneManager.h"
+#include "utils/StringUtils.h"
 #include "editor/ShaderReloader.h"
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
@@ -34,6 +41,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::ForwardPassScene>("Forward pass");
     scenes.registerScene<pye::RayTracingDemoScene>("RayTracing demo");
     scenes.registerScene<pye::VoxelisationDemoScene>("Voxelisation demo");
+    scenes.registerScene<pye::MaterialScene>("GGX Demo");
+    scenes.registerScene<pye::CubemapBuilderScene>("IBL");
 
     // Load the scene that is passed on the command line by default
     scenes.transitionToScene(pyr::widestring2string(lpCmdLine));

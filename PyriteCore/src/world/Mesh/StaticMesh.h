@@ -1,58 +1,64 @@
 ﻿#pragma once
+
+#include <filesystem>
+
 #include "Model.h"
+
 #include "world/Material.h"
 #include "world/Transform.h"
+#include "utils/debug.h"
 
 namespace pyr
 {
-    
-class StaticMesh
-{
-private:
 
-    const Model* m_model;
-    Transform m_transform;
-    std::shared_ptr<Material> m_material;
-
-    std::unordered_map<int, std::shared_ptr<Material>> m_submeshesMaterial;
-
-public:
-
-    StaticMesh() = default;
-    StaticMesh(const Model& model) 
-        : m_model(&model)
-    {}
-
-    void setBaseMaterial(std::shared_ptr<Material> mat)
+    class StaticMesh
     {
-        m_material = mat;
-    }
+    private:
 
-    std::shared_ptr<Material> getMaterialOfIndex(int matId) const
-    {
-        if (matId < 0 || !m_submeshesMaterial.contains(matId)) return nullptr;
-        return m_submeshesMaterial.at(matId); // todo figure out where the indice offset comes from (should be assimp loading starting at index 1)
-    }
+        std::shared_ptr<Model> m_model;
+        Transform m_transform;
 
-    void loadSubmeshesMaterial(const std::vector<MaterialMetadata>& inOrderMetadata)
-    {
-        int i = 0;
-        for (const auto& metadata : inOrderMetadata)
+        Model::SubmeshesMaterialTable m_submeshesMaterials;
+
+    public:
+
+
+        StaticMesh() = default;
+        StaticMesh(const std::shared_ptr<Model>& model)
+            : m_model(model)
         {
-            auto newMat = std::make_shared<Material>();
-            newMat->loadMaterialFromMetadata(metadata);
-            m_submeshesMaterial[i++] = newMat;
+            m_submeshesMaterials = model->getDefaultSubmeshesMaterials();
         }
-    }
 
-    const pyr::Model* getModel()       const { return m_model; }
-    std::shared_ptr<pyr::Material> getMaterial() const { return m_material; }
+        void overrideSubmeshMaterial(size_t materialLocalIndex, const std::shared_ptr<Material>& materialOverride)
+        {
+            if (materialLocalIndex < 0 || materialLocalIndex >= m_submeshesMaterials.size())
+            {
+                //PYR_LOG(LogDebug, L"Index out of range");
+                return;
+            }
 
-    Transform& getTransform()       { return m_transform; }
-    Transform getTransform() const  { return m_transform; }
-    
-    void bindModel()    const   { m_model->bind();   }
-    void bindMaterial() const   { m_material->bind(); }
-};
+            m_submeshesMaterials[materialLocalIndex] = materialOverride;
+
+        }
+
+        const std::shared_ptr<const Material>& getMaterial(size_t submeshLocalIndex) const
+        {
+            if (submeshLocalIndex < 0 || submeshLocalIndex >= m_submeshesMaterials.size())
+            {
+                return nullptr;
+            }
+            return m_submeshesMaterials[submeshLocalIndex];
+        }
+
+
+        const std::shared_ptr<const Model>& getModel()       const { return m_model; }
+        std::shared_ptr<Model> getModel() { return m_model; }
+
+        Transform& getTransform() { return m_transform; }
+        Transform getTransform() const { return m_transform; }
+
+        void bindModel()    const { m_model->bind(); }
+    };
 
 }

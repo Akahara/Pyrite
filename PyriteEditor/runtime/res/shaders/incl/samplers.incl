@@ -5,6 +5,14 @@ SamplerState MeshTextureSampler
     AddressV = Wrap;
 };
 
+SamplerState PointTextureSampler
+{
+    Filter = MIN_MAG_MIP_POINT;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+
+
 SamplerState blitSamplerState
 {
   Filter = MIN_MAG_MIP_LINEAR;

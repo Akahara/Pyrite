@@ -4,7 +4,7 @@
 
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
-#include "world/Mesh/Mesh.h"
+#include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 #include "utils/math.h"
 
@@ -61,22 +61,24 @@ namespace pyr
                 m_ssaoTextureTarget.clearTargets();
                 m_ssaoTextureTarget.bind();
 
-                m_ssaoEffect->bind();
                 m_ssaoEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
                 m_ssaoEffect->bindTexture(m_randomTexture, "blueNoise");
                 m_ssaoEffect->setUniform<std::vector<vec4>>("u_kernel", m_kernel);
+                m_ssaoEffect->bind();
                 
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
-
+                
                 m_ssaoEffect->unbindResources();
+                m_ssaoTextureTarget.unbind();
 
                 // Blur pass
-                m_ssaoTextureTarget.unbind();
                 m_blurredSSAOTarget.bind();
-                m_blurEffect->bind();
+
                 m_blurEffect->bindTexture(m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0), "sourceTexture");
+                m_blurEffect->bind();
                 Engine::d3dcontext().DrawIndexed(3, 0, 0);
                 m_blurEffect->unbindResources();
+                
                 m_blurredSSAOTarget.unbind();
 
                 debugWindow();
@@ -105,8 +107,6 @@ namespace pyr
                 if (ImGui::SliderFloat("u_blurStrength", &u_blurStrength, 0, 10))   m_blurEffect->setUniform<float>("u_blurStrength", u_blurStrength);
 
                 ImGui::End();
-
-
             }
 
         private:

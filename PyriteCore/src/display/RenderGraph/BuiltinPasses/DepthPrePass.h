@@ -2,7 +2,7 @@
 
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
-#include "world/Mesh/Mesh.h"
+#include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 
 
@@ -32,7 +32,7 @@ namespace pyr
                 displayName = "Depth pre-pass";
                 m_depthOnlyEffect = m_registry.loadEffect(
                         L"res/shaders/depthOnly.fx", 
-                        InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>()
+                        InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
                 );
 
                 producesResource("depthBuffer", m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL));
@@ -48,14 +48,14 @@ namespace pyr
                 for (const StaticMesh* smesh : m_meshes)
                 {
 
-                    m_depthOnlyEffect->bind();
                     smesh->bindModel();
 
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
                     m_depthOnlyEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
-
+                    m_depthOnlyEffect->bind();
+                    
                     std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
-                    for (auto submesh : submeshes)
+                    for (auto& submesh : submeshes)
                     {
                         Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                     }

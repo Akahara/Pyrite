@@ -50,7 +50,7 @@ RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed)
   ID3DBlob *errors = nullptr;
   IncludeManager includes{};
 
-  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, 0, 0, &device, &effect, &errors);
+  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 2, &device, &effect, &errors);
 
   if (compilationSuccess != S_OK) {
     const char* errorMessage = errors
