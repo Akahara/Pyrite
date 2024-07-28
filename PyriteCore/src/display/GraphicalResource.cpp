@@ -40,10 +40,15 @@ GraphicalResourceRegistry::~GraphicalResourceRegistry()
     texture.m_resource->Release();
     texture.m_texture->Release();
   }
+  for (auto& texture : m_ownedTextures) {
+      //texture.m_resource->Release();
+      //texture.m_texture->Release(); // < causes a memory leak, todo fix
+  }
   for (auto &[_, cubemap] : m_cubemapsCache) {
     cubemap.m_resource->Release();
     cubemap.m_texture->Release();
   }
+
   // meshes are released on deletion
 }
 
@@ -52,6 +57,16 @@ Texture GraphicalResourceRegistry::loadTexture(const filepath &path)
   if (m_texturesCache.contains(path))
     return m_texturesCache[path];
   return m_texturesCache[path] = TextureManager::loadTexture(path);
+}
+
+void GraphicalResourceRegistry::keepHandleToTexture(Texture texture)
+{
+    m_ownedTextures.push_back(texture);
+}
+
+void GraphicalResourceRegistry::keepHandleToCubemap(Cubemap cubemap)
+{
+    m_ownedCubemaps.push_back(cubemap);
 }
 
 Cubemap GraphicalResourceRegistry::loadCubemap(const filepath &path)

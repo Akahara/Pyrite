@@ -11,7 +11,8 @@ namespace pyr
 
 struct PerspectiveProjection
 {
-  float fovy   = PI * .4f;
+  //float fovy   = PI * .4f;
+   float fovy = 1.02974f;
   float aspect = 16.f/9.f;
   float zNear  = 0.1f;     // world space
   float zFar   = 10000.f; // world space

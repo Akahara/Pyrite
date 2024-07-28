@@ -9,8 +9,8 @@ static constexpr bool bUseMeshNormals = true;
 
 RayResult raytrace(const StaticMesh& mesh, const Ray& ray)
 {
-  const std::vector<Mesh::mesh_indice_t>& indices = mesh.getModel()->getRawMeshData()->getIndices();
-  const std::vector<Mesh::mesh_vertex_t>& vertices = mesh.getModel()->getRawMeshData()->getVertices();
+  const std::vector<RawMeshData::mesh_indice_t>& indices = mesh.getModel()->getRawMeshData()->getIndices();
+  const std::vector<RawMeshData::mesh_vertex_t>& vertices = mesh.getModel()->getRawMeshData()->getVertices();
   const Transform& meshTransform = mesh.getTransform();
 
   RayResult result{ .distance = std::numeric_limits<float>::max() };

@@ -184,8 +184,8 @@ private:
 
   pyr::RenderGraph m_RDG;
   pyr::BuiltinPasses::ForwardPass m_forwardPass;
-  pyr::Mesh m_meshMesh;
-  pyr::Model m_meshModel;
+  std::shared_ptr<pyr::RawMeshData> m_meshMesh;
+  std::shared_ptr<pyr::Model> m_meshModel;
   pyr::StaticMesh m_mesh;
 
   VoxelGrid<bool> m_voxelGrid;
@@ -200,14 +200,12 @@ public:
     drawDebugSetCamera(&m_camera);
 
     fs::path meshFile = "res/meshes/axes.obj";
-    pyr::Effect* meshEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::Mesh::mesh_vertex_t>());
+    pyr::Effect* meshEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
     meshEffect->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
     m_forwardPass.getSkyboxEffect()->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
-    m_meshMesh = pyr::MeshImporter::ImportMeshFromFile(meshFile);
-    m_meshModel = pyr::Model{ m_meshMesh };
+    m_meshModel = pyr::MeshImporter::ImportMeshesFromFile(meshFile).at(0);
     m_mesh = pyr::StaticMesh{ m_meshModel };
-    m_mesh.setBaseMaterial(std::make_shared<pyr::Material>(meshEffect));
-    m_mesh.loadSubmeshesMaterial(pyr::MeshImporter::FetchMaterialPaths(meshFile));
+    m_mesh.overrideSubmeshMaterial(0, std::make_shared<pyr::Material>(meshEffect));
     m_RDG.addPass(&m_forwardPass);
     m_forwardPass.addMeshToPass(&m_mesh);
 
@@ -290,6 +288,7 @@ public:
     }
     ImGui::End();
 
+    // Note : not sure about the fusion of this
     m_cameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
     pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
     m_RDG.execute();

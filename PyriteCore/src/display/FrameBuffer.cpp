@@ -39,6 +39,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 	renderTextureDesc.SampleDesc.Quality = 0;
 	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	renderTextureDesc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
+	renderTextureDesc.CPUAccessFlags = 0;
 	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
 	m_textures.push_back(renderTexture);
 
@@ -195,8 +196,6 @@ size_t FrameBuffer::targetTypeToIndex(Target target)
   return mathf::firstBitIndex(static_cast<target_t>(target));
 }
 
-
-
 struct GlobalResources {
   Effect *simpleBlitEffect;
   Effect *simpleMSAABlitEffect;
@@ -305,6 +304,7 @@ void FrameBufferPipeline::loadGlobalResources(GraphicalResourceRegistry &resourc
   s_globalResources = new GlobalResources;
   s_globalResources->simpleBlitEffect = resources.loadEffect(L"res/shaders/blit_copy.fx", getBlitVertexLayout());
   s_globalResources->simpleMSAABlitEffect = resources.loadEffect(L"res/shaders/blit_mscopy.fx", getBlitVertexLayout());
+
 }
 
 void FrameBufferPipeline::unloadGlobalResources()

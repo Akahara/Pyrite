@@ -68,6 +68,9 @@
       <AdditionalDependencies>dxguid.lib;winmm.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dinput8.lib;Effects11d.lib;XInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(PyriteLib)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -90,8 +93,12 @@
       <AdditionalDependencies>dxguid.lib;winmm.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dinput8.lib;Effects11d.lib;XInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(PyriteLib)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\display\CubemapBuilder.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
@@ -113,11 +120,12 @@
     <ClCompile Include="src\utils\StringUtils.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
-    <ClCompile Include="src\world\Mesh\Mesh.cpp" />
+    <ClCompile Include="src\world\Mesh\RawMeshData.cpp" />
     <ClCompile Include="src\world\Mesh\Model.cpp" />
     <ClCompile Include="src\world\Mesh\StaticMesh.cpp" />
     <ClCompile Include="src\world\RayCasting.cpp" />
     <ClCompile Include="vendor\ddstextureloader\DDSTextureLoader11.cpp" />
+    <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
     <ClCompile Include="vendor\directtk\SimpleMath.cpp" />
     <ClCompile Include="vendor\imguizmo\GraphEditor.cpp" />
     <ClCompile Include="vendor\imguizmo\ImCurveEdit.cpp" />
@@ -137,6 +145,7 @@
     <ClInclude Include="src\display\ConstantBuffer.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
+    <ClInclude Include="src\display\CubemapBuilder.h" />
     <ClInclude Include="src\display\DebugDraw.h" />
     <ClInclude Include="src\display\FrameBuffer.h" />
     <ClInclude Include="src\display\GraphicalResource.h" />
@@ -173,13 +182,14 @@
     <ClInclude Include="src\world\AABB.h" />
     <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="src\world\Material.h" />
-    <ClInclude Include="src\world\Mesh\Mesh.h" />
+    <ClInclude Include="src\world\Mesh\RawMeshData.h" />
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
     <ClInclude Include="src\world\RayCasting.h" />
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
+    <ClInclude Include="vendor\ddstextureloader\WICTextureLoader11.h" />
     <ClInclude Include="vendor\directtk\SimpleMath.h" />
     <ClInclude Include="vendor\Effects11\d3dx11effect.h" />
     <ClInclude Include="vendor\Effects11\d3dxGlobal.h" />

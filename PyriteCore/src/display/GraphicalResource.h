@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "Texture.h"
 #include "Shader.h"
@@ -20,7 +21,7 @@ private:
   template<class T, class K>
   using map = std::unordered_map<T, K>;
   template<class T>
-  using shared_ptr = std::shared_ptr<T>;
+  using vector = std::vector<T>;
 
 public:
   GraphicalResourceRegistry() = default;
@@ -32,6 +33,8 @@ public:
   GraphicalResourceRegistry &operator=(GraphicalResourceRegistry &&) noexcept;
 
   Texture loadTexture(const filepath &path);
+  void keepHandleToTexture(Texture texture);
+  void keepHandleToCubemap(Cubemap cubemap);
   Cubemap loadCubemap(const filepath &path);
   Effect *loadEffect(const filepath &path, const InputLayout& layout);
 
@@ -40,6 +43,8 @@ public:
 private:
   map<filepath, Texture> m_texturesCache;
   map<filepath, Cubemap> m_cubemapsCache;
+  vector<Texture> m_ownedTextures;
+  vector<Cubemap> m_ownedCubemaps;
   map<filepath, std::pair<std::shared_ptr<Effect>, InputLayout>> m_effects;
 };
 
