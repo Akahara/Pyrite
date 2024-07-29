@@ -441,32 +441,32 @@ int main(int arg, char **argv)
    typedef char stbtt__check_size32[sizeof(stbtt_int32)==4 ? 1 : -1];
    typedef char stbtt__check_size16[sizeof(stbtt_int16)==2 ? 1 : -1];
 
-   // e.g. #define your own STBTT_ifloor/STBTT_iceil() to avoid Math.h
+   // e.g. #define your own STBTT_ifloor/STBTT_iceil() to avoid math.h
    #ifndef STBTT_ifloor
-   #include <Math.h>
+   #include <math.h>
    #define STBTT_ifloor(x)   ((int) floor(x))
    #define STBTT_iceil(x)    ((int) ceil(x))
    #endif
 
    #ifndef STBTT_sqrt
-   #include <Math.h>
+   #include <math.h>
    #define STBTT_sqrt(x)      sqrt(x)
    #define STBTT_pow(x,y)     pow(x,y)
    #endif
 
    #ifndef STBTT_fmod
-   #include <Math.h>
+   #include <math.h>
    #define STBTT_fmod(x,y)    fmod(x,y)
    #endif
 
    #ifndef STBTT_cos
-   #include <Math.h>
+   #include <math.h>
    #define STBTT_cos(x)       cos(x)
    #define STBTT_acos(x)      acos(x)
    #endif
 
    #ifndef STBTT_fabs
-   #include <Math.h>
+   #include <math.h>
    #define STBTT_fabs(x)      fabs(x)
    #endif
 
@@ -656,7 +656,7 @@ STBTT_DEF void stbtt_PackSetOversampling(stbtt_pack_context *spc, unsigned int h
 STBTT_DEF void stbtt_PackSetSkipMissingCodepoints(stbtt_pack_context *spc, int skip);
 // If skip != 0, this tells stb_truetype to skip any codepoints for which
 // there is no corresponding glyph. If skip=0, which is the default, then
-// codepoints without a glyph recived the font's "missing character" glyph,
+// codepoints without a glyph received the font's "missing character" glyph,
 // typically an empty box by convention.
 
 STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph,  // same data as above

@@ -86,6 +86,7 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
   ImGui_ImplWin32_Init(m_mainWindowHandle);
   ImGui_ImplDX11_Init(&d3ddevice(), &d3dcontext());
 
