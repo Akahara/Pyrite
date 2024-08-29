@@ -60,7 +60,7 @@ public:
             for (auto& submesh : submeshes)
             {
                 //const auto submeshMaterial = pyr::MaterialBank::GetMaterialReference(submesh.materialIndex);
-                const auto submeshMaterial = mesh->getMaterial(submesh.materialIndex);
+                const auto& submeshMaterial = mesh->getMaterial(submesh.materialIndex);
                 if (!submeshMaterial) break; // should not happen because of default mat ?
 
                 const Effect* effect = submeshMaterial->getEffect();

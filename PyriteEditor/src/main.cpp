@@ -15,6 +15,7 @@
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
 #include "MaterialScene.h"
+#include "CornellBoxScene.h"
 #include "utils/Debug.h"
 #include "engine/Engine.h"
 #include "engine/Device.h"
@@ -22,7 +23,8 @@
 #include "utils/StringUtils.h"
 #include "editor/ShaderReloader.h"
 
-int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+//int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+int main(const char** argv, int argc)
 {
 #ifndef PYR_ISDEBUG
   try
@@ -34,7 +36,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     
     pye::ShaderAutoReloader shaderAutoReloader; // RAII singleton
 
-    pyr::Engine engine{ hInstance, std::move(settings) };
+    HINSTANCE handle = GetModuleHandle(NULL);
+
+    pyr::Engine engine{ handle, std::move(settings) };
     pyr::SceneManager& scenes = pyr::SceneManager::getInstance();
     scenes.registerScene<pye::TriangleScene>("TriangleScene");
     scenes.registerScene<pye::EmptyEditorScene>("Empty");
@@ -43,9 +47,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::VoxelisationDemoScene>("Voxelisation demo");
     scenes.registerScene<pye::MaterialScene>("GGX Demo");
     scenes.registerScene<pye::CubemapBuilderScene>("IBL");
+    scenes.registerScene<pye::CornellBoxScene>("CornellBox");
 
     // Load the scene that is passed on the command line by default
-    scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
+    //scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG

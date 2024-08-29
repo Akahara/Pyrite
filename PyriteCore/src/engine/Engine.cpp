@@ -90,6 +90,14 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
   ImGui_ImplWin32_Init(m_mainWindowHandle);
   ImGui_ImplDX11_Init(&d3ddevice(), &d3dcontext());
 
+  ImGui::StyleColorsClassic();
+  ImGuiStyle& style = ImGui::GetStyle();
+
+  style.WindowRounding = 7;
+  style.FrameRounding = 7;
+  style.WindowBorderSize = 0;
+  style.ChildBorderSize = 0;
+  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.04, 0.04, 0.04, 1);
   showWindow();
   UserInputs::loadGlobalResources();
 }
@@ -142,14 +150,17 @@ void Engine::runFrame(float deltaTime)
 
   // render
   FrameBuffer::getActiveFrameBuffer().clearTargets();
+
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();
-  SceneManager::getInstance().render();
+  ImGui::SetNextWindowBgAlpha(0.0f);
+  ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
   DebugDraws::get().render();
-
+  SceneManager::getInstance().render();
   ImGui::Render();
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+  
 }
 
 void Engine::postFrame()

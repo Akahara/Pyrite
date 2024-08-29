@@ -38,7 +38,7 @@ namespace pyr
 			for (auto& meshData : outMeshes)
 			{
 				auto Model = std::make_shared<pyr::Model>(meshData, defaultMaterials);
-				
+				if (!Model) continue;
 				outModels.emplace_back(Model);
 			}
 			return outModels;
@@ -144,7 +144,7 @@ private:
 				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
 					coefs.Roughness = factor / 1000.f;
 
-				for (auto [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
+				for (auto& [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
 					{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
 					{ aiTextureType_NORMALS, TextureType::NORMAL},
 					{ aiTextureType_METALNESS, TextureType::METALNESS},

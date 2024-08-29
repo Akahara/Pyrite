@@ -37,9 +37,6 @@ class Material
 {
 public:
 
-
-   
-
 private:
     
     const Effect* m_shader = nullptr;

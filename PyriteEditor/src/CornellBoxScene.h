@@ -12,15 +12,20 @@
 #include "scene/Scene.h"
 #include "CubemapBuilderScene.h"
 #include "world/camera.h"
+#include "world/Lights/Light.h"
 #include "world/Mesh/MeshImporter.h"
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
 #include <imfilebrowser.h>
+#include <array>
+
+#include "editor/views/widget.h"
+#include "editor/views/Lights/widget_lights.h"
 
 namespace pye
 {
-    class MaterialScene : public pyr::Scene
+    class CornellBoxScene : public pyr::Scene
     {
     private:
 
@@ -28,10 +33,9 @@ namespace pye
         pyr::Effect* m_ggxShader;
         pyr::Effect* m_equiproj;
 
-        std::shared_ptr<pyr::Model> m_ballModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/boule.obj").at(0);
-        std::shared_ptr<pyr::Model> m_cubeModel = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/cube.obj").at(0);
-        std::vector<pyr::StaticMesh> m_balls;
-        pyr::StaticMesh m_helmetStaticMesh;
+
+        std::vector<std::shared_ptr<pyr::Model>> m_cornellBoxModels = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/CornellBox/scene.gltf");
+        std::vector<pyr::StaticMesh> sceneMeshes;
 
         using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
         std::shared_ptr<CameraBuffer>       pcameraBuffer = std::make_shared<CameraBuffer>();
@@ -45,19 +49,29 @@ namespace pye
         pyr::FreecamController m_camController;
         using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
-        
-        pyr::Texture brdfLUT;
 
+        using LightsBuffer = pyr::ConstantBuffer < InlineStruct( pyr::hlsl_GenericLight lights[16]; ) > ;
+        std::shared_ptr<LightsBuffer>    pLightBuffer = std::make_shared<LightsBuffer>();
+
+        pyr::Texture brdfLUT;
         std::shared_ptr<pyr::Cubemap> specularCubemap;
         std::shared_ptr<pyr::Cubemap> m_irradianceMap;
 
-        ImGui::FileBrowser fileDialog;
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
+
+        pyr::LightsCollections m_lights;
+        pye::WidgetsContainer HUD;
+        pye::widgets::LightCollectionWidget LightCollectionWidget;
+
 
     public:
 
-        MaterialScene()
+        /// ------------------------------------------------------------------------------------------------------------------------------- ///
+        
+        CornellBoxScene()
         {
+            LightCollectionWidget.LightsCollectionView = pye::pf_LightsCollection{ &m_lights };
+            HUD.widgets.push_back(&LightCollectionWidget);
 
             cubemapScene.ComputeIBLCubemaps();
             specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
@@ -67,32 +81,13 @@ namespace pye
             brdfLUT = cubemapScene.BRDF_Lut;
 
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
-            brdfLUT = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png"); 
+            brdfLUT = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png");
             m_ggxShader->bindTexture(brdfLUT, "brdfLUT");
             m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
             m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
-
-#pragma region BALLS
-            int gridSize = 7;
-            m_balls.resize(gridSize * gridSize, pyr::StaticMesh{ m_ballModel });
-            for (int i = 0; i < m_balls.size(); i++)
-            {
-                m_balls[i].getTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
-                
-                pyr::MaterialRenderingCoefficients coefs;
-                coefs.Ka = { 1,0,1 };
-                coefs.Metallic = (i % gridSize) / (gridSize - 1.f);
-                coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
-                auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
-                m_balls[i].overrideSubmeshMaterial(0, mat);
-                m_forwardPass.addMeshToPass(&m_balls[i]);
-                m_depthPrePass.addMeshToPass(&m_balls[i]);
-            }
-#pragma endregion BALLS
-
 #pragma region RDG
-            m_camera.setPosition(vec3{ 0,0,0});
-            m_camera.lookAt(vec3{ 0,0,0.f});
+            m_camera.setPosition(vec3{ 0,0,0 });
+            m_camera.lookAt(vec3{ 0,0,0.f });
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
             m_ggxShader->addBinding({ .label = "CameraBuffer",   .bufferRef = pcameraBuffer });
@@ -108,67 +103,69 @@ namespace pye
             m_forwardPass.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
-            auto& device = pyr::Engine::device();
 
-            update(0.0F);
+            sceneMeshes.reserve(m_cornellBoxModels.size());
+            for (const std::shared_ptr<pyr::Model>& model : m_cornellBoxModels)
+            {
+                sceneMeshes.emplace_back(pyr::StaticMesh{ model });
+                sceneMeshes.back().getTransform().scale = { 10,10,10 };
+                m_forwardPass.addMeshToPass(&sceneMeshes.back());
+                m_depthPrePass.addMeshToPass(&sceneMeshes.back());
+            }
+            m_lights.Points.push_back({});
+            m_lights.Points.push_back({});
+            m_lights.Directionals.push_back(pyr::DirectionalLight{});
+            m_lights.Spots.push_back({});
+            m_lights.Spots.push_back({});
+            m_lights.Spots.push_back({});
 
-            fileDialog.SetTitle("Choose an HDR background");
-            fileDialog.SetTypeFilters({ ".hdr" });
-
+            std::vector<pyr::hlsl_GenericLight> gpu_lights = m_lights.ConvertCollectionToHLSL();
 
         }
 
+        /// ------------------------------------------------------------------------------------------------------------------------------- ///
+        
         void update(float delta) override
         {
             m_camController.processUserInputs(delta);
             pcameraBuffer->setData(CameraBuffer::data_t{
-                .mvp = m_camera.getViewProjectionMatrix(), 
+                .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
-            });
+                });
             pinvCameBuffer->setData(InverseCameraBuffer::data_t{
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
-                            });
+                });
+
+            LightsBuffer::data_t light_data{};
+            std::copy_n(m_lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
+            pLightBuffer->setData(light_data);
         }
 
+        /// ------------------------------------------------------------------------------------------------------------------------------- ///
+        
         void render() override
 
         {
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
- 
-            m_ggxShader->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+
+            pyr::MaterialBank::GetDefaultGGXShader()->bindConstantBuffer("lightsBuffer", pLightBuffer);
+
+
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            
+
             m_RDG.execute();
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
-            //m_RDG.debugWindow();
 
-            if (ImGui::Button("open file dialog"))
-                fileDialog.Open();
+            HUD.Render();
 
-            fileDialog.Display();
-
-            if (fileDialog.HasSelected())
-            {
-                std::string Selected = fileDialog.GetSelected().string();
-                fileDialog.ClearSelected();
-                cubemapScene.SetHDRBackground(Selected.c_str());
-                cubemapScene.ComputeIBLCubemaps();
-                specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
-                m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
-                m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
-                m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
-                m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
-            }
         }
 
     };
