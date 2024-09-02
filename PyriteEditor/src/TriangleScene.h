@@ -43,7 +43,6 @@ namespace pye
 
         void update(float delta) override
         {
-
         }
 
         void render() override

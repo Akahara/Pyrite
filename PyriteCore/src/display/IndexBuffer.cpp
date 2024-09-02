@@ -10,7 +10,7 @@
 
 namespace pyr
 {
-IndexBuffer::IndexBuffer(const std::vector<size_type>& indices)
+IndexBuffer::IndexBuffer(const std::span<size_type>& indices)
 {
 
 	m_indiceCount = indices.size();
@@ -33,11 +33,13 @@ IndexBuffer::IndexBuffer(const std::vector<size_type>& indices)
 	Engine::d3ddevice().CreateBuffer(&m_descriptor, &m_initData, &m_ibo);
 }
 
+IndexBuffer::IndexBuffer(const std::vector<size_type>& indices) : IndexBuffer(std::span(const_cast<std::vector<size_type>&>(indices)))
+{}
+
 void IndexBuffer::swap(IndexBuffer& other) noexcept {
 	std::swap(other.m_ibo, m_ibo);
 	std::swap(other.m_indiceCount, m_indiceCount);
 }
-
 
 size_t IndexBuffer::getIndicesCount() const noexcept { return m_indiceCount; }
 

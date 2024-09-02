@@ -3,23 +3,20 @@
 // Defines an object that takes named entries and named output and draws in a target fbo
 
 #include "NamedResources.h"
-#include "display/FrameBuffer.h"
-#include "world/Mesh/StaticMesh.h"
+#include "utils/Debug.h"
 #include <set>
+#include <optional>
 
+static inline PYR_DEFINELOG(LogRenderPass, VERBOSE);
 
 namespace pyr
 {
-
     class RenderPass
     {
     protected:
 
 
         // this is temp. Maybe we should have a resource manager for the whole graph or somtuhing. idk
-
-        std::vector<const StaticMesh*> m_meshes;
-
         std::unordered_map<std::string, NamedInput> m_inputs; // this is what the pass has as inputs
         std::unordered_map<std::string, ResourceGetter> m_outputs;
 
@@ -27,6 +24,7 @@ namespace pyr
 
     public:
 
+        class RenderGraph* owner;
         bool m_bIsEnabled = true;
         std::string displayName = "N/A";
 
@@ -35,7 +33,6 @@ namespace pyr
 
 
         virtual void apply() = 0;
-        virtual void clear() { m_meshes.clear(); };
         virtual void update(float dt) {}; // should be useless, idk yet
 
 
@@ -46,7 +43,7 @@ namespace pyr
         void addNamedInput(const NamedInput& input) { m_inputs[input.label] = input; }
 
         // This is bad
-        std::optional<NamedOutput> getOutputResource(const char* resName)  noexcept
+        std::optional<NamedOutput> getOutputResource(const char* resName) noexcept
         {
             if (m_outputs.contains(resName)) return NamedOutput 
             {   
@@ -68,8 +65,6 @@ namespace pyr
 
             return std::nullopt;
         }
-
-        void addMeshToPass(const StaticMesh* meshView) { m_meshes.push_back(meshView); }
 
     };
 

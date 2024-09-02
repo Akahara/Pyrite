@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <cstdint>
 #include <vector>
+#include <span>
 
 struct ID3D11Buffer;
 
@@ -31,7 +32,8 @@ public:
 	/// -- Constructors and other stuff
 	///
 	IndexBuffer() = default;
-	explicit IndexBuffer(const std::vector<size_type>& indices);
+	explicit IndexBuffer(const std::span<size_type>& indices);
+	IndexBuffer(const std::vector<size_type>& indices);
 
 	void swap(IndexBuffer& other) noexcept;
 	IndexBuffer(const IndexBuffer&) = delete;

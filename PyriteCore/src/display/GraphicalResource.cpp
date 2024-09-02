@@ -7,6 +7,31 @@
 #include <utility>
 #include <algorithm>
 
+template<>
+struct std::hash<pyr::Effect::define_t>
+{
+    std::size_t operator()(const pyr::Effect::define_t& s) const noexcept
+    {
+        std::size_t h1 = std::hash<std::string>{}(s.name);
+        std::size_t h2 = std::hash<std::string>{}(s.value);
+        return h1 ^ (h2 << 1);
+    }
+};
+
+template<>
+struct std::hash<std::vector<pyr::Effect::define_t>>
+{
+    std::size_t operator()(const std::vector<pyr::Effect::define_t>& vec) const noexcept
+    {
+        std::size_t seed = vec.size();
+        for (const pyr::Effect::define_t& def : vec) {
+            seed ^= std::hash<pyr::Effect::define_t>{}(def)+0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
+
+
 namespace pyr
 {
 
@@ -76,11 +101,13 @@ Cubemap GraphicalResourceRegistry::loadCubemap(const filepath &path)
   return m_cubemapsCache[path] = TextureManager::loadCubemap(path);
 }
 
-Effect *GraphicalResourceRegistry::loadEffect(const filepath &path, const InputLayout &layout)
+Effect* GraphicalResourceRegistry::loadEffect(const filepath& path, const InputLayout& layout, const std::vector<Effect::define_t>& defines /* = {} */)
 {
-  if (m_effects.contains(path))
-    return &*m_effects[path].first;
-  return &*(m_effects[path] = { ShaderManager::makeEffect(path, layout), layout }).first;
+  size_t effectHash = std::hash<filepath>{}(path) ^ std::hash<std::vector<pyr::Effect::define_t>>{}(defines);
+  if (m_effects.contains(effectHash))
+    return &*m_effects[effectHash].first;
+  return &*(m_effects[effectHash] = { ShaderManager::makeEffect(path, layout, defines), layout }).first;
 }
 
 }
+

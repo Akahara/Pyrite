@@ -207,7 +207,6 @@ public:
     m_mesh = pyr::StaticMesh{ m_meshModel };
     m_mesh.overrideSubmeshMaterial(0, std::make_shared<pyr::Material>(meshEffect));
     m_RDG.addPass(&m_forwardPass);
-    m_forwardPass.addMeshToPass(&m_mesh);
 
     voxeliseMesh();
     updateCubesToMatchVoxelGrid();
@@ -266,6 +265,8 @@ public:
 
   void render() override
   {
+    SceneActors.registerForFrame(&m_mesh);
+
     ImGui::Begin("Voxelization");
     static ivec3 dims = m_voxelGrid.getDimensions();
     static vec3 position = m_voxelGrid.getTransform().position;
@@ -274,8 +275,8 @@ public:
     static bool showMesh = true;
     ImGui::Checkbox("Autogen", &autogen);
     if (ImGui::Checkbox("ShowMesh", &showMesh)) {
-      m_forwardPass.clear();
-      if (showMesh) m_forwardPass.addMeshToPass(&m_mesh);
+        SceneActors.clear();
+      if (showMesh) SceneActors.registerForFrame(&m_mesh);
     }
     if ((ImGui::DragInt3("Dimensions", &dims.x, 1, 1, 100)
         + ImGui::DragFloat3("Position", &position.x)
@@ -291,7 +292,7 @@ public:
     // Note : not sure about the fusion of this
     m_cameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
     pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
-    m_RDG.execute();
+    m_RDG.execute(pyr::RenderContext{ SceneActors });
     pyr::RenderProfiles::popRasterProfile();
 
     pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);

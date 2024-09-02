@@ -32,6 +32,7 @@
     <ClCompile Include="vendor\efsw\src\efsw\WatcherInotify.cpp" />
     <ClCompile Include="vendor\efsw\src\efsw\WatcherKqueue.cpp" />
     <ClCompile Include="vendor\efsw\src\efsw\WatcherWin32.cpp" />
+    <ClCompile Include="src\editor\Editor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\EditorScene.h" />
@@ -77,10 +78,10 @@
     <ClInclude Include="vendor\efsw\include\efsw\efsw.hpp" />
     <ClInclude Include="src\CubemapBuilderScene.h" />
     <ClInclude Include="src\MaterialScene.h" />
-    <ClInclude Include="src\CornellBoxScene.h" />
-    <ClInclude Include="src\editor\bridges\Lights\pf_Light.h" />
-    <ClInclude Include="src\editor\views\Lights\widget_lights.h" />
-    <ClInclude Include="src\editor\views\widget.h" />
+    <ClInclude Include="src\editorPasses\PickerPass.h" />
+    <ClInclude Include="src\editor\EditorActor.h" />
+    <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />
+    <ClInclude Include="src\editor\Editor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="vendor\efsw\src\efsw\Utf.inl" />

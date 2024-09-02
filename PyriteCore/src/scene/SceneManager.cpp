@@ -9,8 +9,6 @@
 namespace pyr
 {
 
-SceneManager SceneManager::s_singleton{};
-
 void SceneManager::transitionToScene(SceneSupplier nextSceneSupplier)
 {
   if (m_activeScene == nullptr)
@@ -51,6 +49,7 @@ bool SceneManager::doSceneTransition()
 
 void SceneManager::update(double delta)
 {
+  m_activeScene->SceneActors.clear();
   m_activeScene->update(static_cast<float>(delta));
 }
 

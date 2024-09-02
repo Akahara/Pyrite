@@ -6,12 +6,13 @@
 
 #include "world/Material.h"
 #include "world/Transform.h"
+#include "world/Actor.h"
 #include "utils/debug.h"
 
 namespace pyr
 {
 
-    class StaticMesh
+    class StaticMesh : public Actor
     {
     private:
 
@@ -34,7 +35,6 @@ namespace pyr
         {
             if (materialLocalIndex < 0 || materialLocalIndex >= m_submeshesMaterials.size())
             {
-                //PYR_LOG(LogDebug, L"Index out of range");
                 return;
             }
 

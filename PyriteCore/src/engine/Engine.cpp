@@ -9,6 +9,7 @@
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 #include "inputs/UserInputs.h"
+#include "imguizmo/ImGuizmo.h"
 #include "scene/SceneManager.h"
 #include "utils/StringUtils.h"
 #include "display/GraphicalResource.h"
@@ -115,7 +116,7 @@ Engine::~Engine()
 
 void Engine::run()
 {
-  if (!SceneManager::getInstance().getActiveScene())
+  if (!SceneManager::getActiveScene())
     SceneManager::getInstance().transitionToScene(SceneManager::make_scene_supplier<EmptyScene>());
 
   bool running = true;
@@ -157,10 +158,19 @@ void Engine::runFrame(float deltaTime)
   ImGui::SetNextWindowBgAlpha(0.0f);
   ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
   DebugDraws::get().render();
+  ImGuizmo::BeginFrame();
   SceneManager::getInstance().render();
+  DebugDraws::get().render();
+
+
+  ID3DUserDefinedAnnotation* pPerf;
+  HRESULT hr = pyr::Engine::d3dcontext().QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
+  if (FAILED(hr)) return;
+  pPerf->BeginEvent(L"ImGui");
   ImGui::Render();
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-  
+  pPerf->EndEvent();
+  DXRelease(pPerf);
 }
 
 void Engine::postFrame()

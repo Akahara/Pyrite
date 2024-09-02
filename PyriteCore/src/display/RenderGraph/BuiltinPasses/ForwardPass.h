@@ -1,12 +1,14 @@
 #pragma once
 
 #include "display/RenderGraph/RenderPass.h"
+#include "display/RenderGraph/RenderGraph.h"
 #include "display/GraphicalResource.h"
+#include "display/FrameBuffer.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/camera.h"
 #include "display/RenderProfiles.h"
 #include "world/Mesh/StaticMesh.h"
-
+#include "scene/SceneManager.h"
 
 namespace pyr
 {
@@ -22,7 +24,6 @@ private:
     Effect* m_skyboxEffect;
 
     using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
-
     std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
     Effect* m_defaultGGXEffect;
 
@@ -45,12 +46,16 @@ public:
 
     virtual void apply() override
     {
-        assert(boundCamera);
+        if (!PYR_ENSURE(boundCamera)) return;
         pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
+
+        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
         // Render all objects 
 
-        for (const StaticMesh* mesh : m_meshes)
+        for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
         {
             mesh->bindModel();
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->getTransform().getWorldMatrix() });
@@ -84,10 +89,10 @@ public:
                 
                 effect->bind();
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-                Effect::unbindResources();
+                effect->unbindResources();
             }
         }
-
+        pyr::RenderProfiles::popDepthProfile();
         renderSkybox();
     }
 
@@ -115,6 +120,8 @@ private:
         m_skyboxEffect->unbindResources();
         RenderProfiles::popDepthProfile();
         RenderProfiles::popRasterProfile();
+        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(nullptr);
+
     }
 };
 }

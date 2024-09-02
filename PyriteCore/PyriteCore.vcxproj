@@ -103,8 +103,8 @@
     <ClCompile Include="src\display\FrameBuffer.cpp" />
     <ClCompile Include="src\display\GraphicalResource.cpp" />
     <ClCompile Include="src\display\IndexBuffer.cpp" />
-    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\display\RenderGraph\RDGResourcesManager.cpp" />
+    <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
     <ClCompile Include="src\display\RenderProfiles.cpp" />
     <ClCompile Include="src\display\Shader.cpp" />
     <ClCompile Include="src\display\Texture.cpp" />
@@ -118,6 +118,7 @@
     <ClCompile Include="src\utils\Debug.cpp" />
     <ClCompile Include="src\utils\ImGuiExt.cpp" />
     <ClCompile Include="src\utils\StringUtils.cpp" />
+    <ClCompile Include="src\world\Billboards\Billboard.cpp" />
     <ClCompile Include="src\world\Camera.cpp" />
     <ClCompile Include="src\world\Material.cpp" />
     <ClCompile Include="src\world\Mesh\RawMeshData.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="src\display\GraphicalResource.h" />
     <ClInclude Include="src\display\IndexBuffer.h" />
     <ClInclude Include="src\display\InputLayout.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BillboardsPass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\DepthPrePass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ForwardPass.h" />
@@ -169,6 +171,7 @@
     <ClInclude Include="src\engine\Engine.h" />
     <ClInclude Include="src\inputs\ScanCodes.h" />
     <ClInclude Include="src\inputs\UserInputs.h" />
+    <ClInclude Include="src\scene\RenderableActorCollection.h" />
     <ClInclude Include="src\scene\Scene.h" />
     <ClInclude Include="src\scene\SceneManager.h" />
     <ClInclude Include="src\utils\Clock.h" />
@@ -180,6 +183,8 @@
     <ClInclude Include="src\utils\StringUtils.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\world\AABB.h" />
+    <ClInclude Include="src\world\Actor.h" />
+    <ClInclude Include="src\world\Billboards\Billboard.h" />
     <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="src\world\Lights\Light.h" />
     <ClInclude Include="src\world\Material.h" />
