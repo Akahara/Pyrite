@@ -169,6 +169,7 @@
     <ClInclude Include="src\engine\Engine.h" />
     <ClInclude Include="src\inputs\ScanCodes.h" />
     <ClInclude Include="src\inputs\UserInputs.h" />
+    <ClInclude Include="src\scene\RenderableActorCollection.h" />
     <ClInclude Include="src\scene\Scene.h" />
     <ClInclude Include="src\scene\SceneManager.h" />
     <ClInclude Include="src\utils\Clock.h" />
@@ -180,6 +181,8 @@
     <ClInclude Include="src\utils\StringUtils.h" />
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\world\AABB.h" />
+    <ClInclude Include="src\world\Actor.h" />
+    <ClInclude Include="src\world\Billboards\Billboard.h" />
     <ClInclude Include="src\world\Camera.h" />
     <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\world\Mesh\RawMeshData.h" />

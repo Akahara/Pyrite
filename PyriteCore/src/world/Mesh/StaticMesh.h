@@ -6,12 +6,13 @@
 
 #include "world/Material.h"
 #include "world/Transform.h"
+#include "world/Actor.h"
 #include "utils/debug.h"
 
 namespace pyr
 {
 
-    class StaticMesh
+    class StaticMesh : public Actor
     {
     private:
 

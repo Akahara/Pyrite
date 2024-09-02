@@ -1,6 +1,7 @@
 #include "RDGResourcesManager.h"
 
 #include "RenderPass.h"
+#include <optional>
 
 #define ENSURE_IS_IN_GRAPH(pass) if (!m_passResources.contains(pass)) throw Errors::PassNotInManager{};
 

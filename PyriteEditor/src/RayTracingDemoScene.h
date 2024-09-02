@@ -59,9 +59,8 @@ public:
 
     // Setup this scene's rendergraph
     m_RDG.addPass(&m_forwardPass);
-
-    m_forwardPass.addMeshToPass(&cubeInstance);
-
+    m_RDG.getResourcesManager().checkResourcesValidity();
+    
     // Setup the camera
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
@@ -79,6 +78,7 @@ public:
 
   void render() override
   {
+    SceneActors.registerForFrame(&cubeInstance);
     ImGui::Begin("raytrace");
     static vec3 p0{ 3,3,3 }, p1{ -2,-3,-4 };
     ImGui::DragFloat3("P0", &p0.x, .25f);
@@ -105,15 +105,10 @@ public:
     pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
     m_baseEffect->uploadAllBindings();
     m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-    m_RDG.execute();
+    m_RDG.execute(pyr::RenderContext{ SceneActors });
 
     pyr::RenderProfiles::popDepthProfile();
     pyr::RenderProfiles::popRasterProfile();
-  }
-
-  ~RayTracingDemoScene() override
-  {
-    m_RDG.clearGraph();
   }
 };
 }

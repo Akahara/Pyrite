@@ -1,12 +1,13 @@
 #pragma once
 
 #include "display/RenderGraph/RenderPass.h"
+#include "display/RenderGraph/RenderGraph.h"
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/camera.h"
 #include "display/RenderProfiles.h"
 #include "world/Mesh/StaticMesh.h"
-
+#include "scene/SceneManager.h"
 
 namespace pyr
 {
@@ -22,7 +23,6 @@ private:
     Effect* m_skyboxEffect;
 
     using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
-
     std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
     Effect* m_defaultGGXEffect;
 
@@ -45,12 +45,12 @@ public:
 
     virtual void apply() override
     {
-        assert(boundCamera);
+        if (!PYR_ENSURE(boundCamera)) return;
         pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         // Render all objects 
 
-        for (const StaticMesh* mesh : m_meshes)
+        for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
         {
             mesh->bindModel();
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->getTransform().getWorldMatrix() });

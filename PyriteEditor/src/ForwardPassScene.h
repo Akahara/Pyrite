@@ -66,8 +66,6 @@ namespace pye
             {
                 sceneMeshes.emplace_back(pyr::StaticMesh{ model });
                 sceneMeshes.back().getTransform().scale = { 30,30, 30 };
-                m_forwardPass.addMeshToPass(&sceneMeshes.back());
-                m_depthPrePass.addMeshToPass(&sceneMeshes.back());
             }
 
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
@@ -106,6 +104,11 @@ namespace pye
         void render() override
         {
 
+            for (const auto& mesh : sceneMeshes)
+            {
+                SceneActors.registerForFrame(&mesh);
+            }
+
             ImGui::Begin("Forward Pass Scene");
             static vec3 sunPos = vec3{ 0,100,0 };
             if (ImGui::SliderFloat3("sunPos", &sunPos.x, -300, 300))
@@ -122,7 +125,7 @@ namespace pye
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-            m_RDG.execute();
+            m_RDG.execute(pyr::RenderContext{ SceneActors });
 
             pyr::drawDebugLine(vec3::Zero, vec3::UnitX * 10.f, { 1,0,0,1 });
             pyr::drawDebugLine(vec3::Zero, vec3::UnitY * 10.f, { 0,1,0,1 });
@@ -134,11 +137,6 @@ namespace pye
 
             m_RDG.debugWindow();
 
-        }
-
-        ~ForwardPassScene() override
-        {
-            m_RDG.clearGraph();
         }
     };
 }

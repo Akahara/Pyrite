@@ -107,7 +107,7 @@ Engine::~Engine()
 
 void Engine::run()
 {
-  if (!SceneManager::getInstance().getActiveScene())
+  if (!SceneManager::getActiveScene())
     SceneManager::getInstance().transitionToScene(SceneManager::make_scene_supplier<EmptyScene>());
 
   bool running = true;

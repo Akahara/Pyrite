@@ -108,7 +108,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PyriteIncludeDir);$(ProjectDir)vendor;$(ProjectDir)vendor\efsw\src;$(ProjectDir)vendor\efsw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(PyriteIncludeDir);$(ProjectDir)vendor;$(ProjectDir)vendor\efsw\src;$(ProjectDir)vendor\efsw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -175,7 +175,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\CubemapBuilderScene.h" />
+    <ClInclude Include="src\editorPasses\BillboardPass.h" />
+    <ClInclude Include="src\editorPasses\PickerPass.h" />
     <ClInclude Include="src\EditorScene.h" />
+    <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />
+    <ClInclude Include="src\editor\EditorActor.h" />
     <ClInclude Include="src\editor\ShaderReloader.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\MaterialScene.h" />

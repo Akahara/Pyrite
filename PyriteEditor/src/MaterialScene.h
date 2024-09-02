@@ -85,21 +85,18 @@ namespace pye
                 coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
                 auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
                 m_balls[i].overrideSubmeshMaterial(0, mat);
-                m_forwardPass.addMeshToPass(&m_balls[i]);
-                m_depthPrePass.addMeshToPass(&m_balls[i]);
             }
 #pragma endregion BALLS
 
 #pragma region RDG
-            m_RDG.addPass(&m_forwardPass);
             m_camera.setPosition(vec3{ 0,0,0});
             m_camera.lookAt(vec3{ 0,0,0.f});
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
             m_ggxShader->addBinding({ .label = "CameraBuffer",   .bufferRef = pcameraBuffer });
+            m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
-            m_RDG.addPass(&m_depthPrePass);
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
@@ -111,16 +108,13 @@ namespace pye
 #pragma endregion RDG
             auto& device = pyr::Engine::device();
 
-            update(0.0F);
-
             fileDialog.SetTitle("Choose an HDR background");
             fileDialog.SetTypeFilters({ ".hdr" });
-
-
         }
 
         void update(float delta) override
         {
+            // move this to pre-render fn
             m_camController.processUserInputs(delta);
             pcameraBuffer->setData(CameraBuffer::data_t{
                 .mvp = m_camera.getViewProjectionMatrix(), 
@@ -134,8 +128,11 @@ namespace pye
         }
 
         void render() override
-
         {
+            for (int i = 0; i < m_balls.size(); i++)
+            {
+                SceneActors.registerForFrame(&m_balls[i]);
+            }
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
@@ -146,11 +143,10 @@ namespace pye
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             
-            m_RDG.execute();
+            m_RDG.execute(pyr::RenderContext{ SceneActors });
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
-            //m_RDG.debugWindow();
 
             if (ImGui::Button("open file dialog"))
                 fileDialog.Open();

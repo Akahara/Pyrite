@@ -28,6 +28,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
   try
   {
 #endif
+
     pyr::EngineSettings settings;
     settings.appTitle = "PyriteEditor";
     settings.bHasTitleBar = true;
