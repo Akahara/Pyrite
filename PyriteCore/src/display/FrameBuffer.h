@@ -42,6 +42,7 @@ public:
   void bind();
   void unbind();
   void clearTargets() const;
+  void setDepthOverride(ID3D11DepthStencilView* depth);
   Texture getTargetAsTexture(Target target) const;
 
 private:
@@ -56,6 +57,7 @@ private:
   std::array<Texture, Target::__COUNT> m_targetsAsTextures;
   ID3D11RenderTargetView *m_renderTargetView = nullptr;
   ID3D11DepthStencilView *m_depthStencilView = nullptr;
+  ID3D11DepthStencilView *m_overridenDepth = nullptr;
 };
 
 class FrameBufferPipeline {

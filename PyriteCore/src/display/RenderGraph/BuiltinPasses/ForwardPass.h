@@ -3,6 +3,7 @@
 #include "display/RenderGraph/RenderPass.h"
 #include "display/RenderGraph/RenderGraph.h"
 #include "display/GraphicalResource.h"
+#include "display/FrameBuffer.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/camera.h"
 #include "display/RenderProfiles.h"
@@ -47,7 +48,10 @@ public:
     {
         if (!PYR_ENSURE(boundCamera)) return;
         pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
+        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
         // Render all objects 
 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
@@ -87,7 +91,7 @@ public:
                 Effect::unbindResources();
             }
         }
-
+        pyr::RenderProfiles::popDepthProfile();
         renderSkybox();
     }
 

@@ -16,7 +16,9 @@
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
+#include "editorPasses/PickerPass.h"
 #include <imfilebrowser.h>
+#include "inputs/UserInputs.h"
 
 namespace pye
 {
@@ -39,6 +41,8 @@ namespace pye
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
+
+        pye::EditorPasses::PickerPass m_picker;
         pyr::RenderGraph m_RDG;
 
         pyr::Camera m_camera;
@@ -74,9 +78,10 @@ namespace pye
 
 #pragma region BALLS
             int gridSize = 7;
-            m_balls.resize(gridSize * gridSize, pyr::StaticMesh{ m_ballModel });
-            for (int i = 0; i < m_balls.size(); i++)
+            m_balls.reserve(gridSize * gridSize);
+            for (int i = 0; i < gridSize * gridSize; i++)
             {
+                m_balls.push_back(pyr::StaticMesh{ m_ballModel });
                 m_balls[i].getTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
                 
                 pyr::MaterialRenderingCoefficients coefs;
@@ -97,13 +102,17 @@ namespace pye
             m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
+            m_RDG.addPass(&m_picker);
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
             m_RDG.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
+            m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
+            m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_picker);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
             m_forwardPass.boundCamera = &m_camera;
+            m_picker.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
             auto& device = pyr::Engine::device();
@@ -133,6 +142,10 @@ namespace pye
             {
                 SceneActors.registerForFrame(&m_balls[i]);
             }
+
+            if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
+                m_picker.m_bIsEnabled = true;
+
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
@@ -148,6 +161,7 @@ namespace pye
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
 
+            m_picker.m_bIsEnabled = false;
             if (ImGui::Button("open file dialog"))
                 fileDialog.Open();
 

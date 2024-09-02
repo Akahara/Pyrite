@@ -2,7 +2,7 @@
 
 #define InlineStruct(body) decltype([]() {\
     struct ConstantBufferData_t {\
-        body;\
+        struct alignas(16) {body ;};\
     } _;\
     return _; \
 }())\

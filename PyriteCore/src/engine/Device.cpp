@@ -112,6 +112,11 @@ Device::Device(DeviceMode mode, HWND hWnd)
   m_immediateContext->RSSetViewports(1, &viewport);
 
   m_backbuffer = std::make_unique<FrameBuffer>(m_swapChain, m_device, s_winWidth, s_winHeight);
+
+  if (!PYR_ENSURE(RenderDoc::Init()))
+  {
+      PYR_LOG(LogDebug, FATAL, "Could not init renderdoc. Make sure the dll is in /Pyrite/x64/Debug !");
+  }
 }
 
 Device::~Device()
@@ -204,6 +209,19 @@ DeviceInfo::DeviceInfo(const DXGI_MODE_DESC& modeDesc)
   for (size_t i = 0; i < adapters.size(); ++i)
 	DXRelease(adapters[i]);
   DXRelease(factory);
+}
+
+bool RenderDoc::Init()
+{
+    // At init, on windows
+    if (HMODULE mod = LoadLibraryA("renderdoc.dll"))
+    {
+        pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+            (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+        int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)(&RenderDoc::m_api));
+        return ret == 1;
+    }
+    return false;
 }
 
 }

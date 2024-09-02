@@ -3,8 +3,11 @@
 // Defines an object that takes named entries and named output and draws in a target fbo
 
 #include "NamedResources.h"
+#include "utils/Debug.h"
 #include <set>
 #include <optional>
+
+static inline PYR_DEFINELOG(LogRenderPass, VERBOSE);
 
 namespace pyr
 {

@@ -93,6 +93,22 @@ Cubemap TextureManager::loadCubemap(const std::wstring &path)
   return Cubemap(resource, texture);
 }
 
+ID3D11DepthStencilView* Texture::toDepthStencilView()
+{
+	if (!m_asDepthView)
+	{
+		auto& device = pyr::Engine::d3ddevice();
+		D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+		ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
+		depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		depthStencilViewDesc.Texture2D.MipSlice = 0;
+		device.CreateDepthStencilView(m_resource, &depthStencilViewDesc, &m_asDepthView);
+	}
+
+	return m_asDepthView;
+}
+
 void Texture::releaseRawTexture()
 {
   DXRelease(m_resource);

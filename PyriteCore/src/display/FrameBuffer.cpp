@@ -133,6 +133,7 @@ FrameBuffer::~FrameBuffer()
 
   DXRelease(m_depthStencilView);
   DXRelease(m_renderTargetView);
+  DXRelease(m_overridenDepth);
   if(!m_keepTextures) {
 	  std::ranges::for_each(m_targetsAsTextures, [](auto texture) { texture.releaseRawTexture(); });
   }
@@ -187,13 +188,20 @@ void FrameBuffer::unbind()
 void FrameBuffer::bindToD3DContext() const
 {
   D3D11_VIEWPORT viewport{ 0,0,static_cast<float>(m_width),static_cast<float>(m_height),0,1 };
-  Engine::d3dcontext().OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+  Engine::d3dcontext().OMSetRenderTargets(1, &m_renderTargetView, m_overridenDepth ? m_overridenDepth : m_depthStencilView);
   Engine::d3dcontext().RSSetViewports(1, &viewport);
 }
 
 size_t FrameBuffer::targetTypeToIndex(Target target)
 {
   return mathf::firstBitIndex(static_cast<target_t>(target));
+}
+
+void FrameBuffer::setDepthOverride(ID3D11DepthStencilView* depth)
+{ 
+	PYR_ASSERT(std::ranges::find(s_frameBuffersStack, this) != s_frameBuffersStack.end());
+	if (depth != m_overridenDepth) DXRelease(m_overridenDepth);
+	m_overridenDepth = depth; 
 }
 
 struct GlobalResources {

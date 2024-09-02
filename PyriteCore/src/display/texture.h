@@ -5,6 +5,7 @@
 
 struct ID3D11Resource;
 struct ID3D11ShaderResourceView;
+struct ID3D11DepthStencilView;
 struct ID3D11SamplerState;
 
 namespace pyr
@@ -20,6 +21,7 @@ struct Texture
 
   ID3D11ShaderResourceView *getRawTexture() const { return m_texture; }
   ID3D11Resource *getRawResource() const { return m_resource; }
+  ID3D11DepthStencilView* toDepthStencilView();
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
 
@@ -49,6 +51,7 @@ private:
   size_t m_width, m_height;
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
+  ID3D11DepthStencilView *m_asDepthView = nullptr;
 };
 
 struct GlobalTextureSet {

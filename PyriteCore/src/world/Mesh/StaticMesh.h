@@ -35,7 +35,6 @@ namespace pyr
         {
             if (materialLocalIndex < 0 || materialLocalIndex >= m_submeshesMaterials.size())
             {
-                //PYR_LOG(LogDebug, L"Index out of range");
                 return;
             }
 
