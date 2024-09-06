@@ -134,7 +134,7 @@ const GlobalTextureSet& Texture::getDefaultTextureSet()
 }
 
 // This is intended to be used with .hdr files
-Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_height(height)
+Texture::Texture(float* data, size_t width, size_t height, bool bStagingTexture /* = false */) : m_width(width), m_height(height)
 {
 
 	D3D11_TEXTURE2D_DESC srcDesc;
@@ -147,12 +147,12 @@ Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_h
 	srcDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	srcDesc.SampleDesc.Count = 1;
 	srcDesc.SampleDesc.Quality = 0;
-	srcDesc.Usage = D3D11_USAGE_DEFAULT;  
-	srcDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;  
+	srcDesc.Usage = bStagingTexture ? D3D11_USAGE_STAGING : D3D11_USAGE_DEFAULT;
+	srcDesc.BindFlags = bStagingTexture ? 0 : D3D11_BIND_SHADER_RESOURCE;
 	srcDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 	srcDesc.MiscFlags = 0;
 
-	D3D11_SUBRESOURCE_DATA initialData;
+	D3D11_SUBRESOURCE_DATA initialData{};
 	initialData.pSysMem = data;
 	initialData.SysMemPitch = static_cast<UINT>(width) * 4 * sizeof(float);
 	initialData.SysMemSlicePitch = 0; // 0 is for tex2D, create SRV fails otherwise...
@@ -167,7 +167,7 @@ Texture::Texture(float* data, size_t width, size_t height) : m_width(width), m_h
 
 	m_resource = resource;
 	
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Format = srcDesc.Format;
 	srvDesc.Texture2D.MipLevels = 1;

@@ -1,11 +1,8 @@
 #pragma once
 
 #include "editor/EditorActor.h"
-
-namespace pyr 
-{
-	class StaticMesh;
-}
+#include "world/Mesh/StaticMesh.h"
+#include <imgui.h>
 
 namespace pye
 {
@@ -19,10 +16,15 @@ namespace pye
 
 		virtual void inspect() override
 		{
-		
-		
+			ImGui::Begin("Inspection Window");
+
+			ImGui::DragFloat3("Position", &sourceMesh->getTransform().position.x);
+
+			ImGui::End();
 		}
 	};
+
+	using pf_StaticMesh = EditorActor_Impl<pyr::StaticMesh>;
 
 
 

@@ -51,7 +51,9 @@ public:
 
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
+
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
+        pyr::Effect::unbindResources();
         // Render all objects 
 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
@@ -88,7 +90,7 @@ public:
                 
                 effect->bind();
                 Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-                Effect::unbindResources();
+                effect->unbindResources();
             }
         }
         pyr::RenderProfiles::popDepthProfile();

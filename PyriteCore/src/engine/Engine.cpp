@@ -148,8 +148,15 @@ void Engine::runFrame(float deltaTime)
   SceneManager::getInstance().render();
   DebugDraws::get().render();
 
+
+  ID3DUserDefinedAnnotation* pPerf;
+  HRESULT hr = pyr::Engine::d3dcontext().QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
+  if (FAILED(hr)) return;
+  pPerf->BeginEvent(L"ImGui");
   ImGui::Render();
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+  pPerf->EndEvent();
+  DXRelease(pPerf);
 }
 
 void Engine::postFrame()

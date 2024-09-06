@@ -105,6 +105,7 @@
     <ClCompile Include="src\display\IndexBuffer.cpp" />
     <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\display\RenderGraph\RDGResourcesManager.cpp" />
+    <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
     <ClCompile Include="src\display\RenderProfiles.cpp" />
     <ClCompile Include="src\display\Shader.cpp" />
     <ClCompile Include="src\display\Texture.cpp" />

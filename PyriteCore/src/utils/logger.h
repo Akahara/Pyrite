@@ -47,6 +47,7 @@ public:
 
 		static std::stringstream ss;
 		ss.str("");
+		ss << m_name + ": ";
 		(ss << ... << std::forward<Args>(args));
 		ss << '\n';
 		OutputDebugStringA(ss.str().c_str());
@@ -59,7 +60,8 @@ public:
 	      return;
 
 	    OutputDebugStringA(std::vformat(
-	      std::string(format) + "\n",
+		  m_name + ": " +
+		  std::string(format) + "\n",
 	      std::make_format_args(std::forward<Args>(args)...)).c_str());
     }
 

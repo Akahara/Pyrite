@@ -43,6 +43,7 @@
     <ClCompile Include="src\display\CubemapBuilder.cpp" />
     <ClCompile Include="src\world\Mesh\RawMeshData.cpp" />
     <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
+    <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />

@@ -39,12 +39,12 @@ namespace pyr
 		auto width = static_cast<UINT>(textures[0].getWidth());
 
 		// -- Describe the texture cubemap
-		D3D11_TEXTURE2D_DESC textureDesc = {};
+		D3D11_TEXTURE2D_DESC textureDesc{};
 		textureDesc.Width = width;
 		textureDesc.Height = width;
 		textureDesc.MipLevels = static_cast<UINT>(mipCount);
 		textureDesc.ArraySize = 6;
-		textureDesc.Format = DXGI_FORMAT_R11G11B10_FLOAT;
+		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.Usage = D3D11_USAGE_DEFAULT;
 		textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;

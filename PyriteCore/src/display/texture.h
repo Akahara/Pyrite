@@ -17,6 +17,8 @@ class GraphicalResourceRegistry;
 struct Texture
 {
 
+public:
+
   Texture() : m_resource(nullptr), m_texture(nullptr), m_width(0), m_height(0) {}
 
   ID3D11ShaderResourceView *getRawTexture() const { return m_texture; }
@@ -39,6 +41,8 @@ struct Texture
   static void initDefaultTextureSet(GraphicalResourceRegistry& registry);
   static const GlobalTextureSet& getDefaultTextureSet();
 
+  Texture(float* data, size_t width, size_t height, bool bStagingTexture = false);
+
 private:
   friend class TextureManager;
   friend class GraphicalResourceRegistry;
@@ -46,7 +50,6 @@ private:
   Texture(ID3D11Resource *resource, ID3D11ShaderResourceView *raw, size_t width, size_t height)
     : m_resource(resource), m_texture(raw), m_width(width), m_height(height) { }
 
-  Texture(float* data, size_t width, size_t height);
 
   size_t m_width, m_height;
   ID3D11Resource *m_resource;

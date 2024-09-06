@@ -3,6 +3,8 @@
 #include "scene/RenderableActorCollection.h"
 #include "RDGResourcesManager.h"
 
+static inline PYR_DEFINELOG(LogRenderGraph, VERBOSE);
+
 namespace pyr
 {
     // This is given through the execute and can be used and accessed by any passes.
@@ -10,7 +12,6 @@ namespace pyr
     {
         RegisteredRenderableActorCollection ActorsToRender;
     };
-
 
     class RenderGraph
     {
@@ -25,20 +26,12 @@ namespace pyr
     public:
 
         RenderGraphResourceManager& getResourcesManager() noexcept { return m_manager; }
-
         const RenderContext& GetContext() const { return m_renderContext; }
-        void execute(const RenderContext& frameRenderContext = {}) { m_renderContext = frameRenderContext ; for (RenderPass* p : m_passes) if (p->isEnabled()) p->apply(); }
+    public:
+
+        void execute(const RenderContext& frameRenderContext = {});
         void addPass(RenderPass* pass)  { m_passes.emplace_back(pass); m_manager.addNewPass(pass); pass->owner = this; }
-        void debugWindow()
-        {
-            // Shitty stuff, will rewrite this to a proper graph display usin imguizmo
-            //ImGui::Begin("RenderGraph");
-            //for (auto& pass : m_passes )
-            //{
-            //    ImGui::Checkbox(pass->displayName.c_str(), &pass->m_bIsEnabled);
-            //}
-            //ImGui::End();
-        }
+        void debugWindow() {}
 
     };
 }

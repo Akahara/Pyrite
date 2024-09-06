@@ -34,12 +34,11 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 	renderTextureDesc.Height = m_height;
 	renderTextureDesc.MipLevels = 1;
 	renderTextureDesc.ArraySize = 1;
-	renderTextureDesc.Format = DXGI_FORMAT_R11G11B10_FLOAT;
+	renderTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	renderTextureDesc.SampleDesc.Count = isMultisampled ? MSAA_LEVEL : 1;
 	renderTextureDesc.SampleDesc.Quality = 0;
 	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	renderTextureDesc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
-	renderTextureDesc.CPUAccessFlags = 0;
 	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
 	m_textures.push_back(renderTexture);
 
@@ -199,9 +198,9 @@ size_t FrameBuffer::targetTypeToIndex(Target target)
 
 void FrameBuffer::setDepthOverride(ID3D11DepthStencilView* depth)
 { 
-	PYR_ASSERT(std::ranges::find(s_frameBuffersStack, this) != s_frameBuffersStack.end());
 	if (depth != m_overridenDepth) DXRelease(m_overridenDepth);
 	m_overridenDepth = depth; 
+	bindToD3DContext();
 }
 
 struct GlobalResources {

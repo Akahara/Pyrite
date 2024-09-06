@@ -20,6 +20,9 @@
 #include <imfilebrowser.h>
 #include "inputs/UserInputs.h"
 
+#include "editor/Editor.h"
+#include "editor/EditorActor.h"
+
 namespace pye
 {
     class MaterialScene : public pyr::Scene
@@ -58,6 +61,7 @@ namespace pye
         ImGui::FileBrowser fileDialog;
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
+
     public:
 
         MaterialScene()
@@ -76,6 +80,7 @@ namespace pye
             m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
             m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
 
+
 #pragma region BALLS
             int gridSize = 7;
             m_balls.reserve(gridSize * gridSize);
@@ -90,6 +95,7 @@ namespace pye
                 coefs.Roughness = std::clamp((i / gridSize) / (gridSize - 1.f), 0.05f, 1.f);
                 auto mat = pyr::Material::MakeRegisteredMaterial({}, coefs, m_ggxShader, std::format("Material_%d",i));
                 m_balls[i].overrideSubmeshMaterial(0, mat);
+                SceneActors.meshes.push_back(&m_balls[i]);
             }
 #pragma endregion BALLS
 
@@ -119,6 +125,9 @@ namespace pye
 
             fileDialog.SetTitle("Choose an HDR background");
             fileDialog.SetTypeFilters({ ".hdr" });
+
+            pye::Editor::Get().Init(SceneActors);
+
         }
 
         void update(float delta) override
@@ -179,6 +188,11 @@ namespace pye
                 m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
                 m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
                 m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
+            }
+
+            if (m_picker.Selected)
+            {
+                m_picker.Selected->inspect();
             }
         }
 

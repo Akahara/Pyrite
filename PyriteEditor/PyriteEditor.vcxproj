@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\editor\Editor.cpp" />
     <ClCompile Include="src\editor\ShaderReloader.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="vendor\efsw\src\efsw\Debug.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="src\editorPasses\PickerPass.h" />
     <ClInclude Include="src\EditorScene.h" />
     <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />
+    <ClInclude Include="src\editor\Editor.h" />
     <ClInclude Include="src\editor\EditorActor.h" />
     <ClInclude Include="src\editor\ShaderReloader.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
