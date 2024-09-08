@@ -31,7 +31,7 @@ float delinearize_depth(float d, float znear, float zfar)
 
 float gridSDF(float2 uv, float grid_size)
 {
-    float2 a = step(4, frac(uv / grid_size) * grid_size);
+    float2 a = step(grid_size/2.F, frac(uv / grid_size) * grid_size);
     return step(0.99, a.x + a.y);
 }
 
@@ -68,7 +68,7 @@ float4 ColorID(VertexOut vsOut) : SV_Target
     {
         float angle = radians(100);
         float2 rotatedUvs = rotateUvs(vsOut.Pos.xy, angle);
-        float sdf = gridSDF(rotatedUvs, 8.F);
+        float sdf = gridSDF(rotatedUvs, 3.F);
         pixelColor = gridColor * step(sdf, .5);
     }
     

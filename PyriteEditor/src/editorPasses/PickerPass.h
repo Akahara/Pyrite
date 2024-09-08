@@ -10,6 +10,8 @@
 #include "editor/bridges/pf_StaticMesh.h"
 #include "editor/Editor.h"
 
+#include "imguizmo/ImGuizmo.h"
+
 #include <span>
 
 namespace pye
@@ -58,6 +60,9 @@ namespace pye
         public:
 
             EditorActor* Selected = nullptr;
+
+            std::vector<EditorActor*> selectedActors;
+
             pyr::Camera* boundCamera = nullptr;
 
             PickerPass()
@@ -98,30 +103,34 @@ namespace pye
                     bShouldPick = false;
                 }
 
-                if (pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(Selected))
+                if (selectedActors.size() > 0)
                 {
                     m_target.clearTargets();
                     m_target.bind();
 
                     // -- 1 . Depth grid effect and selected meshes depth buffer
                     pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
-                    sm->sourceMesh->bindModel();
-
-                    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
-                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
 
                     m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
                     m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-                    m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
-                    m_gridDepthEffect->bind();
-
-                    std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
-                    for (auto& submesh : submeshes)
+                    for (EditorActor* actor : selectedActors)
                     {
-                        pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
+                        pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
+                        if (!sm) continue;
+
+                        sm->sourceMesh->bindModel();
+                        pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+                        pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
+                        m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+                        m_gridDepthEffect->bind();
+                        std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
+                        for (auto& submesh : submeshes)
+                        {
+                            pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
+                        }
+                        m_gridDepthEffect->unbindResources();
                     }
-                    m_gridDepthEffect->unbindResources();
 
                     // -- 2 . Compute outline
                     m_target.unbind();
@@ -144,6 +153,15 @@ namespace pye
                     m_composeEffect->unbindResources();
                     pyr::RenderProfiles::popBlendProfile();
 
+                    // -- 4. Guizmos
+                    std::vector<pyr::StaticMesh*> meshes;
+                    for (EditorActor* actor : selectedActors)
+                    {
+                        pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
+                        if (sm) meshes.push_back(sm->sourceMesh);
+                    }
+                    
+                    EditTransforms(*boundCamera, meshes);
                 }
             }
 
@@ -153,8 +171,12 @@ namespace pye
             }
         
         private:
+
             void computeSelectedActors()
             {
+
+                bool bIsHoldingControl = pyr::UserInputs::isKeyPressed(keys::SC_LEFT_CTRL);
+
                 m_requestedMousePosition = pyr::UserInputs::getMousePosition();
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
                 m_idTarget.setDepthOverride(m_inputs["depthBuffer"].res.toDepthStencilView());
@@ -198,7 +220,7 @@ namespace pye
                 {
                     // You have picked actor !!!
                     PYR_LOGF(LogRenderPass, INFO, "Actor {} was picked.", actorId);
-                    handlePick(actorId);
+                    handlePick(actorId, bIsHoldingControl);
 
                 }
                 //if (renderDoc)
@@ -269,20 +291,74 @@ namespace pye
                 return actorId;
             }
 
-            void handlePick(int actorId)
+            void handlePick(int actorId, bool bPushNewActor = false)
             {
-                if (pye::Editor::Get().RegisteredActors.contains(actorId))
+                bool bIsActorRegistered = pye::Editor::Get().RegisteredActors.contains(actorId);
+                if (bIsActorRegistered)
                 {
                     pye::EditorActor* editorActor = pye::Editor::Get().RegisteredActors.at(actorId);
-                    Selected = editorActor;
+                    if (!bPushNewActor)
+                    {
+                        selectedActors.clear();
+                    }
+                    selectedActors.push_back(editorActor);
                 }
                 else
                 {
-                    Selected = nullptr;
+                    selectedActors.clear();
                 }
 
             }
 
+            void EditTransforms(const pyr::Camera& camera, std::vector<pyr::StaticMesh*> meshes)
+            {
+                // Get center of mass ? 
+                if (meshes.empty()) return;
+
+                Transform center;
+                for (pyr::StaticMesh* mesh : meshes)
+                {
+                    center.position += mesh->getTransform().position;
+                }
+                center.position /= meshes.size();
+                center.scale = { 1,1,1 };
+                center.rotation = { 0,0,0 };
+
+
+                vec3 originalPos = center.position;
+                mat4 matrix = center.getWorldMatrix();
+
+                static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+                static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+
+                ImGuiIO& io = ImGui::GetIO();
+                ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+                ImGuizmo::Manipulate(&camera.getViewMatrix()._11, &camera.getProjectionMatrix()._11, mCurrentGizmoOperation, mCurrentGizmoMode, &matrix._11, NULL, NULL);
+
+                vec3 dScale, dPos;  quat dRot;
+                matrix.Decompose(dScale, dRot, dPos);
+
+                dPos -= originalPos;
+                for (pyr::StaticMesh* mesh : meshes)
+                {
+                    mesh->getTransform().position += dPos;
+                    mesh->getTransform().scale *= dScale;
+                    mesh->getTransform().rotation *= dRot;
+                }
+            }
+
+            void EditTransform(const pyr::Camera& camera, pyr::StaticMesh& mesh)
+            {
+                static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
+                static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+
+                mat4 matrix = mesh.getTransform().getWorldMatrix();
+
+                ImGuiIO& io = ImGui::GetIO();
+                ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+                ImGuizmo::Manipulate(&camera.getViewMatrix()._11, &camera.getProjectionMatrix()._11, mCurrentGizmoOperation, mCurrentGizmoMode, &matrix._11, NULL, NULL);
+                matrix.Decompose(mesh.getTransform().scale, mesh.getTransform().rotation, mesh.getTransform().position);
+            }
 
         };
     }

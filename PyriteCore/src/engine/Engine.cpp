@@ -9,6 +9,7 @@
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
 #include "inputs/UserInputs.h"
+#include "imguizmo/ImGuizmo.h"
 #include "scene/SceneManager.h"
 #include "utils/StringUtils.h"
 #include "display/GraphicalResource.h"
@@ -145,6 +146,7 @@ void Engine::runFrame(float deltaTime)
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
   SceneManager::getInstance().render();
   DebugDraws::get().render();
 
