@@ -7,6 +7,7 @@
 #include "inputs/UserInputs.h"
 
 #include "editor/EditorActor.h"
+#include "editor/bridges/pf_StaticMesh.h"
 #include "editor/Editor.h"
 
 #include <span>
@@ -36,7 +37,12 @@ namespace pye
 
             // -- Goal : output a 1,1 texture, called once on click
             pyr::FrameBuffer m_idTarget{ pyr::Device::getWinWidth(),pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0};
-            pyr::Effect* m_effect = nullptr;
+            pyr::FrameBuffer m_OutlineTarget{ pyr::Device::getWinWidth(),pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0};
+
+            pyr::Effect* m_pickEffect = nullptr;
+            pyr::Effect* m_gridDepthEffect = nullptr;
+            pyr::Effect* m_outlineEffect = nullptr;
+            pyr::Effect* m_composeEffect = nullptr;
 
 
             std::vector<pye::EditorActor> m_editorActors;
@@ -44,6 +50,10 @@ namespace pye
 
             pyr::ScreenPoint m_requestedMousePosition;
 
+            bool bShouldPick = false;
+
+            pyr::FrameBuffer m_target{pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_targetNoDepth{pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0 };
 
         public:
 
@@ -52,11 +62,25 @@ namespace pye
 
             PickerPass()
             {
-                m_bIsEnabled = false;
                 displayName = "Editor-PickerPass";
-                m_effect = m_registry.loadEffect(
+                m_pickEffect = m_registry.loadEffect(
                     L"editor/shaders/picker.fx",
                     pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
+                );
+
+                m_gridDepthEffect = m_registry.loadEffect(
+                    L"editor/shaders/selectionDepthEffect.fx",
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
+                );
+
+                m_outlineEffect = m_registry.loadEffect(
+                    L"editor/shaders/selectionOutline.fx",
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>()
+                );
+
+                m_composeEffect = m_registry.loadEffect(
+                    L"editor/shaders/composePick.fx",
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>()
                 );
 
                 producesResource("pickerIdBuffer", m_idTarget.getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
@@ -68,13 +92,76 @@ namespace pye
                 if (!PYR_ENSURE(boundCamera)) return;
                 // Render all objects to a depth only texture
 
+                if (bShouldPick)
+                {
+                    computeSelectedActors();
+                    bShouldPick = false;
+                }
+
+                if (pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(Selected))
+                {
+                    m_target.clearTargets();
+                    m_target.bind();
+
+                    // -- 1 . Depth grid effect and selected meshes depth buffer
+                    pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
+                    sm->sourceMesh->bindModel();
+
+                    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
+
+                    m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
+                    m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+
+                    m_gridDepthEffect->bind();
+
+                    std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
+                    for (auto& submesh : submeshes)
+                    {
+                        pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
+                    }
+                    m_gridDepthEffect->unbindResources();
+
+                    // -- 2 . Compute outline
+                    m_target.unbind();
+                    pyr::Texture selectedMeshesDepth = m_target.getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
+                    m_targetNoDepth.clearTargets();
+                    m_targetNoDepth.bind();
+                    m_outlineEffect->bindTexture(selectedMeshesDepth, "selectedMeshesDepth");
+                    m_outlineEffect->bindTexture(m_inputs["depthBuffer"].res, "sceneDepth");
+                    m_outlineEffect->bind();
+                    pyr::Engine::d3dcontext().Draw(3, 0);
+                    m_outlineEffect->unbindResources();
+                    m_targetNoDepth.unbind();
+
+                    // -- 3. Compose scene, outline and depthgrid
+
+                    m_composeEffect->bindTexture(m_targetNoDepth.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "outlineTexture");
+                    m_composeEffect->bindTexture(m_target.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "depthGridTexture");
+                    m_composeEffect->bind();
+                    pyr::Engine::d3dcontext().Draw(3, 0);
+                    m_composeEffect->unbindResources();
+                    pyr::RenderProfiles::popBlendProfile();
+
+                }
+            }
+
+            void RequestPick()
+            {
+                bShouldPick = true;
+            }
+        
+        private:
+            void computeSelectedActors()
+            {
                 m_requestedMousePosition = pyr::UserInputs::getMousePosition();
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
                 m_idTarget.setDepthOverride(m_inputs["depthBuffer"].res.toDepthStencilView());
 
                 PYR_LOG(LogRenderPass, INFO, "Pick !");
                 auto renderDoc = pyr::RenderDoc::Get();
-                if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
+                //if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
                 PYR_LOG(LogRenderPass, INFO, "%p", renderDoc);
 
                 m_idTarget.clearTargets();
@@ -87,38 +174,36 @@ namespace pye
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
                     pIdBuffer->setData(ActorPickerIDBuffer::data_t{ .id = smesh->GetActorID() });
 
-                    m_effect->bindConstantBuffer("ActorPickerIDBuffer", pIdBuffer);
-                    m_effect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-                    m_effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+                    m_pickEffect->bindConstantBuffer("ActorPickerIDBuffer", pIdBuffer);
+                    m_pickEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    m_pickEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
-                    m_effect->bind();
-                
+                    m_pickEffect->bind();
+
                     std::span<const pyr::SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
                     for (auto& submesh : submeshes)
                     {
                         pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                     }
-                
-                    m_effect->unbindResources();
+
+                    m_pickEffect->unbindResources();
                 }
-                
+
                 m_idTarget.unbind();
 
                 pyr::RenderProfiles::popDepthProfile();
 
                 int actorId = readback();
-                if (actorId != ID_NONE) 
+                if (actorId != ID_NONE)
                 {
                     // You have picked actor !!!
                     PYR_LOGF(LogRenderPass, INFO, "Actor {} was picked.", actorId);
                     handlePick(actorId);
 
                 }
-                if (renderDoc)
-                    renderDoc->EndFrameCapture(nullptr, nullptr);
-                
+                //if (renderDoc)
+                //    renderDoc->EndFrameCapture(nullptr, nullptr);
             }
-
 
             int readback() {
             

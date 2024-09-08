@@ -108,7 +108,7 @@ FrameBuffer::FrameBuffer(IDXGISwapChain *swapChain, ID3D11Device *device, unsign
 void FrameBuffer::clearTargets() const
 {
   auto &context = Engine::d3dcontext();
-  constexpr float clearColor[4]{ .05f, .08f, .1f, 1.f };
+  constexpr float clearColor[4]{ .05f, .08f, .1f, 0.0f };
   if(m_depthStencilView) context.ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
   if(m_renderTargetView) context.ClearRenderTargetView(m_renderTargetView, clearColor);
 }
@@ -198,7 +198,6 @@ size_t FrameBuffer::targetTypeToIndex(Target target)
 
 void FrameBuffer::setDepthOverride(ID3D11DepthStencilView* depth)
 { 
-	if (depth != m_overridenDepth) DXRelease(m_overridenDepth);
 	m_overridenDepth = depth; 
 	bindToD3DContext();
 }

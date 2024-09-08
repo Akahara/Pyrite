@@ -53,7 +53,6 @@ public:
         pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
 
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
-        pyr::Effect::unbindResources();
         // Render all objects 
 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
@@ -121,6 +120,8 @@ private:
         m_skyboxEffect->unbindResources();
         RenderProfiles::popDepthProfile();
         RenderProfiles::popRasterProfile();
+        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(nullptr);
+
     }
 };
 }

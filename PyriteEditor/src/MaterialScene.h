@@ -153,10 +153,10 @@ namespace pye
             }
 
             if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
-                m_picker.m_bIsEnabled = true;
+                m_picker.RequestPick();
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
+            pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
  
             m_ggxShader->bindConstantBuffer("CameraBuffer", pcameraBuffer);
@@ -170,7 +170,6 @@ namespace pye
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
 
-            m_picker.m_bIsEnabled = false;
             if (ImGui::Button("open file dialog"))
                 fileDialog.Open();
 
