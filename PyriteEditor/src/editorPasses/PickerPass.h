@@ -331,19 +331,32 @@ namespace pye
                 static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
                 static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
 
+                if (pyr::UserInputs::isKeyPressed(keys::SC_Z)) mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+                if (pyr::UserInputs::isKeyPressed(keys::SC_E)) mCurrentGizmoOperation = ImGuizmo::SCALE;
+                if (pyr::UserInputs::isKeyPressed(keys::SC_R)) mCurrentGizmoOperation = ImGuizmo::ROTATE;
+
                 ImGuiIO& io = ImGui::GetIO();
                 ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-                ImGuizmo::Manipulate(&camera.getViewMatrix()._11, &camera.getProjectionMatrix()._11, mCurrentGizmoOperation, mCurrentGizmoMode, &matrix._11, NULL, NULL);
-
-                vec3 dScale, dPos;  quat dRot;
-                matrix.Decompose(dScale, dRot, dPos);
-
-                dPos -= originalPos;
-                for (pyr::StaticMesh* mesh : meshes)
+                if (ImGuizmo::Manipulate(&camera.getViewMatrix()._11, &camera.getProjectionMatrix()._11, mCurrentGizmoOperation, mCurrentGizmoMode, &matrix._11, NULL, NULL))
                 {
-                    mesh->getTransform().position += dPos;
-                    mesh->getTransform().scale *= dScale;
-                    mesh->getTransform().rotation *= dRot;
+                    vec3 dScale, dPos;  quat dRot;
+                    matrix.Decompose(dScale, dRot, dPos);
+
+                    dPos -= originalPos;
+                    for (pyr::StaticMesh* mesh : meshes)
+                    {
+                        mesh->getTransform().position += dPos;
+                        if (meshes.size() > 1)
+                        {
+                            vec3 rotationPoint = center.position;
+                            vec3 diff = mesh->getTransform().position - rotationPoint;
+                            vec3 out = (diff * dRot);
+                            mesh->getTransform().position += out;
+                        }
+
+                        if (mCurrentGizmoOperation == ImGuizmo::SCALE) mesh->getTransform().scale = dScale; // temp
+                        mesh->getTransform().rotation *= dRot;
+                    }
                 }
             }
 
