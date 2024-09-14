@@ -74,6 +74,9 @@
     <Import Project="..\PyriteCore\PyriteProperties.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -127,17 +130,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PyriteIncludeDir);$(ProjectDir)vendor;$(ProjectDir)vendor\efsw\src;$(ProjectDir)vendor\efsw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PyriteIncludeDir);$(ProjectDir)vendor;$(ProjectDir)vendor\efsw\src;$(ProjectDir)vendor\efsw\include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(PyriteDllOutput);$(PyriteLib)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dxguid.lib;winmm.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dinput8.lib;PyriteCore.lib;Effects11.lib;XInput.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxguid.lib;winmm.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dinput8.lib;Effects11d.lib;XInput.lib;PyriteCore.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

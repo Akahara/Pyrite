@@ -12,11 +12,12 @@ namespace pyr
 	struct RegisteredRenderableActorCollection
 	{
 		std::vector<const class StaticMesh*> meshes;
-		//std::vector<Billboard*> billboards;
+		std::vector<const class Billboard*> billboards;
 		//std::vector<Lights*> lights;
 
 		void registerForFrame(const StaticMesh* mesh) { meshes.push_back(mesh); }
-		void clear() { meshes.clear(); }
+		void registerForFrame(const Billboard* billboard) { billboards.push_back(billboard); }
+		void clear() { meshes.clear(); billboards.clear(); }
 		// lights.clear(); billboards.clear();
 		//void registerForFrame(Billboard* billboard)		{ billboards.push_back(billboard); }
 		//void registerForFrame(Lights* light)			{ lights.push_back(light); }

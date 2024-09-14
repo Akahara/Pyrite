@@ -44,6 +44,7 @@ namespace pye
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
+        pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
 
         pye::EditorPasses::PickerPass m_picker;
         pyr::RenderGraph m_RDG;
@@ -61,6 +62,8 @@ namespace pye
         ImGui::FileBrowser fileDialog;
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
+        pyr::Billboard testBillboard;
+        pyr::Texture breadbug = m_registry.loadTexture(L"editor/icons/world/lights/lightbulb.png");
 
     public:
 
@@ -108,6 +111,7 @@ namespace pye
             m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
+            m_RDG.addPass(&m_billboardsPass);
             m_RDG.addPass(&m_picker);
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
@@ -118,6 +122,7 @@ namespace pye
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_picker);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
             m_forwardPass.boundCamera = &m_camera;
+            m_billboardsPass.boundCamera = &m_camera;
             m_picker.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
@@ -128,6 +133,10 @@ namespace pye
 
             pye::Editor::Get().Init(SceneActors);
 
+
+            testBillboard.type = pyr::Billboard::HUD;
+            testBillboard.texture = &breadbug;
+            //testBillboard.transform.position = { 10,10,10};
         }
 
         void update(float delta) override
@@ -142,7 +151,7 @@ namespace pye
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
-                            });
+            });
         }
 
         void render() override
@@ -151,6 +160,7 @@ namespace pye
             {
                 SceneActors.registerForFrame(&m_balls[i]);
             }
+            SceneActors.registerForFrame(&testBillboard);
 
             if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
                 m_picker.RequestPick();

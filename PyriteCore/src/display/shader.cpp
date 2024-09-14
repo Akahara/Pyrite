@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <d3dcompiler.h>
 #include <fstream>
+#include <ranges>
 
 #include "engine/Directxlib.h"
 #include "GraphicalResource.h"
@@ -170,6 +171,13 @@ void Effect::bindTexture(const Texture &texture, const std::string &name) const
 void Effect::bindCubemap(const Cubemap &cubemap, const std::string &name) const
 {
   DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(cubemap.getRawCubemap()), "Could not bind a cubemap to an effect");
+}
+
+void Effect::bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const
+{
+    auto view = textures | std::views::transform([](const pyr::Texture& t) { return (ID3D11ShaderResourceView*)t.getRawTexture(); });
+    std::vector<ID3D11ShaderResourceView*> views(view.begin(), view.end());
+    bindTextures(views, name);
 }
 
 void Effect::bindTextures(const std::vector<ID3D11ShaderResourceView*> &textures, const std::string &name) const

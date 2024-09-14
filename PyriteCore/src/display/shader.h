@@ -53,7 +53,10 @@ public:
   static void unbindResources();
   void bindTexture(const Texture &texture, const std::string &name) const;
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
+
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
+  void bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const;
+
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
 
   const std::string& getFilePath() const { return m_effectFile; }
