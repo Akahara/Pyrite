@@ -14,6 +14,12 @@ namespace pyr {
 
 /// =============================================================================================================================================================///
 
+enum LightTypeID : uint32_t
+{
+	Directional = 1,
+	Point = 2,
+	Spotlight = 3,
+};
 
 struct hlsl_GenericLight
 {
@@ -29,7 +35,7 @@ struct hlsl_GenericLight
 	float strength;
 	float isOn;
 
-	uint32_t type; // 1 : dir, 2 : point , 3 : dir
+	LightTypeID type;
 	float padding[3];
 };
 
@@ -58,16 +64,16 @@ template<>
 hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const DirectionalLight& light)
 {
 	return hlsl_GenericLight{
-		light.direction,
-		{},
-		{},
-		light.ambiant,
-		light.diffuse,
-		{},
-		{},
-		light.strength,
-		static_cast<float>(light.isOn),
-		1
+		.direction = light.direction,
+		.range = {},
+		.position = {},
+		.ambiant = light.ambiant,
+		.diffuse = light.diffuse,
+		.specularFactor = {},
+		.fallOff = {},
+		.strength = light.strength,
+		.isOn = static_cast<float>(light.isOn),
+		.type = LightTypeID::Directional
 	};
 }
 
@@ -76,22 +82,17 @@ hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const DirectionalLight& 
 
 struct PointLight : public BaseLight {
 
-	int distance = 7;
+	int distance = 7; // lookup table
 	vec4 range = computeRangeFromDistance(7);
 	vec4 position;
 	float specularFactor = 1.0;
 
 	PointLight() = default;
 	PointLight(unsigned int d, vec4 pos, vec4 Ka, vec4 Kd, float f, bool on)
-	{
-		distance = d;
-		range = computeRangeFromDistance(distance);
-		position = pos;
-		ambiant = Ka;
-		diffuse = Kd;
-		specularFactor = f;
-		isOn = on;
-	}
+		: BaseLight{ .isOn = on, .ambiant = Ka, .diffuse = Kd},
+		distance(d), range(computeRangeFromDistance(distance)), position(pos), 
+		specularFactor(f)
+	{}
 
 	vec4 computeRangeFromDistance(unsigned int distance)
 	{
@@ -122,16 +123,16 @@ template<>
 hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light)
 {
 	return hlsl_GenericLight{
-		{},
-		light.range,
-		light.position,
-		light.ambiant,
-		light.diffuse,
-		light.specularFactor,
-		{},
-		{},
-		static_cast<float>(light.isOn),
-		2
+		.direction = {},
+		.range = light.range,
+		.position = light.position,
+		.ambiant = light.ambiant,
+		.diffuse = light.diffuse,
+		.specularFactor = light.specularFactor,
+		.fallOff = {},
+		.strength = {},
+		.isOn = static_cast<float>(light.isOn),
+		.type = LightTypeID::Point
 	};
 }
 
@@ -142,25 +143,26 @@ struct SpotLight : public  BaseLight {
 	vec4 direction = { 0.f,0.f,-1.f,0.f };
 	vec4 position;
 
-	float outsideAngle = 1.6;
-	float insideAngle = 0.5;
-	float strength = 1.0;
-	float specularFactor = 1.0;
+	float outsideAngle = 1.6f;
+	float insideAngle = 0.5f;
+	float strength = 1.0f;
+	float specularFactor = 1.0f;
 };
 
 template<>
 hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
 {
 	return hlsl_GenericLight{
-		light.direction,
-		{light.insideAngle,light.insideAngle,light.insideAngle,light.insideAngle},
-		light.position,
-		light.ambiant, light.diffuse,
-		light.specularFactor,
-		light.outsideAngle,
-		light.strength,
-		static_cast<float>(light.isOn),
-		3
+		.direction = light.direction,
+		.range = {light.insideAngle,light.insideAngle,light.insideAngle,light.insideAngle},
+		.position = light.position,
+		.ambiant = light.ambiant,
+		.diffuse = light.diffuse,
+		.specularFactor = light.specularFactor,
+		.fallOff = light.outsideAngle,
+		.strength = light.strength,
+		.isOn = static_cast<float>(light.isOn),
+		.type = LightTypeID::Spotlight
 	};
 }
 
@@ -176,10 +178,10 @@ struct LightsCollections {
 	std::vector<PointLight> Points;
 	std::vector<DirectionalLight> Directionals;
 
-	std::vector<hlsl_GenericLight> ConvertCollectionToHLSL(size_t desiredMinCapacity = 16)
+	template<size_t N = 16>
+	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL()
 	{
-		std::vector<hlsl_GenericLight> res;
-		res.resize(desiredMinCapacity);
+		std::array<hlsl_GenericLight, N> res;
 
 		auto it = res.begin();
 		for (const SpotLight& spot : Spots)

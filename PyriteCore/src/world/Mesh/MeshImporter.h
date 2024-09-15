@@ -10,6 +10,7 @@
 #include "../Material.h"
 #include "Model.h"
 #include <set>
+#include <array>
 
 namespace fs = std::filesystem;
 using namespace DirectX::SimpleMath;
@@ -144,16 +145,16 @@ private:
 				if (AI_SUCCESS == currMeshMaterial->Get(AI_MATKEY_REFRACTI, factor))
 					coefs.Roughness = factor / 1000.f;
 
-				for (auto& [assimpType, pyrType] : std::vector<std::pair<aiTextureType, TextureType>>{
-					{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
-					{ aiTextureType_NORMALS, TextureType::NORMAL},
-					{ aiTextureType_METALNESS, TextureType::METALNESS},
-					{ aiTextureType_SPECULAR, TextureType::SPECULAR},
-					{ aiTextureType_AMBIENT, TextureType::AO},
-					{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS},
-					{ aiTextureType_DISPLACEMENT, TextureType::BUMP},
-					{ aiTextureType_HEIGHT, TextureType::HEIGHT},
-					})
+				for (auto& [assimpType, pyrType] : std::array< std::pair<aiTextureType, TextureType>, 8>{
+					{{ aiTextureType_DIFFUSE, TextureType::ALBEDO },
+						{ aiTextureType_NORMALS, TextureType::NORMAL },
+						{ aiTextureType_METALNESS, TextureType::METALNESS },
+						{ aiTextureType_SPECULAR, TextureType::SPECULAR },
+						{ aiTextureType_AMBIENT, TextureType::AO },
+						{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS },
+						{ aiTextureType_DISPLACEMENT, TextureType::BUMP },
+						{ aiTextureType_HEIGHT, TextureType::HEIGHT },
+					}})
 				{
 
 					if (currMeshMaterial->GetTextureCount(assimpType) >= 1)

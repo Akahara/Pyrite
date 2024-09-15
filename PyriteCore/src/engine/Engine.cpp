@@ -97,7 +97,7 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
   style.FrameRounding = 7;
   style.WindowBorderSize = 0;
   style.ChildBorderSize = 0;
-  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.04, 0.04, 0.04, 1);
+  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.f);
   showWindow();
   UserInputs::loadGlobalResources();
 }

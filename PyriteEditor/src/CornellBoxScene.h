@@ -119,7 +119,6 @@ namespace pye
             m_lights.Spots.push_back({});
             m_lights.Spots.push_back({});
 
-            std::vector<pyr::hlsl_GenericLight> gpu_lights = m_lights.ConvertCollectionToHLSL();
 
         }
 
@@ -132,22 +131,24 @@ namespace pye
                 .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
                 });
-            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
-                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
-                .inverseProj = m_camera.getProjectionMatrix().Invert(),
-                .Proj = m_camera.getProjectionMatrix()
-                });
 
-            LightsBuffer::data_t light_data{};
-            std::copy_n(m_lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
-            pLightBuffer->setData(light_data);
         }
 
         /// ------------------------------------------------------------------------------------------------------------------------------- ///
         
         void render() override
-
         {
+
+            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
+                .inverseProj = m_camera.getProjectionMatrix().Invert(),
+                .Proj = m_camera.getProjectionMatrix()
+            });
+
+            LightsBuffer::data_t light_data{};
+            std::copy_n(m_lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
+            pLightBuffer->setData(light_data);
+
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);

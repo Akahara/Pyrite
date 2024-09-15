@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world/Lights/Light.h"
+#include "utils/debug.h"
 
 namespace pye
 {
@@ -21,15 +22,15 @@ namespace pye
 
 	struct pf_LightsCollection
 	{
-		pf_LightsCollection() {}
+		pf_LightsCollection() = default;
 		pf_LightsCollection(pyr::LightsCollections* source)
 		{
-			assert(source);
+			PYR_ASSERT(source);
 			sourceCollection = source;
 			UpdateEditorFormat();
 		}
 		// -- // 
-		pyr::LightsCollections* sourceCollection;
+		pyr::LightsCollections* sourceCollection = nullptr;
 
 
 		// -- // 
@@ -55,7 +56,6 @@ namespace pye
 				EditorFormat.push_back(pf_Light{ .sourceLight = &dl, .name = std::format("DirectionalLight #{}", id++), .type = pf_Light::DIR });
 
 		}
-	
 	};
 
 }

@@ -23,8 +23,11 @@
 #include "utils/StringUtils.h"
 #include "editor/ShaderReloader.h"
 
-//int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
-int main(const char** argv, int argc)
+#ifdef _CONSOLE
+int main(int argc, char* argv[])
+#else
+int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+#endif
 {
 #ifndef PYR_ISDEBUG
   try
@@ -50,7 +53,12 @@ int main(const char** argv, int argc)
     scenes.registerScene<pye::CornellBoxScene>("CornellBox");
 
     // Load the scene that is passed on the command line by default
-    //scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
+#ifdef _CONSOLE
+    if (argc > 1)
+        scenes.transitionToScene(argv[0]);
+#else
+    scenes.transitionToScene(pyr::widestring2string(lpCmdLine));
+#endif
     engine.run();
     return 0;
 #ifndef PYR_ISDEBUG
