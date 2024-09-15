@@ -47,15 +47,17 @@ namespace pyr
                 
                 Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
-
                  
                 pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+
+                // - First step should be to sort the billboards, whether they are HUD (autofacing, no depth test, depth write for the picker) ect
                 pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
                 m_billboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
                 auto result = renderData.textures
                     | std::views::keys                        
-                    | std::views::transform([](auto texPtr) { return *texPtr; }); 
+                    | std::views::transform([](auto texPtr) { return *texPtr; });
+
 
                 // Collect the view into a vector
                 std::vector<pyr::Texture> textures (result.begin(), result.end());
@@ -63,13 +65,14 @@ namespace pyr
 
                 m_billboardEffect->bind();
                 renderData.instanceBuffer.bind(true);
-                pyr::Engine::d3dcontext().DrawInstanced(6, renderData.instanceBuffer.getVerticesCount(), 0, 0);
+                pyr::Engine::d3dcontext().DrawInstanced(6, static_cast<UINT>(renderData.instanceBuffer.getVerticesCount()), 0, 0);
                 m_billboardEffect->unbindResources();
-
-
 
                 pyr::RenderProfiles::popBlendProfile();
             }
+
+
+
 
         };
     }

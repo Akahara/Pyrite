@@ -1,7 +1,14 @@
 //======================================================================================================================//
+// -- INCLUDES
 
 #include "../../res/shaders/incl/cbuffers.incl"
 #include "../../res/shaders/incl/samplers.incl"
+#include "../../res/shaders/incl/transform_utils.incl"
+
+//======================================================================================================================//
+// -- DEFINES
+
+static const int AUTO_FACING = 0;
 
 //======================================================================================================================//
 
@@ -44,25 +51,6 @@ static float4 VERTICES[6] =
 
 //======================================================================================================================//
 
-float4x4 RotateModelToFaceNormal(float4x4 modelMatrix, float3 targetNormal)
-{
-    targetNormal = normalize(targetNormal);
-    
-    float3 worldUp = float3(0.0f, 1.0f, 0.0f);
-    float3 right    = normalize(cross(targetNormal, worldUp)); 
-    float3 front    = cross(right, targetNormal);
-    
-    float4x4 rotationMatrix = float4x4(
-        float4(right, 0.0f),
-        float4(front, 0.0f),
-        float4(targetNormal, 0.0f),
-        float4(0.0f, 0.0f, 0.0f, 1.0f)
-    );
-    
-    return mul(transpose(rotationMatrix), modelMatrix);
-}
-//======================================================================================================================//
-
 VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint vertexID : SV_VertexID)
 {
     float4 position = VSin.instanceTransform3;
@@ -74,14 +62,10 @@ VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint ve
     ));  
     
     
-    if (VSin.billboardType == 0) // HUD (autofacing + no depth)
+    if (VSin.billboardType == AUTO_FACING) // HUD (autofacing + no depth)
     {
         float3 facingNormal = normalize(cameraPosition - position.xyz);
         M = RotateModelToFaceNormal(M, -facingNormal);
-    }
-    
-    if (VSin.billboardType == 1) // Depth write
-    {
     }
     
     float4x4 MVP = mul(ViewProj, M);
@@ -105,6 +89,10 @@ VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint ve
 
 float4 billboardPS(VertexOut vsin) : SV_Target
 {
+#ifdef WRITE_DEPTH_ONLY
+    return float4(0,0,0,1);
+#endif
+    
     float4 texSample = float4(0, 0, 0, 1);
     
     for (uint i = 0; i < 16; i++)

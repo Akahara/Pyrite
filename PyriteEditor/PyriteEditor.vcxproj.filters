@@ -78,7 +78,6 @@
     <ClInclude Include="vendor\efsw\include\efsw\efsw.hpp" />
     <ClInclude Include="src\CubemapBuilderScene.h" />
     <ClInclude Include="src\MaterialScene.h" />
-    <ClInclude Include="src\editorPasses\BillboardPass.h" />
     <ClInclude Include="src\editorPasses\PickerPass.h" />
     <ClInclude Include="src\editor\EditorActor.h" />
     <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />

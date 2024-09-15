@@ -31,6 +31,9 @@ namespace pye
             using ActorPickerIDBuffer = pyr::ConstantBuffer<InlineStruct( uint32_t id) > ;
             std::shared_ptr<ActorPickerIDBuffer> pIdBuffer = std::make_shared<ActorPickerIDBuffer>();
 
+            using BillboardPickerIDBuffer = pyr::ConstantBuffer<InlineStruct(uint32_t ids[64]) >;
+            std::shared_ptr<BillboardPickerIDBuffer> pBillboardIDBuffer = std::make_shared<BillboardPickerIDBuffer>();
+
             // -- MVP
             using ActorBuffer = pyr::ConstantBuffer<InlineStruct(mat4 modelMatrix) >;
             std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
@@ -41,7 +44,8 @@ namespace pye
             pyr::FrameBuffer m_idTarget{ pyr::Device::getWinWidth(),pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0};
             pyr::FrameBuffer m_OutlineTarget{ pyr::Device::getWinWidth(),pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0};
 
-            pyr::Effect* m_pickEffect = nullptr;
+            pyr::Effect* m_pickEffect_Meshes = nullptr;
+            pyr::Effect* m_pickEffect_Billboards = nullptr;
             pyr::Effect* m_gridDepthEffect = nullptr;
             pyr::Effect* m_outlineEffect = nullptr;
             pyr::Effect* m_composeEffect = nullptr;
@@ -68,9 +72,16 @@ namespace pye
             PickerPass()
             {
                 displayName = "Editor-PickerPass";
-                m_pickEffect = m_registry.loadEffect(
+                m_pickEffect_Meshes = m_registry.loadEffect(
                     L"editor/shaders/picker.fx",
-                    pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>(),
+                    { pyr::Effect::define_t{ .name = "USE_MESH", .value = "1" }}
+                );
+
+                m_pickEffect_Billboards = m_registry.loadEffect(
+                    L"editor/shaders/picker.fx",
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex,pyr::Billboard::billboard_vertex_t>(),
+                    { pyr::Effect::define_t{ .name = "USE_BILLBOARDS", .value = "1" }}
                 );
 
                 m_gridDepthEffect = m_registry.loadEffect(
@@ -183,7 +194,7 @@ namespace pye
 
                 PYR_LOG(LogRenderPass, INFO, "Pick !");
                 auto renderDoc = pyr::RenderDoc::Get();
-                //if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
+                if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
                 PYR_LOG(LogRenderPass, INFO, "%p", renderDoc);
 
                 m_idTarget.clearTargets();
@@ -196,11 +207,11 @@ namespace pye
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
                     pIdBuffer->setData(ActorPickerIDBuffer::data_t{ .id = smesh->GetActorID() });
 
-                    m_pickEffect->bindConstantBuffer("ActorPickerIDBuffer", pIdBuffer);
-                    m_pickEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-                    m_pickEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+                    m_pickEffect_Meshes->bindConstantBuffer("ActorPickerIDBuffer", pIdBuffer);
+                    m_pickEffect_Meshes->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    m_pickEffect_Meshes->bindConstantBuffer("ActorBuffer", pActorBuffer);
 
-                    m_pickEffect->bind();
+                    m_pickEffect_Meshes->bind();
 
                     std::span<const pyr::SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
                     for (auto& submesh : submeshes)
@@ -208,7 +219,33 @@ namespace pye
                         pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                     }
 
-                    m_pickEffect->unbindResources();
+                    m_pickEffect_Meshes->unbindResources();
+                }
+
+                // -- Billboards
+                {
+                    pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
+                    std::array<uint32_t, 64> ids;
+
+                    ids[0] = 727;
+                    pBillboardIDBuffer->setData(
+                        BillboardPickerIDBuffer::data_t{ .ids = ids[0] });
+                    
+                    m_pickEffect_Billboards->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    m_pickEffect_Billboards->bindConstantBuffer("BillboardPickerIDBuffer", pBillboardIDBuffer);
+
+                    auto result = renderData.textures
+                        | std::views::keys
+                        | std::views::transform([](auto texPtr) { return *texPtr; });
+
+                    // Collect the view into a vector
+                    std::vector<pyr::Texture> textures(result.begin(), result.end());
+                    m_pickEffect_Billboards->bindTextures(textures, "textures");
+
+                    m_pickEffect_Billboards->bind();
+                    renderData.instanceBuffer.bind(true);
+                    pyr::Engine::d3dcontext().DrawInstanced(6, static_cast<UINT>(renderData.instanceBuffer.getVerticesCount()), 0, 0);
+                    m_pickEffect_Billboards->unbindResources();
                 }
 
                 m_idTarget.unbind();
@@ -223,8 +260,8 @@ namespace pye
                     handlePick(actorId, bIsHoldingControl);
 
                 }
-                //if (renderDoc)
-                //    renderDoc->EndFrameCapture(nullptr, nullptr);
+                if (renderDoc)
+                    renderDoc->EndFrameCapture(nullptr, nullptr);
             }
 
             int readback() {
@@ -373,6 +410,43 @@ namespace pye
                 matrix.Decompose(mesh.getTransform().scale, mesh.getTransform().rotation, mesh.getTransform().position);
             }
 
+        private:
+
+            template<class T>
+            ID3D11ShaderResourceView* createStructuredBuffer(const std::span<T>& sourceData)
+            {
+                ID3D11Buffer* buffer = nullptr;
+                uint32_t stride = sizeof(T);
+                const uint32_t byteWidth = stride * static_cast<uint32_t>(sourceData.size());
+
+                D3D11_BUFFER_DESC desc;
+                desc.ByteWidth = byteWidth;
+                desc.Usage = D3D11_USAGE_DYNAMIC;
+                desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+                desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+                desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+                desc.StructureByteStride = stride;
+
+                D3D11_SUBRESOURCE_DATA data;
+                data.pSysMem = sourceData.data();
+                data.SysMemPitch = 0;
+                data.SysMemSlicePitch = 0;
+
+                auto hr = pyr::Engine::d3ddevice().CreateBuffer(&desc, &data, &buffer);
+                PYR_ENSURE(hr == S_OK);
+
+                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+                srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+                srvDesc.Buffer.NumElements = sourceData.size(); 
+                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+
+                ID3D11ShaderResourceView* shaderResourceView = nullptr;
+                hr = pyr::Engine::d3ddevice().CreateShaderResourceView(buffer, nullptr, &shaderResourceView);
+                PYR_ENSURE(hr == S_OK);
+                return shaderResourceView;
+            }
+
         };
+
     }
 }

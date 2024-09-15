@@ -36,7 +36,7 @@ public:
   void keepHandleToTexture(Texture texture);
   void keepHandleToCubemap(Cubemap cubemap);
   Cubemap loadCubemap(const filepath &path);
-  Effect *loadEffect(const filepath &path, const InputLayout& layout);
+  Effect *loadEffect(const filepath &path, const InputLayout& layout, const std::vector<Effect::define_t>& defines = {});
 
   void swap(GraphicalResourceRegistry& other) noexcept;
 
@@ -45,7 +45,7 @@ private:
   map<filepath, Cubemap> m_cubemapsCache;
   vector<Texture> m_ownedTextures;
   vector<Cubemap> m_ownedCubemaps;
-  map<filepath, std::pair<std::shared_ptr<Effect>, InputLayout>> m_effects;
+  map<size_t, std::pair<std::shared_ptr<Effect>, InputLayout>> m_effects;
 };
 
 }
