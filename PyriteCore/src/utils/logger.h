@@ -3,6 +3,7 @@
 #include <format>
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "Math.h"
 #include "StringUtils.h"
@@ -49,6 +50,7 @@ public:
 		ss.str("");
 		(ss << ... << std::forward<Args>(args));
 		ss << '\n';
+		std::cout << ss.str();
 		OutputDebugStringA(ss.str().c_str());
 	}
 
@@ -58,9 +60,12 @@ public:
 	    if (verbosity < m_verbosity)
 	      return;
 
-	    OutputDebugStringA(std::vformat(
-	      std::string(format) + "\n",
-	      std::make_format_args(std::forward<Args>(args)...)).c_str());
+		std::string res = std::vformat(
+			std::string(format) + "\n",
+			std::make_format_args(std::forward<Args>(args)...));
+
+		std::cout << res;
+	    OutputDebugStringA(res.c_str());
     }
 
 

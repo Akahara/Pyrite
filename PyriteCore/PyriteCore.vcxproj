@@ -181,6 +181,7 @@
     <ClInclude Include="src\utils\Utils.h" />
     <ClInclude Include="src\world\AABB.h" />
     <ClInclude Include="src\world\Camera.h" />
+    <ClInclude Include="src\world\Lights\Light.h" />
     <ClInclude Include="src\world\Material.h" />
     <ClInclude Include="src\world\Mesh\RawMeshData.h" />
     <ClInclude Include="src\world\Mesh\MeshImporter.h" />

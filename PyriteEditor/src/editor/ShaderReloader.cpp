@@ -21,6 +21,12 @@ public:
     m_fileWatcher.watch();
   }
 
+  ~ShaderAutoReloaderImpl()
+  {
+      if (m_debouncingThread.joinable())
+          m_debouncingThread.join();
+  }
+
   void addEffectToWatch(std::weak_ptr<pyr::Effect> effect)
   {
     std::shared_ptr<pyr::Effect> effectLock = effect.lock();

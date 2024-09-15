@@ -152,8 +152,30 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
     return texCoords - p;
 }
 
-#define LIGHT_COUNT 1
+#define LIGHT_COUNT 16
 #define PI 3.14159
+
+struct Light
+{
+    float4 direction; // For directional lights and spotlight
+    float4 range; // for pl + radius of spotlights
+    float4 position;
+    float4 ambiant;
+    float4 diffuse;
+    
+    float specularFactor;
+    float fallOff; // outside angle for spots
+    float strength;
+    float isOn;
+    
+    uint type;
+    float3 pading;
+};
+
+cbuffer lightsBuffer
+{
+    Light lights[16];
+};
 
 Texture2D ssaoTexture;
 TextureCube irrandiance_map;
@@ -182,32 +204,61 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 R = reflect(-V, pixelNormal);
     
     // Go ggx !!
-    float3 F0 = Ni.xxx; //Ni.xxx; // Ni
+    float3 F0 = Ni.xxx; 
     F0 = lerp(F0, albedo.xyz, computed_metallic);
     float3 Lo = float3(0,0,0);
     // -- For each light, compute the specular --//
+    for (int i = 0; i < LIGHT_COUNT; ++i)
     {
+        Light light = lights[i];
+        if (light.isOn < 1.0f)
+            continue;
+        
+        float3 radiance = 0.0.xxx;
+        float3 L = normalize(1.0.xxx);
+        
+        if (light.type == 1) // dir
+        {
+            L = normalize(-light.direction);
+            radiance = light.diffuse.xyz * light.strength * 5.f;
+        }
+        
+        if (light.type == 2) // point
+        {
+            float LightToPixel = light.position.xyz - vsIn.worldpos.xyz;
+            float dist = length(LightToPixel);
+            float attenuation = 1.0 / (light.range.y + light.range.z * dist + light.range.w * (dist * dist));
+            //float attenuation = 1.0 / (dist * dist);
+            L = normalize(light.position.xyz - vsIn.worldpos.xyz);
+            radiance = light.diffuse.xyz * attenuation * light.specularFactor;
+
+        }
+        if (light.type == 3) // spot
+        {
+            // compute pixel angle
+            L = normalize(light.position.xyz - vsIn.worldpos.xyz);
+            float smallAngle = light.range.x;
+            float largeAngle = smallAngle + light.fallOff;
             
-        float3 radiance = 5.0.xxx;; // should be lights color and attenuation
+            float pixelToSpotAngle = saturate(dot(
+                    normalize(-light.position.xyz + vsIn.worldpos.xyz),
+                    normalize(light.direction.xyz)
+            ));
+            float t = smoothstep(0, 1, (pixelToSpotAngle - cos(largeAngle)) / (cos(smallAngle) - cos(largeAngle)));
+            radiance = light.diffuse.rgb * lights[i].strength * t;
+        }
         
-        float3 L = normalize(sunPos - vsIn.worldpos.xyz);
         float3 H = normalize(L + V);
-        
         float NDF = DistributionGGX(pixelNormal, H, computed_roughness);
         float G = GeometrySmith(pixelNormal, V, L, computed_roughness);
         float3 F = fresnelSchlick(H, V, F0);
-        
-        
-        
         float3 kS = F;
         float3 kD = float3(1,1,1) - kS;
         kD *= 1.f - computed_metallic;
-        
         float NDotL = saturate(dot(pixelNormal, L));
         float3 numerator = NDF * G * F;
         float denominator = 4.0 * saturate(dot(V, pixelNormal)) * NDotL;
         float3 specular = numerator / (denominator + 0.0001);
-        
         Lo += ((kD * albedo / PI) + specular) * radiance * NDotL;
     }
     

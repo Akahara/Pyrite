@@ -27,10 +27,14 @@ class RenderProfiles
 public:
   static void pushBlendProfile(BlendProfile profile);
   static void popBlendProfile();
+  
   static void pushDepthProfile(DepthProfile profile);
   static void popDepthProfile();
+
   static void pushRasterProfile(RasterizerProfile profile);
   static void popRasterProfile();
+
+public:
 
   static void initProfiles();
   static void disposeProfiles();

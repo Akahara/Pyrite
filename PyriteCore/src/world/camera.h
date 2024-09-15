@@ -131,7 +131,7 @@ public:
   void setCamera(Camera* camera) { m_camera = camera; }
 
 private:
-  float m_playerSpeed = 15.f;
+  float m_playerSpeed = 15.0;
   bool  m_cursorLocked{};
   Camera* m_camera;
 };

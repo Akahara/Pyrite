@@ -19,8 +19,8 @@ static_assert(MSAA_LEVEL == 8); // the number of samples must set as a constant 
 std::vector<FrameBuffer *> FrameBuffer::s_frameBuffersStack;
 
 FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targets)
-  : m_width(width)
-  , m_height(height)
+  : m_width(std::max<UINT>(1, width))
+  , m_height(std::max<UINT>(1, height))
 {
   auto &device = Engine::d3ddevice();
 
@@ -30,7 +30,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 	ID3D11Texture2D *renderTexture;
 	CD3D11_TEXTURE2D_DESC renderTextureDesc;
 	ZeroMemory(&renderTextureDesc, sizeof(renderTextureDesc));
-	renderTextureDesc.Width = m_width;
+	renderTextureDesc.Width =  m_width;
 	renderTextureDesc.Height = m_height;
 	renderTextureDesc.MipLevels = 1;
 	renderTextureDesc.ArraySize = 1;
@@ -62,7 +62,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
   if (targets & Target::DEPTH_STENCIL) {
 	D3D11_TEXTURE2D_DESC depthTextureDesc;
 	ZeroMemory(&depthTextureDesc, sizeof(depthTextureDesc));
-	depthTextureDesc.Width = m_width;
+	depthTextureDesc.Width =  m_width;
 	depthTextureDesc.Height = m_height;
 	depthTextureDesc.MipLevels = 1;
 	depthTextureDesc.ArraySize = 1;
