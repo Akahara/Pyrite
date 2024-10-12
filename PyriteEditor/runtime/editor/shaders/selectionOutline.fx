@@ -63,7 +63,7 @@ float SobelSDF_2(float2 uv, float2 screenSize)
     {
         float2 uv_offset = uv + (texAddrOffsets[i] / screenSize) * outlineScale;
         float d = selectedMeshesDepth.Sample(blitSamplerState, uv_offset).r;
-        lum[i] = step(0.0001, 1 - d);
+        lum[i] = step(0.00001, 1 - d);
     }
 
     float x = lum[0] + 2 * lum[3] + lum[5] - lum[2] - 2 * lum[4] - lum[7];

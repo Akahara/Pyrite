@@ -64,8 +64,8 @@ VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint ve
     
     if (VSin.billboardType == AUTO_FACING) // HUD (autofacing + no depth)
     {
-        float3 facingNormal = normalize(cameraPosition - position.xyz);
-        M = RotateModelToFaceNormal(M, -facingNormal);
+        float3 targetNormal = normalize(cameraPosition - position.xyz);
+        M = RotateModelToFaceNormal(M, -targetNormal);
     }
     
     float4x4 MVP = mul(ViewProj, M);
@@ -89,10 +89,6 @@ VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint ve
 
 float4 billboardPS(VertexOut vsin) : SV_Target
 {
-#ifdef WRITE_DEPTH_ONLY
-    return float4(0,0,0,1);
-#endif
-    
     float4 texSample = float4(0, 0, 0, 1);
     
     for (uint i = 0; i < 16; i++)
@@ -103,7 +99,13 @@ float4 billboardPS(VertexOut vsin) : SV_Target
         }
     
     }
-    return texSample * vsin.color;
+    
+    float4 pixelColor = texSample * vsin.color;
+#ifdef USE_TEXTURE_AS_DEPTH
+    if (pixelColor.a < 0.00001) discard;
+#endif
+    return pixelColor;
+    
 }
 
 //======================================================================================================================//

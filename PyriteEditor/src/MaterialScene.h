@@ -22,6 +22,9 @@
 
 #include "editor/Editor.h"
 #include "editor/EditorActor.h"
+#include "editor/views/widget.h"
+#include "editor/views/Lights/widget_lights.h"
+#include "editorPasses/WorldHUDPass.h"
 
 namespace pye
 {
@@ -45,8 +48,8 @@ namespace pye
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
         pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
-
         pye::EditorPasses::PickerPass m_picker;
+        pye::EditorPasses::WorldHUDPass m_editorHUD;
         pyr::RenderGraph m_RDG;
 
         pyr::Camera m_camera;
@@ -62,13 +65,14 @@ namespace pye
         ImGui::FileBrowser fileDialog;
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
-        pyr::Billboard testBillboard;
-        pyr::Texture breadbug = m_registry.loadTexture(L"editor/icons/world/lights/lightbulb.png");
+        pye::WidgetsContainer HUD;
+        pye::widgets::LightCollectionWidget LightCollectionWidget;
 
     public:
 
         MaterialScene()
         {
+            HUD.widgets.push_back(&LightCollectionWidget);
 
             cubemapScene.ComputeIBLCubemaps();
             specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
@@ -112,6 +116,7 @@ namespace pye
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
             m_RDG.addPass(&m_billboardsPass);
+            m_RDG.addPass(&m_editorHUD);
             m_RDG.addPass(&m_picker);
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
@@ -123,6 +128,7 @@ namespace pye
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
             m_forwardPass.boundCamera = &m_camera;
             m_billboardsPass.boundCamera = &m_camera;
+            m_editorHUD.boundCamera = &m_camera;
             m_picker.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
@@ -131,27 +137,14 @@ namespace pye
             fileDialog.SetTitle("Choose an HDR background");
             fileDialog.SetTypeFilters({ ".hdr" });
 
-            pye::Editor::Get().Init(SceneActors);
-
-
-            testBillboard.type = pyr::Billboard::HUD;
-            testBillboard.texture = &breadbug;
-            //testBillboard.transform.position = { 10,10,10};
+            pye::Editor::Get().UpdateRegisteredActors(SceneActors);
         }
 
         void update(float delta) override
         {
             // move this to pre-render fn
             m_camController.processUserInputs(delta);
-            pcameraBuffer->setData(CameraBuffer::data_t{
-                .mvp = m_camera.getViewProjectionMatrix(), 
-                .pos = m_camera.getPosition()
-            });
-            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
-                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
-                .inverseProj = m_camera.getProjectionMatrix().Invert(),
-                .Proj = m_camera.getProjectionMatrix()
-            });
+
         }
 
         void render() override
@@ -160,7 +153,17 @@ namespace pye
             {
                 SceneActors.registerForFrame(&m_balls[i]);
             }
-            SceneActors.registerForFrame(&testBillboard);
+
+            pcameraBuffer->setData(CameraBuffer::data_t{
+                .mvp = m_camera.getViewProjectionMatrix(),
+                .pos = m_camera.getPosition()
+            });
+            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
+                .inverseProj = m_camera.getProjectionMatrix().Invert(),
+                .Proj = m_camera.getProjectionMatrix()
+                });
+
 
             if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
                 m_picker.RequestPick();
@@ -203,6 +206,8 @@ namespace pye
             {
                 m_picker.Selected->inspect();
             }
+
+            HUD.Render();
         }
 
     };

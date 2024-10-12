@@ -134,6 +134,8 @@ float ColorID(VertexOutput vsIn) : SV_Target
         }
     
     }
+    if (texSample.a <= 0.9999) discard;
+
     return !!texSample.a * float(vsIn.billboardActorId);
 #else
 float ColorID() : SV_Target

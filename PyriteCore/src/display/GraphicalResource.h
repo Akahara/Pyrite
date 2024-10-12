@@ -32,7 +32,7 @@ public:
   GraphicalResourceRegistry(GraphicalResourceRegistry &&) noexcept;
   GraphicalResourceRegistry &operator=(GraphicalResourceRegistry &&) noexcept;
 
-  Texture loadTexture(const filepath &path);
+  Texture loadTexture(const filepath &path, bool bGenerateMips = true);
   void keepHandleToTexture(Texture texture);
   void keepHandleToCubemap(Cubemap cubemap);
   Cubemap loadCubemap(const filepath &path);

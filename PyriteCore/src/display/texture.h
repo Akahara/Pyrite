@@ -110,7 +110,7 @@ class TextureManager
 public:
   ~TextureManager();
 
-  static Texture loadTexture(const std::wstring &path);
+  static Texture loadTexture(const std::wstring &path, bool bGenerateMips = true);
   static Cubemap loadCubemap(const std::wstring &path);
   static const SamplerState &getSampler(SamplerState::SamplerType type);
 

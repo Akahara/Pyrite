@@ -22,6 +22,7 @@
 
 #include "editor/views/widget.h"
 #include "editor/views/Lights/widget_lights.h"
+#include <inputs/UserInputs.h>
 
 namespace pye
 {
@@ -43,6 +44,9 @@ namespace pye
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
+        pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
+        pye::EditorPasses::PickerPass m_picker;
+        pye::EditorPasses::WorldHUDPass m_editorHUD;
         pyr::RenderGraph m_RDG;
 
         pyr::Camera m_camera;
@@ -50,8 +54,6 @@ namespace pye
         using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
         std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
 
-        using LightsBuffer = pyr::ConstantBuffer < InlineStruct( pyr::hlsl_GenericLight lights[16]; ) > ;
-        std::shared_ptr<LightsBuffer>    pLightBuffer = std::make_shared<LightsBuffer>();
 
         pyr::Texture brdfLUT;
         std::shared_ptr<pyr::Cubemap> specularCubemap;
@@ -59,10 +61,8 @@ namespace pye
 
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
-        pyr::LightsCollections m_lights;
         pye::WidgetsContainer HUD;
         pye::widgets::LightCollectionWidget LightCollectionWidget;
-
 
     public:
 
@@ -70,7 +70,6 @@ namespace pye
         
         CornellBoxScene()
         {
-            LightCollectionWidget.LightsCollectionView = pye::pf_LightsCollection{ &m_lights };
             HUD.widgets.push_back(&LightCollectionWidget);
 
             cubemapScene.ComputeIBLCubemaps();
@@ -94,13 +93,22 @@ namespace pye
             m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
+            m_RDG.addPass(&m_billboardsPass);
+            m_RDG.addPass(&m_editorHUD);
+            m_RDG.addPass(&m_picker);
             m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
             m_RDG.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
             m_RDG.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
+
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
+            m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
+            m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_picker);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
             m_forwardPass.boundCamera = &m_camera;
+            m_billboardsPass.boundCamera = &m_camera;
+            m_picker.boundCamera = &m_camera;
+            m_editorHUD.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
 
@@ -109,16 +117,7 @@ namespace pye
             {
                 sceneMeshes.emplace_back(pyr::StaticMesh{ model });
                 sceneMeshes.back().getTransform().scale = { 10,10,10 };
-                m_forwardPass.addMeshToPass(&sceneMeshes.back());
-                m_depthPrePass.addMeshToPass(&sceneMeshes.back());
             }
-            m_lights.Points.push_back({});
-            m_lights.Points.push_back({});
-            m_lights.Directionals.push_back(pyr::DirectionalLight{});
-            m_lights.Spots.push_back({});
-            m_lights.Spots.push_back({});
-            m_lights.Spots.push_back({});
-
 
         }
 
@@ -127,10 +126,7 @@ namespace pye
         void update(float delta) override
         {
             m_camController.processUserInputs(delta);
-            pcameraBuffer->setData(CameraBuffer::data_t{
-                .mvp = m_camera.getViewProjectionMatrix(),
-                .pos = m_camera.getPosition()
-                });
+
 
         }
 
@@ -138,29 +134,34 @@ namespace pye
         
         void render() override
         {
-
+            pcameraBuffer->setData(CameraBuffer::data_t{
+                .mvp = m_camera.getViewProjectionMatrix(),
+                .pos = m_camera.getPosition()
+            });
             pinvCameBuffer->setData(InverseCameraBuffer::data_t{
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
             });
 
-            LightsBuffer::data_t light_data{};
-            std::copy_n(m_lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
-            pLightBuffer->setData(light_data);
+            for (const auto& m : sceneMeshes)
+            {
+                SceneActors.registerForFrame(&m);
+            }
+
+
+            if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
+                m_picker.RequestPick();
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
-            pyr::MaterialBank::GetDefaultGGXShader()->bindConstantBuffer("lightsBuffer", pLightBuffer);
-
-
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-            m_RDG.execute();
+            m_RDG.execute(pyr::RenderContext{ SceneActors });
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();

@@ -31,7 +31,7 @@ namespace pyr
 		BillboardType type;
 		Transform transform;
 		vec4 instanceUVs = { 0,0,1,1 };
-		const pyr::Texture* texture;
+		const pyr::Texture* texture = &pyr::Texture::getDefaultTextureSet().WhitePixel;
 
 		friend class BillboardManager;
 
@@ -49,6 +49,7 @@ namespace pyr
 																													// offset, scale
 		static BillboardsRenderData makeContext(const std::vector<const pyr::Billboard*>& sceneBillboards)
 		{
+			if (sceneBillboards.empty()) return {};
 
 			BillboardsRenderData res;
 			std::vector<Billboard::billboard_vertex_t> instanceVertices;
@@ -89,13 +90,6 @@ namespace pyr
 		}
 
 		BillboardManager() = default;
-
-		pyr::GraphicalResourceRegistry m_registry;
-		std::vector<Billboard> m_billboards;
-
-		std::unique_ptr<pyr::VertexBuffer> instanceBuffer;
-		std::unique_ptr<pyr::VertexBuffer> vertexBuffer;
-
 	};
 
 }

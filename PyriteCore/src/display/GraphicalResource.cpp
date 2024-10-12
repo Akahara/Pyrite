@@ -77,11 +77,11 @@ GraphicalResourceRegistry::~GraphicalResourceRegistry()
   // meshes are released on deletion
 }
 
-Texture GraphicalResourceRegistry::loadTexture(const filepath &path)
+Texture GraphicalResourceRegistry::loadTexture(const filepath &path, bool bGenerateMips /* = true */)
 {
   if (m_texturesCache.contains(path))
     return m_texturesCache[path];
-  return m_texturesCache[path] = TextureManager::loadTexture(path);
+  return m_texturesCache[path] = TextureManager::loadTexture(path, bGenerateMips);
 }
 
 void GraphicalResourceRegistry::keepHandleToTexture(Texture texture)

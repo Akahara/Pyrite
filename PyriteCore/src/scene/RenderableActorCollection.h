@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "world/Lights/Light.h"
+
 /// RenderableActorCollection
 /// 
 /// Contains multiple types of actors that can be renderered.
@@ -12,14 +14,13 @@ namespace pyr
 	struct RegisteredRenderableActorCollection
 	{
 		std::vector<const class StaticMesh*> meshes;
-		std::vector<const class Billboard*> billboards;
-		//std::vector<Lights*> lights;
+		std::vector<const struct Billboard*> billboards;
+		pyr::LightsCollections lights;
 
-		void registerForFrame(const StaticMesh* mesh) { meshes.push_back(mesh); }
-		void registerForFrame(const Billboard* billboard) { billboards.push_back(billboard); }
+		void registerForFrame(const StaticMesh* mesh)		{ meshes.push_back(mesh); }
+		void registerForFrame(const Billboard* billboard)	{ billboards.push_back(billboard); }
+		//void registerForFrame(const BaseLight* light)		{ lights.AddLight(light); }
+
 		void clear() { meshes.clear(); billboards.clear(); }
-		// lights.clear(); billboards.clear();
-		//void registerForFrame(Billboard* billboard)		{ billboards.push_back(billboard); }
-		//void registerForFrame(Lights* light)			{ lights.push_back(light); }
 	};
 }

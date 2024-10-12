@@ -7,24 +7,55 @@
 #include "editor/views/widget.h"
 
 
+/// <summary>
+/// Fatass chunk of code that basically fetches the current scene lights (using pyr::LightCollection)
+/// and register all of the engine-side lights as editor-side ones (they all have a pointer to the base engine light)
+///
+/// Then we inspect each editor light, with adding/deleting operations ect! 
+/// </summary>
+
 namespace pye
 {
 	namespace widgets
 	{
 
-		struct LightCollectionWidget : public Widget
+		struct LightCollectionWidget : public Widget 
 		{
 
-			mutable pf_LightsCollection LightsCollectionView;
+		private:
+
+			pye::pf_LightsCollection LightsCollectionView; // fetched from registered actors, should be a scene specific widget
+
+		public:
 
 			virtual void display() override
 			{
-				if (!LightsCollectionView.sourceCollection) return;
-				LightsCollectionView.UpdateEditorFormat();
+				// -- Ensure that we have a light collection to inspect
+				pyr::Scene* currentScene = pyr::SceneManager::getActiveScene();
+				if (!currentScene) return;
 
+				if ( !LightsCollectionView.sourceCollection ||
+					  LightsCollectionView.sourceCollection != &currentScene->SceneActors.lights ||
+					LightsCollectionView.bIsWidgetDirty)
+				{
+					// Initial update, register all lights
+					LightsCollectionView.sourceCollection = &currentScene->SceneActors.lights;
+					auto baseLights = LightsCollectionView.sourceCollection->toBaseLights();
+					LightsCollectionView.EditorFormatPtrs.clear();
+					for (pyr::BaseLight* l : baseLights)
+						LightsCollectionView.registerLight(l);
+
+					pye::Editor::Get().UpdateRegisteredActors(currentScene->SceneActors);
+					LightsCollectionView.bIsWidgetDirty = false;
+				}
+
+				// -- Ensure the validity of the view collection
+				PYR_ENSURE(LightsCollectionView.sourceCollection);
+
+				// -- Import the icons and stuff
 				static pyr::Texture AddIcon = getWidgetAssetRegistry().loadTexture(L"res/editor/plus.png");
 				static pyr::Texture RemoveIcon = getWidgetAssetRegistry().loadTexture(L"res/editor/retirer.png");
-				static auto makeSelectable = [](const char* label, int id, pf_Light* ref, pf_LightsCollection &LightsCollectionView)
+				auto makeSelectable = [](const char* label, int id, pf_Light* ref, pf_LightsCollection &LightsCollectionView)
 				{
 						ImGui::PushID(label);
 						if (ImGui::Selectable(label, LightsCollectionView.selectedId == id))
@@ -39,25 +70,23 @@ namespace pye
 				// -- Start the widget
 				ImGui::Begin("Lights");
 				{
-
-					// Add the plus sign
-					//if (ImGui::BeginMenuBar())
+					// -- Behaviour of the "+" button, open a small menu popup with 3 choices
 					if (ImGui::BeginPopupContextItem("AddLightPopup"))
 					{
 						if (ImGui::Selectable("Point light"))
 						{
 							LightsCollectionView.sourceCollection->Points.push_back({});
-							LightsCollectionView.UpdateEditorFormat();
+							LightsCollectionView.bIsWidgetDirty = true;
 						}
 						if (ImGui::Selectable("Spot light")) 
 						{
-							LightsCollectionView.sourceCollection->Directionals.push_back({}); 
-							LightsCollectionView.UpdateEditorFormat();
+							LightsCollectionView.sourceCollection->Spots.push_back({}); 
+							LightsCollectionView.bIsWidgetDirty = true;
 						}
 						if (ImGui::Selectable("Directional light"))
 						{
 							LightsCollectionView.sourceCollection->Directionals.push_back({});
-							LightsCollectionView.UpdateEditorFormat();
+							LightsCollectionView.bIsWidgetDirty = true;
 						}
 						ImGui::SetNextItemWidth(-FLT_MIN);
 						ImGui::EndPopup();
@@ -77,26 +106,40 @@ namespace pye
 							{
 								PYR_LOG(LogWidgets, INFO, "Removing light.");
 								LightsCollectionView.sourceCollection->RemoveLight(LightsCollectionView.selectedLight->sourceLight);
-								LightsCollectionView.UpdateEditorFormat();
+								LightsCollectionView.removeLight(LightsCollectionView.selectedLight);
+
+								// Try to select automatically next light
+								if (LightsCollectionView.selectedId < LightsCollectionView.EditorFormatPtrs.size())
+								{
+									LightsCollectionView.selectedLight = LightsCollectionView.EditorFormatPtrs[LightsCollectionView.selectedId];
+
+								}
+								else
+								{
+									LightsCollectionView.selectedId = 0;
+									LightsCollectionView.selectedLight = nullptr;
+								}
+
 							}
 						}
 						ImGui::PopStyleColor();
 					}
 				}
+				// -- Left side, as a simple list of each lights names
 				ImGui::Separator();
 				{
 					ImGui::BeginChild("left pane", ImVec2(150, 0), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX);
 					int id = 0;
-					for (pf_Light& pf_light : LightsCollectionView.EditorFormat)
+					for (pf_Light* pf_light : LightsCollectionView.EditorFormatPtrs)
 					{
-						makeSelectable(pf_light.name.c_str(), id++, &pf_light, LightsCollectionView);
+						if (pf_light)
+							makeSelectable(pf_light->name.c_str(), id++, pf_light, LightsCollectionView);
 					}
 					ImGui::EndChild();
 				}
 				ImGui::SameLine();
 
-				// Right
-				
+				// -- Right side, when selecting a light
 				if (LightsCollectionView.selectedLight)
 				{
 					ImGui::BeginGroup();
@@ -127,7 +170,7 @@ namespace pye
 				{
 					pyr::DirectionalLight* sourceLight = static_cast<pyr::DirectionalLight*>(light->sourceLight);
 					if (!sourceLight) break;
-					ImGui::DragFloat3("Direction", &sourceLight->direction.x);
+					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
 					ImGui::DragFloat("Strength", &sourceLight->strength, 1.0, 0);
 					break;
 				}
@@ -135,8 +178,8 @@ namespace pye
 				{
 					pyr::SpotLight* sourceLight = static_cast<pyr::SpotLight*>(light->sourceLight);
 					if (!sourceLight) break;
-					ImGui::DragFloat3("Position", &sourceLight->position.x);
-					ImGui::DragFloat3("Direction", &sourceLight->direction.x);
+					ImGui::DragFloat3("Position", &sourceLight->GetTransform().position.x);
+					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
 					ImGui::DragFloat("Strength", &sourceLight->strength);
 					ImGui::DragFloat("Inside angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_2PI);
 					ImGui::DragFloat("Outside angle", &sourceLight->outsideAngle, 0.05f, 0.f, XM_2PI);
@@ -151,7 +194,7 @@ namespace pye
 					{
 						sourceLight->range = sourceLight->computeRangeFromDistance(sourceLight->distance);
 					}
-					ImGui::DragFloat3("Position", &sourceLight->position.x);
+					ImGui::DragFloat3("Position", &sourceLight->GetTransform().position.x);
 					ImGui::DragFloat("specularFactor", &sourceLight->specularFactor, 1.0, 0);
 					ImGui::Separator();
 

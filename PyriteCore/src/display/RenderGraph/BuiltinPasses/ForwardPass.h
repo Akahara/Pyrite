@@ -8,7 +8,10 @@
 #include "world/camera.h"
 #include "display/RenderProfiles.h"
 #include "world/Mesh/StaticMesh.h"
+#include "world/Lights/Light.h"
 #include "scene/SceneManager.h"
+
+#include <iterator>
 
 namespace pyr
 {
@@ -27,8 +30,11 @@ private:
     std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
     Effect* m_defaultGGXEffect;
 
-    using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
+    using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; vec3 pos) > ;
     std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
+    
+    using LightsBuffer = pyr::ConstantBuffer < InlineStruct(pyr::hlsl_GenericLight lights[16]; ) > ;
+    std::shared_ptr<LightsBuffer>    pLightBuffer = std::make_shared<LightsBuffer>();
 
 public:
 
@@ -46,6 +52,7 @@ public:
 
     virtual void apply() override
     {
+        PYR_ENSURE(owner);
         if (!PYR_ENSURE(boundCamera)) return;
         pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
 
@@ -53,8 +60,13 @@ public:
         pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
 
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
-        // Render all objects 
 
+        // -- Get all the lights in the context, and bind them
+        LightsBuffer::data_t light_data{};
+        std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
+        pLightBuffer->setData(light_data);
+
+        // Render all objects 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
         {
             mesh->bindModel();
@@ -74,6 +86,9 @@ public:
                 effect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
+                effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
+                effect->bindConstantBuffer("lightsBuffer", pLightBuffer);
+
 
                 if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
                 if (submeshMaterial)

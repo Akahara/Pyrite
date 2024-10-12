@@ -10,13 +10,25 @@
 #include <unordered_set>
 #include <ranges>
 
-namespace pyr
+#include "display/RenderGraph/RenderPass.h"
+#include "display/GraphicalResource.h"
+#include "world/Mesh/RawMeshData.h"
+#include "world/Mesh/StaticMesh.h"
+#include "inputs/UserInputs.h"
+
+#include "editor/EditorActor.h"
+#include "editor/bridges/pf_StaticMesh.h"
+#include "editor/Editor.h"
+#include <world/camera.h>
+#include <display/RenderProfiles.h>
+
+namespace pye
 {
 
-    namespace BuiltinPasses
+    namespace EditorPasses
     {
 
-        class BillboardsPass : public RenderPass
+        class WorldHUDPass : public pyr::RenderPass
         {
         private:
 
@@ -24,18 +36,18 @@ namespace pyr
             std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
 
             pyr::GraphicalResourceRegistry m_registry;
-            Effect* m_billboardEffect = nullptr;
+            pyr::Effect* m_billboardEffect = nullptr;
 
         public:
 
             pyr::Camera* boundCamera = nullptr;
 
-            BillboardsPass()
+            WorldHUDPass()
             {
-                displayName = "Billboards pass";
+                displayName = "Editor-WorldHUD";
                 m_billboardEffect = m_registry.loadEffect(
                     L"res/shaders/billboard.fx",
-                    InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex, pyr::Billboard::billboard_vertex_t>()
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex, pyr::Billboard::billboard_vertex_t>()
                 );
 
             }
@@ -45,24 +57,31 @@ namespace pyr
                 if (!PYR_ENSURE(owner)) return;
                 if (!PYR_ENSURE(boundCamera)) return;
 
-                if (owner->GetContext().ActorsToRender.billboards.empty()) return;
-                
-                Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                auto& Editor = pye::Editor::Get();
+
+                if (Editor.WorldHUD.empty()) return;
+
+                pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
-                 
+
                 pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
 
                 // - First step should be to sort the billboards, whether they are HUD (autofacing, no depth test, depth write for the picker) ect
-                pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
+                std::vector<const pyr::Billboard*> bbs;
+                for (auto* editorBB : Editor.WorldHUD)
+                {
+                    editorBB->editorBillboard->transform.position = editorBB->coreActor->GetTransform().position;
+                    bbs.push_back(editorBB->editorBillboard);
+                }
+                pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(bbs);
                 m_billboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
                 auto result = renderData.textures
-                    | std::views::keys                        
+                    | std::views::keys
                     | std::views::transform([](auto texPtr) { return *texPtr; });
 
-
                 // Collect the view into a vector
-                std::vector<pyr::Texture> textures (result.begin(), result.end());
+                std::vector<pyr::Texture> textures(result.begin(), result.end());
                 m_billboardEffect->bindTextures(textures, "textures");
 
                 m_billboardEffect->bind();
@@ -72,9 +91,6 @@ namespace pyr
 
                 pyr::RenderProfiles::popBlendProfile();
             }
-
-
-
 
         };
     }

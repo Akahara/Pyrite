@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#define InlineStruct(...) decltype([]() {\
+#define InlineStruct(body) decltype([]() {\
     struct ConstantBufferData_t {\
         struct alignas(16) {body ;};\
     } _;\

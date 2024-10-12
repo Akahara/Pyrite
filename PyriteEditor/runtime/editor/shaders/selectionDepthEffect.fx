@@ -19,8 +19,6 @@ struct VertexOut
     float2 uv : UV;
 };
 
-
-
 //======================================================================================================================//
 
 float delinearize_depth(float d, float znear, float zfar)

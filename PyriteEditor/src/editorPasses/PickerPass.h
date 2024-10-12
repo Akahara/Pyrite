@@ -4,6 +4,7 @@
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
+#include "world/Transform.h"
 #include "inputs/UserInputs.h"
 
 #include "editor/EditorActor.h"
@@ -13,6 +14,7 @@
 #include "imguizmo/ImGuizmo.h"
 
 #include <span>
+#include <world/camera.h>
 
 namespace pye
 {
@@ -49,6 +51,7 @@ namespace pye
             pyr::Effect* m_gridDepthEffect = nullptr;
             pyr::Effect* m_outlineEffect = nullptr;
             pyr::Effect* m_composeEffect = nullptr;
+            pyr::Effect* m_renderBillboardEffect = nullptr;
 
 
             std::vector<pye::EditorActor> m_editorActors;
@@ -72,6 +75,7 @@ namespace pye
             PickerPass()
             {
                 displayName = "Editor-PickerPass";
+              
                 m_pickEffect_Meshes = m_registry.loadEffect(
                     L"editor/shaders/picker.fx",
                     pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>(),
@@ -99,6 +103,12 @@ namespace pye
                     pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>()
                 );
 
+                m_renderBillboardEffect = m_registry.loadEffect(
+                    L"res/shaders/billboard.fx",
+                    pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex, pyr::Billboard::billboard_vertex_t>(),
+                    { pyr::Effect::define_t{.name = "USE_TEXTURE_AS_DEPTH", .value = "1"}}
+                );
+
                 producesResource("pickerIdBuffer", m_idTarget.getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
             }
 
@@ -116,22 +126,32 @@ namespace pye
 
                 if (selectedActors.size() > 0)
                 {
+                    // -- 0 . Clear and update buffers
                     m_target.clearTargets();
                     m_target.bind();
+                    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
 
-                    // -- 1 . Depth grid effect and selected meshes depth buffer
+                    // -- 1 . Depth grid effect and selected meshes depth buffer. We store billboards separatly and don't render the grid (they are always on top for now)
                     pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
 
                     m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
                     m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
+                    std::vector<const pyr::Billboard*> selectedBillboards; // < dirty thing
                     for (EditorActor* actor : selectedActors)
                     {
                         pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
-                        if (!sm) continue;
+                        if (!sm) {
+                            pye::pf_BillboardHUD* hud = dynamic_cast<pye::pf_BillboardHUD*>(actor);
+                            if (hud)
+                            {
+                                selectedBillboards.push_back(hud->editorBillboard);
+                            }
+
+                            continue;
+                        }
 
                         sm->sourceMesh->bindModel();
-                        pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
                         pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
                         m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                         m_gridDepthEffect->bind();
@@ -141,6 +161,25 @@ namespace pye
                             pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
                         }
                         m_gridDepthEffect->unbindResources();
+                    }
+
+                    // >>> 1.1 : Render all billboards into the current depth buffer ?
+
+                    // Call this using the billboard.fx effect
+                    if (!selectedBillboards.empty())
+                    {
+                        pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(selectedBillboards);
+                        m_renderBillboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                        auto result = renderData.textures
+                            | std::views::keys
+                            | std::views::transform([](auto texPtr) { return *texPtr; });
+                        
+                        std::vector<pyr::Texture> textures(result.begin(), result.end());
+                        m_renderBillboardEffect->bindTextures(textures, "textures");
+                        m_renderBillboardEffect->bind();
+                        renderData.instanceBuffer.bind(true);
+                        pyr::Engine::d3dcontext().DrawInstanced(6, static_cast<UINT>(renderData.instanceBuffer.getVerticesCount()), 0, 0);
+                        m_renderBillboardEffect->unbindResources();
                     }
 
                     // -- 2 . Compute outline
@@ -165,14 +204,25 @@ namespace pye
                     pyr::RenderProfiles::popBlendProfile();
 
                     // -- 4. Guizmos
-                    std::vector<pyr::StaticMesh*> meshes;
+                    std::vector<Transform*> transformsToEdit;
                     for (EditorActor* actor : selectedActors)
                     {
                         pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
-                        if (sm) meshes.push_back(sm->sourceMesh);
+                        if (sm)
+                        {
+                            transformsToEdit.push_back(&sm->sourceMesh->getTransform());
+                            continue;
+                        }
+                        pye::pf_BillboardHUD* bb = dynamic_cast<pye::pf_BillboardHUD*>(actor);
+                        if (bb)
+                        {
+                            transformsToEdit.push_back(&((pyr::PointLight*)bb->coreActor)->GetTransform());
+                            continue;
+                        }
+
                     }
                     
-                    EditTransforms(*boundCamera, meshes);
+                    EditTransforms(*boundCamera, transformsToEdit);
                 }
             }
 
@@ -223,11 +273,23 @@ namespace pye
                 }
 
                 // -- Billboards
-                {
-                    pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
-                    std::array<uint32_t, 64> ids;
+                auto& Editor = pye::Editor::Get();
+                if (!Editor.WorldHUD.empty()) {
+                    std::vector<const pyr::Billboard*> bbs;
+                    for (auto* editorBB : Editor.WorldHUD)
+                    {
+                        bbs.push_back(editorBB->editorBillboard);
+                    }
+                    pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(bbs);
+                    std::array<uint32_t, 64> ids; // only 64 selectable billboards ?
 
-                    ids[0] = 727;
+                    int i = 0;
+                    for (const pyr::Billboard* billboard : bbs)
+                    {
+                        if (i < 64)
+                            ids[i++] = billboard->GetActorID();
+                    }
+
                     pBillboardIDBuffer->setData(
                         BillboardPickerIDBuffer::data_t{ .ids = ids[0] });
                     
@@ -293,15 +355,17 @@ namespace pye
                     return ID_NONE;
                 }
 
+                // -- Copy the 1x1 clicked pixel 
                 D3D11_BOX Region;
-                Region.left = std::clamp<UINT>(m_requestedMousePosition.x * pyr::Device::getWinHeight(), 0, pyr::Device::getWinWidth() - 1);
+                Region.left = std::clamp<UINT>(
+                    UINT(m_requestedMousePosition.x * pyr::Device::getWinHeight()), 0, UINT(pyr::Device::getWinWidth()) - 1);
                 Region.right = Region.left + 1;
-                Region.top = pyr::Device::getWinHeight() - std::clamp<UINT>(m_requestedMousePosition.y * pyr::Device::getWinHeight(), 0, pyr::Device::getWinHeight() - 1);
+                Region.top = UINT(pyr::Device::getWinHeight()) - std::clamp<UINT>(UINT(m_requestedMousePosition.y * pyr::Device::getWinHeight())
+                    , 0, UINT(pyr::Device::getWinHeight() - 1));
                 Region.bottom = Region.top + 1;
                 Region.front = 0;
                 Region.back = 1;
 
-                // -- Copy the 1x1 clicked pixel 
                 pyr::Engine::d3dcontext().CopySubresourceRegion(StagingTexture, 0, 0,0,0, sourceTexture.getRawResource(),0, &Region);
 
                 // -- Map the staging texture for cpu reading
@@ -330,7 +394,8 @@ namespace pye
 
             void handlePick(int actorId, bool bPushNewActor = false)
             {
-                bool bIsActorRegistered = pye::Editor::Get().RegisteredActors.contains(actorId);
+                auto& Editor = pye::Editor::Get();
+                bool bIsActorRegistered = Editor.RegisteredActors.contains(actorId);
                 if (bIsActorRegistered)
                 {
                     pye::EditorActor* editorActor = pye::Editor::Get().RegisteredActors.at(actorId);
@@ -347,17 +412,18 @@ namespace pye
 
             }
 
-            void EditTransforms(const pyr::Camera& camera, std::vector<pyr::StaticMesh*> meshes)
+            // Should be a bunch of &transforms not static meshes
+            void EditTransforms(const pyr::Camera& camera, std::vector<Transform*> transforms)
             {
                 // Get center of mass ? 
-                if (meshes.empty()) return;
+                if (transforms.empty()) return;
 
                 Transform center;
-                for (pyr::StaticMesh* mesh : meshes)
+                for (Transform* t : transforms)
                 {
-                    center.position += mesh->getTransform().position;
+                    center.position += t->position;
                 }
-                center.position /= meshes.size();
+                center.position /= transforms.size();
                 center.scale = { 1,1,1 };
                 center.rotation = { 0,0,0 };
 
@@ -380,71 +446,25 @@ namespace pye
                     matrix.Decompose(dScale, dRot, dPos);
 
                     dPos -= originalPos;
-                    for (pyr::StaticMesh* mesh : meshes)
+                    for (Transform* t : transforms)
                     {
-                        mesh->getTransform().position += dPos;
-                        if (meshes.size() > 1)
+                        t->position += dPos;
+                        if (transforms.size() > 1)
                         {
                             vec3 rotationPoint = center.position;
-                            vec3 diff = mesh->getTransform().position - rotationPoint;
+                            vec3 diff = t->position - rotationPoint;
                             vec3 out = (diff * dRot);
-                            mesh->getTransform().position += out;
+                            t->position += out;
                         }
 
-                        if (mCurrentGizmoOperation == ImGuizmo::SCALE) mesh->getTransform().scale = dScale; // temp
-                        mesh->getTransform().rotation *= dRot;
+                        if (mCurrentGizmoOperation == ImGuizmo::SCALE) t->scale = dScale; // temp
+                        t->rotation *= dRot;
                     }
                 }
             }
 
-            void EditTransform(const pyr::Camera& camera, pyr::StaticMesh& mesh)
-            {
-                static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
-                static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
-
-                mat4 matrix = mesh.getTransform().getWorldMatrix();
-
-                ImGuiIO& io = ImGui::GetIO();
-                ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-                ImGuizmo::Manipulate(&camera.getViewMatrix()._11, &camera.getProjectionMatrix()._11, mCurrentGizmoOperation, mCurrentGizmoMode, &matrix._11, NULL, NULL);
-                matrix.Decompose(mesh.getTransform().scale, mesh.getTransform().rotation, mesh.getTransform().position);
-            }
-
         private:
 
-            template<class T>
-            ID3D11ShaderResourceView* createStructuredBuffer(const std::span<T>& sourceData)
-            {
-                ID3D11Buffer* buffer = nullptr;
-                uint32_t stride = sizeof(T);
-                const uint32_t byteWidth = stride * static_cast<uint32_t>(sourceData.size());
-
-                D3D11_BUFFER_DESC desc;
-                desc.ByteWidth = byteWidth;
-                desc.Usage = D3D11_USAGE_DYNAMIC;
-                desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-                desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-                desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-                desc.StructureByteStride = stride;
-
-                D3D11_SUBRESOURCE_DATA data;
-                data.pSysMem = sourceData.data();
-                data.SysMemPitch = 0;
-                data.SysMemSlicePitch = 0;
-
-                auto hr = pyr::Engine::d3ddevice().CreateBuffer(&desc, &data, &buffer);
-                PYR_ENSURE(hr == S_OK);
-
-                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-                srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-                srvDesc.Buffer.NumElements = sourceData.size(); 
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-
-                ID3D11ShaderResourceView* shaderResourceView = nullptr;
-                hr = pyr::Engine::d3ddevice().CreateShaderResourceView(buffer, nullptr, &shaderResourceView);
-                PYR_ENSURE(hr == S_OK);
-                return shaderResourceView;
-            }
 
         };
 

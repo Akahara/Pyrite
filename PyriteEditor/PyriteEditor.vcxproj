@@ -116,7 +116,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>dxguid.lib;winmm.lib;d3d11.lib;d3dcompiler.lib;dxgi.lib;dinput8.lib;Effects11d.lib;XInput.lib;PyriteCore.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(PyriteDllOutput);$(PyriteLib)</AdditionalLibraryDirectories>
@@ -178,13 +178,19 @@
     <ClCompile Include="vendor\efsw\src\efsw\WatcherWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CornellBoxScene.h" />
     <ClInclude Include="src\CubemapBuilderScene.h" />
     <ClInclude Include="src\editorPasses\PickerPass.h" />
+    <ClInclude Include="src\editorPasses\WorldHUDPass.h" />
     <ClInclude Include="src\EditorScene.h" />
+    <ClInclude Include="src\editor\bridges\Lights\pf_Light.h" />
+    <ClInclude Include="src\editor\bridges\pf_BillboardHUD.h" />
     <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />
     <ClInclude Include="src\editor\Editor.h" />
     <ClInclude Include="src\editor\EditorActor.h" />
     <ClInclude Include="src\editor\ShaderReloader.h" />
+    <ClInclude Include="src\editor\views\Lights\widget_lights.h" />
+    <ClInclude Include="src\editor\views\widget.h" />
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\MaterialScene.h" />
     <ClInclude Include="src\RayTracingDemoScene.h" />

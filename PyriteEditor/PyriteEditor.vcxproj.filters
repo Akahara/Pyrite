@@ -82,6 +82,12 @@
     <ClInclude Include="src\editor\EditorActor.h" />
     <ClInclude Include="src\editor\bridges\pf_StaticMesh.h" />
     <ClInclude Include="src\editor\Editor.h" />
+    <ClInclude Include="src\CornellBoxScene.h" />
+    <ClInclude Include="src\editor\bridges\Lights\pf_Light.h" />
+    <ClInclude Include="src\editor\views\widget.h" />
+    <ClInclude Include="src\editor\views\Lights\widget_lights.h" />
+    <ClInclude Include="src\editorPasses\WorldHUDPass.h" />
+    <ClInclude Include="src\editor\bridges\pf_BillboardHUD.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="vendor\efsw\src\efsw\Utf.inl" />

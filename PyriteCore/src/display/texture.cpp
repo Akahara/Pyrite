@@ -18,7 +18,7 @@ GlobalTextureSet s_globalTextureSet;
 
 std::array<SamplerState, SamplerState::SamplerType::_COUNT> TextureManager::s_samplers;
 
-Texture TextureManager::loadTexture(const std::wstring &path)
+Texture TextureManager::loadTexture(const std::wstring &path, bool bGenerateMips /* = true */)
 {
   auto &device = Engine::d3ddevice();
   ID3D11Resource *resource;
@@ -31,7 +31,7 @@ Texture TextureManager::loadTexture(const std::wstring &path)
   {
 	  if (auto hr = DirectX::CreateDDSTextureFromFile(
 		  &device,
-		  &Engine::d3dcontext(),
+		  bGenerateMips  ? &Engine::d3dcontext() : nullptr,
 		  fspath.c_str(),
 		  &resource,
 		  &texture); hr!= S_OK)
@@ -49,7 +49,7 @@ Texture TextureManager::loadTexture(const std::wstring &path)
   {
 	if (DirectX::CreateWICTextureFromFile(
 		  &device,
-		  &Engine::d3dcontext(),
+		  bGenerateMips ? &Engine::d3dcontext() : nullptr,
 		  fspath.c_str(),
 		  &resource,
 		  &texture
