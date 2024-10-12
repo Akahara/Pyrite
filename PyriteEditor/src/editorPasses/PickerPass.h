@@ -67,9 +67,7 @@ namespace pye
         public:
 
             EditorActor* Selected = nullptr;
-
             std::vector<EditorActor*> selectedActors;
-
             pyr::Camera* boundCamera = nullptr;
 
             PickerPass()
@@ -115,93 +113,17 @@ namespace pye
             virtual void apply() override
             {
                 if (!PYR_ENSURE(owner)) return;
-                if (!PYR_ENSURE(boundCamera)) return;
-                // Render all objects to a depth only texture
+                if (!PYR_ENSURE(boundCamera)) return; // should just get the main camera somehow
 
-                if (bShouldPick)
+                if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
                 {
                     computeSelectedActors();
-                    bShouldPick = false;
                 }
 
                 if (selectedActors.size() > 0)
                 {
-                    // -- 0 . Clear and update buffers
-                    m_target.clearTargets();
-                    m_target.bind();
-                    pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
 
-                    // -- 1 . Depth grid effect and selected meshes depth buffer. We store billboards separatly and don't render the grid (they are always on top for now)
-                    pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
-
-                    m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
-                    m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-
-                    std::vector<const pyr::Billboard*> selectedBillboards; // < dirty thing
-                    for (EditorActor* actor : selectedActors)
-                    {
-                        pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
-                        if (!sm) {
-                            pye::pf_BillboardHUD* hud = dynamic_cast<pye::pf_BillboardHUD*>(actor);
-                            if (hud)
-                            {
-                                selectedBillboards.push_back(hud->editorBillboard);
-                            }
-
-                            continue;
-                        }
-
-                        sm->sourceMesh->bindModel();
-                        pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
-                        m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
-                        m_gridDepthEffect->bind();
-                        std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
-                        for (auto& submesh : submeshes)
-                        {
-                            pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-                        }
-                        m_gridDepthEffect->unbindResources();
-                    }
-
-                    // >>> 1.1 : Render all billboards into the current depth buffer ?
-
-                    // Call this using the billboard.fx effect
-                    if (!selectedBillboards.empty())
-                    {
-                        pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(selectedBillboards);
-                        m_renderBillboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-                        auto result = renderData.textures
-                            | std::views::keys
-                            | std::views::transform([](auto texPtr) { return *texPtr; });
-                        
-                        std::vector<pyr::Texture> textures(result.begin(), result.end());
-                        m_renderBillboardEffect->bindTextures(textures, "textures");
-                        m_renderBillboardEffect->bind();
-                        renderData.instanceBuffer.bind(true);
-                        pyr::Engine::d3dcontext().DrawInstanced(6, static_cast<UINT>(renderData.instanceBuffer.getVerticesCount()), 0, 0);
-                        m_renderBillboardEffect->unbindResources();
-                    }
-
-                    // -- 2 . Compute outline
-                    m_target.unbind();
-                    pyr::Texture selectedMeshesDepth = m_target.getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
-                    m_targetNoDepth.clearTargets();
-                    m_targetNoDepth.bind();
-                    m_outlineEffect->bindTexture(selectedMeshesDepth, "selectedMeshesDepth");
-                    m_outlineEffect->bindTexture(m_inputs["depthBuffer"].res, "sceneDepth");
-                    m_outlineEffect->bind();
-                    pyr::Engine::d3dcontext().Draw(3, 0);
-                    m_outlineEffect->unbindResources();
-                    m_targetNoDepth.unbind();
-
-                    // -- 3. Compose scene, outline and depthgrid
-
-                    m_composeEffect->bindTexture(m_targetNoDepth.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "outlineTexture");
-                    m_composeEffect->bindTexture(m_target.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "depthGridTexture");
-                    m_composeEffect->bind();
-                    pyr::Engine::d3dcontext().Draw(3, 0);
-                    m_composeEffect->unbindResources();
-                    pyr::RenderProfiles::popBlendProfile();
+                    RenderSelectedActors();
 
                     // -- 4. Guizmos
                     std::vector<Transform*> transformsToEdit;
@@ -226,13 +148,13 @@ namespace pye
                 }
             }
 
-            void RequestPick()
-            {
-                bShouldPick = true;
-            }
         
         private:
 
+            /// Draws all static meshes and billboards to a 1x1 texture, reads the actor id CPU-side and adds the ID to the selected actor list, pushing on top if CTRL is held.
+            /// This method is quite huge and seems to scale poorly, but i don't really know what else than billboards and static meshes are going to be pickable ?
+            /// 
+            /// TODO : Cycle through actors, not sure how to do this other than excluding the selected actors in the target ?
             void computeSelectedActors()
             {
 
@@ -314,19 +236,22 @@ namespace pye
 
                 pyr::RenderProfiles::popDepthProfile();
 
-                int actorId = readback();
+                int actorId = ReadActorIDFromTexture();
                 if (actorId != ID_NONE)
                 {
                     // You have picked actor !!!
                     PYR_LOGF(LogRenderPass, INFO, "Actor {} was picked.", actorId);
-                    handlePick(actorId, bIsHoldingControl);
+                    AddSelectedActor(actorId, bIsHoldingControl);
 
                 }
                 if (renderDoc)
                     renderDoc->EndFrameCapture(nullptr, nullptr);
             }
 
-            int readback() {
+            /// Creates a staging texture to readback from the 1x1 target.
+            /// Returns the editor actor ID, or ID_NONE (== -1) if the operation fails.
+            /// Note that editor ID start at 1, so reading 0 is valid and corresponds to basically no actor.
+            int ReadActorIDFromTexture() {
             
                 pyr::Texture sourceTexture = m_idTarget.getTargetAsTexture(pyr::FrameBuffer::COLOR_0);
 
@@ -392,7 +317,8 @@ namespace pye
                 return actorId;
             }
 
-            void handlePick(int actorId, bool bPushNewActor = false)
+            /// Gets all editor-side registered actors and check if the requested ID exists, and adds it accordingly to the selectedActor list.
+            void AddSelectedActor(int actorId, bool bPushNewActor = false)
             {
                 auto& Editor = pye::Editor::Get();
                 bool bIsActorRegistered = Editor.RegisteredActors.contains(actorId);
@@ -412,7 +338,12 @@ namespace pye
 
             }
 
-            // Should be a bunch of &transforms not static meshes
+            /// !! WARNING !!
+            /// 
+            /// This currently works very poorly.
+            /// 
+            /// This works fine for single manipulation, altough the guizmo transform is offset for submeshes.
+            /// The scaling and rotation for multiple selection is broken. Albin will fix this ! :wink:
             void EditTransforms(const pyr::Camera& camera, std::vector<Transform*> transforms)
             {
                 // Get center of mass ? 
@@ -463,8 +394,87 @@ namespace pye
                 }
             }
 
-        private:
+            /// Draws all actors in the selectedActor list with outlines and grid effect (if static meshes).
+            /// Could use some improvements.
+            void RenderSelectedActors()
+            {
+                // -- 0 . Clear and update buffers
+                m_target.clearTargets();
+                m_target.bind();
+                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
 
+                // -- 1 . Depth grid effect and selected meshes depth buffer. We store billboards separatly and don't render the grid (they are always on top for now)
+                pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
+
+                m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
+                m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+
+                std::vector<const pyr::Billboard*> selectedBillboards; // < dirty thing
+                for (EditorActor* actor : selectedActors)
+                {
+                    pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
+                    if (!sm) {
+                        pye::pf_BillboardHUD* hud = dynamic_cast<pye::pf_BillboardHUD*>(actor);
+                        if (hud)
+                        {
+                            selectedBillboards.push_back(hud->editorBillboard);
+                        }
+
+                        continue;
+                    }
+
+                    sm->sourceMesh->bindModel();
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
+                    m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
+                    m_gridDepthEffect->bind();
+                    std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
+                    for (auto& submesh : submeshes)
+                    {
+                        pyr::Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
+                    }
+                    m_gridDepthEffect->unbindResources();
+                }
+
+                // >>> 1.1 : Render all billboards into the current depth buffer ?
+
+                // Call this using the billboard.fx effect
+                if (!selectedBillboards.empty())
+                {
+                    pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(selectedBillboards);
+                    m_renderBillboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+                    auto result = renderData.textures
+                        | std::views::keys
+                        | std::views::transform([](auto texPtr) { return *texPtr; });
+
+                    std::vector<pyr::Texture> textures(result.begin(), result.end());
+                    m_renderBillboardEffect->bindTextures(textures, "textures");
+                    m_renderBillboardEffect->bind();
+                    renderData.instanceBuffer.bind(true);
+                    pyr::Engine::d3dcontext().DrawInstanced(6, static_cast<UINT>(renderData.instanceBuffer.getVerticesCount()), 0, 0);
+                    m_renderBillboardEffect->unbindResources();
+                }
+
+                // -- 2 . Compute outline
+                m_target.unbind();
+                pyr::Texture selectedMeshesDepth = m_target.getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
+                m_targetNoDepth.clearTargets();
+                m_targetNoDepth.bind();
+                m_outlineEffect->bindTexture(selectedMeshesDepth, "selectedMeshesDepth");
+                m_outlineEffect->bindTexture(m_inputs["depthBuffer"].res, "sceneDepth");
+                m_outlineEffect->bind();
+                pyr::Engine::d3dcontext().Draw(3, 0);
+                m_outlineEffect->unbindResources();
+                m_targetNoDepth.unbind();
+
+                // -- 3. Compose scene, outline and depthgrid
+
+                m_composeEffect->bindTexture(m_targetNoDepth.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "outlineTexture");
+                m_composeEffect->bindTexture(m_target.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "depthGridTexture");
+                m_composeEffect->bind();
+                pyr::Engine::d3dcontext().Draw(3, 0);
+                m_composeEffect->unbindResources();
+                pyr::RenderProfiles::popBlendProfile();
+            }
 
         };
 

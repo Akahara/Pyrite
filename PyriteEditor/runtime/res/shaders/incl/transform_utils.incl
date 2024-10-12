@@ -14,7 +14,7 @@ float4x4 RotateModelToFaceNormal(float4x4 modelMatrix, float3 targetNormal)
         float4(0.0f, 0.0f, 0.0f, 1.0f)
     );
     
-    return mul(transpose(rotationMatrix), modelMatrix);
+    return mul(modelMatrix, transpose(rotationMatrix));
 }
 
 float4x4 RotateModelToFaceNormal2(float4x4 modelMatrix, float3 targetNormal, float3 objectPosition)

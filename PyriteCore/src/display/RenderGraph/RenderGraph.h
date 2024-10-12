@@ -10,7 +10,7 @@ namespace pyr
     // This is given through the execute and can be used and accessed by any passes.
     struct RenderContext
     {
-        RegisteredRenderableActorCollection ActorsToRender;
+        RegisteredRenderableActorCollection ActorsToRender; // make this a ref
     };
 
     class RenderGraph
