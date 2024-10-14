@@ -56,14 +56,14 @@ namespace pyr
                 pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
                 m_billboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-                auto result = renderData.textures
-                    | std::views::keys                        
-                    | std::views::transform([](auto texPtr) { return *texPtr; });
-
-
                 // Collect the view into a vector
-                std::vector<pyr::Texture> textures (result.begin(), result.end());
-                m_billboardEffect->bindTextures(textures, "textures");
+                std::vector<pyr::Texture> sortedTextures;
+                sortedTextures.resize(16);
+                for (const auto& [texPtr, texId] : renderData.textures)
+                {
+                    sortedTextures[texId] = *texPtr;
+                }
+                m_billboardEffect->bindTextures(sortedTextures, "textures");
 
                 m_billboardEffect->bind();
                 renderData.instanceBuffer.bind(true);
@@ -72,10 +72,6 @@ namespace pyr
 
                 pyr::RenderProfiles::popBlendProfile();
             }
-
-
-
-
         };
     }
 }

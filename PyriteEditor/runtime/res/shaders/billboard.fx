@@ -70,7 +70,7 @@ VertexOut billboardVS(VertexInput VSin, uint instanceID : SV_InstanceID, uint ve
     
     float4x4 MVP = mul(ViewProj, M);
     
-    uint currentID = vertexID - (instanceID * 6);
+    uint currentID = vertexID % 6;
     float4 vertex = VERTICES[currentID];
     
     VertexOut vso;

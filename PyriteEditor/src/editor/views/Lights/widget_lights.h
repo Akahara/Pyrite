@@ -62,6 +62,8 @@ namespace pye
 						{
 							LightsCollectionView.selectedId = id;
 							LightsCollectionView.selectedLight = ref;
+
+							// TODO send info to PickerPass
 						}
 						ImGui::PopID();
 

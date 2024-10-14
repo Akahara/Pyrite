@@ -76,13 +76,16 @@ namespace pye
                 pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(bbs);
                 m_billboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-                auto result = renderData.textures
-                    | std::views::keys
-                    | std::views::transform([](auto texPtr) { return *texPtr; });
+                std::vector<pyr::Texture> sortedTextures;
+                sortedTextures.resize(16);
+
+                for (const auto& [texPtr, texId] : renderData.textures)
+                {
+                    sortedTextures[texId] = *texPtr;
+                }
 
                 // Collect the view into a vector
-                std::vector<pyr::Texture> textures(result.begin(), result.end());
-                m_billboardEffect->bindTextures(textures, "textures");
+                m_billboardEffect->bindTextures(sortedTextures, "textures");
 
                 m_billboardEffect->bind();
                 renderData.instanceBuffer.bind(true);

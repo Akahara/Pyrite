@@ -34,6 +34,8 @@ namespace pye
 		struct EditorAssets
 		{
 			pyr::Texture lightbulb;
+			pyr::Texture spotlight;
+			pyr::Texture directionalLight;
 
 		} assets;
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <ranges>
+#include <span>
+#include <memory>
+
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
@@ -13,7 +17,6 @@
 
 #include "imguizmo/ImGuizmo.h"
 
-#include <span>
 #include <world/camera.h>
 
 namespace pye
@@ -164,10 +167,8 @@ namespace pye
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
                 m_idTarget.setDepthOverride(m_inputs["depthBuffer"].res.toDepthStencilView());
 
-                PYR_LOG(LogRenderPass, INFO, "Pick !");
                 auto renderDoc = pyr::RenderDoc::Get();
                 if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
-                PYR_LOG(LogRenderPass, INFO, "%p", renderDoc);
 
                 m_idTarget.clearTargets();
                 m_idTarget.bind();
@@ -175,6 +176,21 @@ namespace pye
                 pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
                 for (const pyr::StaticMesh* smesh : owner->GetContext().ActorsToRender.meshes)
                 {
+                    // Do not render already selected actors ?
+                    // TODO : this could go into an editor setting thing
+                    //
+
+                    // TODO : To get this to work properly, we need another depth pass, which would also be correct as the editor pass would come as a standalone injection to a rendergraph
+                    //if (std::find_if(selectedActors.begin(), selectedActors.end(), [smesh](pye::EditorActor* selectedActor)
+                    //{
+                    //        auto mesh = dynamic_cast<pye::pf_StaticMesh*>(selectedActor);
+                    //        return mesh && mesh->sourceMesh == smesh;
+                    //}) != selectedActors.end())
+                    //{
+	                //    continue;
+                    //}
+
+
                     smesh->bindModel();
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
                     pIdBuffer->setData(ActorPickerIDBuffer::data_t{ .id = smesh->GetActorID() });
@@ -197,6 +213,9 @@ namespace pye
                 // -- Billboards
                 auto& Editor = pye::Editor::Get();
                 if (!Editor.WorldHUD.empty()) {
+
+
+
                     std::vector<const pyr::Billboard*> bbs;
                     for (auto* editorBB : Editor.WorldHUD)
                     {
@@ -215,16 +234,17 @@ namespace pye
                     pBillboardIDBuffer->setData(
                         BillboardPickerIDBuffer::data_t{ .ids = ids[0] });
                     
-                    m_pickEffect_Billboards->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+
+                	m_pickEffect_Billboards->bindConstantBuffer("CameraBuffer", pcameraBuffer);
                     m_pickEffect_Billboards->bindConstantBuffer("BillboardPickerIDBuffer", pBillboardIDBuffer);
 
-                    auto result = renderData.textures
-                        | std::views::keys
-                        | std::views::transform([](auto texPtr) { return *texPtr; });
-
-                    // Collect the view into a vector
-                    std::vector<pyr::Texture> textures(result.begin(), result.end());
-                    m_pickEffect_Billboards->bindTextures(textures, "textures");
+                    std::vector<pyr::Texture> sortedTextures;
+                    sortedTextures.resize(16);
+                    for (const auto& [texPtr, texId] : renderData.textures)
+                    {
+                        sortedTextures[texId] = *texPtr;
+                    }
+                    m_pickEffect_Billboards->bindTextures(sortedTextures, "textures");
 
                     m_pickEffect_Billboards->bind();
                     renderData.instanceBuffer.bind(true);

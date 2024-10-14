@@ -11,6 +11,8 @@ using namespace DirectX;
 
 static inline PYR_DEFINELOG(LogLights, VERBOSE);
 
+// TODO : Make light a variant
+
 namespace pyr {
 
 /// =============================================================================================================================================================///
@@ -45,11 +47,17 @@ struct hlsl_GenericLight
 
 struct BaseLight : public Actor
 {
-	bool isOn = false;
+	bool isOn = true;
 	vec4 ambiant;
-	vec4 diffuse;
-	BaseLight() = default;
-	BaseLight(bool isOn, vec4 ambiant, vec4 diffuse) : isOn(isOn), ambiant(ambiant), diffuse(diffuse) {}
+	vec4 diffuse = {1,1,1,1};
+	BaseLight()
+	{
+		GetTransform().rotation = vec4{ 0,-1,0,0 }; // todo make this a directional arrow widget someday ? and make this cleaner
+	}
+	BaseLight(bool isOn, vec4 ambiant, vec4 diffuse) : isOn(isOn), ambiant(ambiant), diffuse(diffuse)
+	{
+		GetTransform().rotation = vec4{ 0,-1,0,0 };
+	}
 
 	virtual LightTypeID getType() const { return Undefined; }
 };
@@ -149,8 +157,8 @@ inline hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light
 
 struct SpotLight : public  BaseLight {
 
-	float outsideAngle = 1.6f;
-	float insideAngle = 0.5f;
+	float outsideAngle = 0.150f;
+	float insideAngle = 0.450f;
 	float strength = 1.0f;
 	float specularFactor = 1.0f;
 	virtual LightTypeID getType() const override final { return Spotlight; }

@@ -9,10 +9,11 @@
 #include <scene/scene.h>
 #include <scene/SceneManager.h>
 
-
 pye::Editor::Editor()
 {
 	assets.lightbulb = m_editorAssetsLoader.loadTexture(L"editor/icons/world/lights/lightbulb.png", false);
+	assets.spotlight = m_editorAssetsLoader.loadTexture(L"editor/icons/world/lights/spotlight.png", false);
+	assets.directionalLight = m_editorAssetsLoader.loadTexture(L"editor/icons/world/lights/directionalLight.png", false);
 }
 
 // probably a terrible way of handling this lol
@@ -34,29 +35,21 @@ void pye::Editor::UpdateRegisteredActors(const pyr::RegisteredRenderableActorCol
 
 		pyr::Billboard* bb = new pyr::Billboard;
 		bb->type = pyr::Billboard::HUD;
-		bb->texture = &assets.lightbulb;
+
+		switch (light->getType())
+		{
+		case pyr::LightTypeID::Directional	: bb->texture = &assets.directionalLight; break;
+		case pyr::LightTypeID::Point			: bb->texture = &assets.lightbulb; break;
+		case pyr::LightTypeID::Spotlight		: bb->texture = &assets.spotlight; break;
+		default: break;
+		}
 
 		pf_BillboardHUD* editorBillboard = new pf_BillboardHUD;
 		editorBillboard->editorBillboard = bb;
 		editorBillboard->coreActor = light;
-
-		switch (light->getType())
-		{
-		case pyr::LightTypeID::Point:
-		{
-			pyr::PointLight* pl = (pyr::PointLight*)(light);
-			bb->transform.position = { pl->GetTransform().position.x,pl->GetTransform().position.y,pl->GetTransform().position.z };
-		}
-		default:
-			break;
-		}
+		bb->transform.position = { light->GetTransform().position.x,light->GetTransform().position.y,light->GetTransform().position.z };
 		WorldHUD.push_back(editorBillboard);
 		RegisteredActors[editorBillboard->editorBillboard->GetActorID()] = editorBillboard;
-
-
-
-
-		// Register a billboard to render
 
 	}
 }
