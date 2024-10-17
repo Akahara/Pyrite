@@ -108,7 +108,7 @@ private:
 				}
 
 				aiMaterial* currMeshMaterial = scene->mMaterials[aimesh->mMaterialIndex];
-				submeshes.push_back(SubMesh{
+				submeshes.push_back(pyr::SubMesh{
 					.startIndex = static_cast<UINT>(startSubmeshIndex),
 					.endIndex = static_cast<UINT>(indices.size()),
 					.materialIndex = static_cast<size_t>(aimesh->mMaterialIndex) ,

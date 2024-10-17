@@ -10,9 +10,8 @@
 
 namespace pyr
 {
-IndexBuffer::IndexBuffer(const std::vector<size_type>& indices)
+IndexBuffer::IndexBuffer(std::span<const size_type> indices)
 {
-
 	m_indiceCount = indices.size();
 
 	D3D11_BUFFER_DESC m_descriptor{};
@@ -28,7 +27,7 @@ IndexBuffer::IndexBuffer(const std::vector<size_type>& indices)
 	m_descriptor.CPUAccessFlags = 0;
 
 	ZeroMemory(&m_initData, sizeof(m_initData));
-	m_initData.pSysMem = &indices[0];
+	m_initData.pSysMem = indices.data();
 
 	Engine::d3ddevice().CreateBuffer(&m_descriptor, &m_initData, &m_ibo);
 }
@@ -37,7 +36,6 @@ void IndexBuffer::swap(IndexBuffer& other) noexcept {
 	std::swap(other.m_ibo, m_ibo);
 	std::swap(other.m_indiceCount, m_indiceCount);
 }
-
 
 size_t IndexBuffer::getIndicesCount() const noexcept { return m_indiceCount; }
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "RenderableActorCollection.h"
+#include <vector>
+
 namespace pyr
 {
 
@@ -10,6 +13,8 @@ public:
   
   virtual void update(float delta) = 0;
   virtual void render() = 0;
+
+  RegisteredRenderableActorCollection SceneActors;
 };
 
 class EmptyScene : public Scene

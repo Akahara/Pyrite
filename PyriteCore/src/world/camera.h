@@ -52,7 +52,7 @@ public:
   const mat4 &getViewProjectionMatrix() const;
   const mat4 &getProjectionMatrix() const;
   const mat4 &getViewMatrix() const;
-  const Transform& getTransform() const { return m_transform; }
+  const Transform& GetTransform() const { return m_transform; }
   const vec3 &getPosition() const { return m_transform.position; }
   const quat &getRotation() const { return m_transform.rotation; }
 
