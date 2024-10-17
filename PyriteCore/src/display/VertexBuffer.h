@@ -20,7 +20,7 @@ namespace pyr
     public:
 
         template<class V> requires std::derived_from<V, BaseVertex>
-        explicit VertexBuffer(const std::span<V>& vertices, bool bMutable=false) : m_stride(sizeof(V))
+        explicit VertexBuffer(std::span<V> vertices, bool bMutable=false) : m_stride(sizeof(V))
         {
             PYR_ASSERT(vertices.size() > 0);
 
@@ -44,7 +44,7 @@ namespace pyr
         }
 
         template<class V> requires std::derived_from<V, BaseVertex>
-        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable = false) : VertexBuffer(std::span{vertices})
+        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable = false) : VertexBuffer(std::span{ vertices })
         {}
 
 

@@ -24,7 +24,4 @@ public:
   void render() override {}
 };
 
-
-
-
 }

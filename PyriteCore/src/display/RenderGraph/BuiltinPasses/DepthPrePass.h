@@ -52,7 +52,7 @@ namespace pyr
 
                     smesh->bindModel();
 
-                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
                     m_depthOnlyEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                     m_depthOnlyEffect->bind();
                     

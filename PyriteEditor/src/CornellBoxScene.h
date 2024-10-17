@@ -116,7 +116,7 @@ namespace pye
             for (const std::shared_ptr<pyr::Model>& model : m_cornellBoxModels)
             {
                 sceneMeshes.emplace_back(pyr::StaticMesh{ model });
-                sceneMeshes.back().getTransform().scale = { 10,10,10 };
+                sceneMeshes.back().GetTransform().scale = { 10,10,10 };
             }
 
         }

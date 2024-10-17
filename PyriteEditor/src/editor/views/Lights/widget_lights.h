@@ -166,9 +166,9 @@ namespace pye
 				ImGui::ColorEdit3("Ambiant", &light->sourceLight->ambiant.x);
 				ImGui::ColorEdit3("Diffuse", &light->sourceLight->diffuse.x);
 				ImGui::Separator();
-				switch (light->type)
+				switch (light->sourceLight->getType())
 				{
-				case pf_Light::DIR:
+				case pyr::LightTypeID::Directional:
 				{
 					pyr::DirectionalLight* sourceLight = static_cast<pyr::DirectionalLight*>(light->sourceLight);
 					if (!sourceLight) break;
@@ -176,7 +176,7 @@ namespace pye
 					ImGui::DragFloat("Strength", &sourceLight->strength, 1.0, 0);
 					break;
 				}
-				case pf_Light::SPOT:
+				case pyr::LightTypeID::Spotlight:
 				{
 					pyr::SpotLight* sourceLight = static_cast<pyr::SpotLight*>(light->sourceLight);
 					if (!sourceLight) break;
@@ -188,7 +188,7 @@ namespace pye
 					ImGui::DragFloat("SpecularFactor", &sourceLight->specularFactor, 1.0f, 0.F);
 					break;
 				}
-				case pf_Light::POINT:
+				case pyr::LightTypeID::Point:
 				{
 					pyr::PointLight* sourceLight = static_cast<pyr::PointLight*>(light->sourceLight);
 					if (!sourceLight) break;

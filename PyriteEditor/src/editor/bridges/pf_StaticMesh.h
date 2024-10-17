@@ -16,9 +16,6 @@ namespace pye
 
 		virtual void inspect() override
 		{
-			ImGui::Begin("Inspection Window");
-			ImGui::DragFloat3("Position", &sourceMesh->getTransform().position.x);
-			ImGui::End();
 		}
 	};
 

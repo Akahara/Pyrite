@@ -1,5 +1,6 @@
 #pragma once
 
+#include <d3d11.h>
 #include <ranges>
 #include <span>
 #include <memory>
@@ -18,6 +19,8 @@
 #include "imguizmo/ImGuizmo.h"
 
 #include <world/camera.h>
+
+#include "../../../PyriteCore/src/utils/Debug.h"
 
 namespace pye
 {
@@ -67,6 +70,8 @@ namespace pye
             pyr::FrameBuffer m_target{pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
             pyr::FrameBuffer m_targetNoDepth{pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0 };
 
+            ID3D11Texture2D* StagingTexture;
+
         public:
 
             EditorActor* Selected = nullptr;
@@ -111,6 +116,36 @@ namespace pye
                 );
 
                 producesResource("pickerIdBuffer", m_idTarget.getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
+
+                // -- Create a staging texture with the format of the source texture
+
+                D3D11_TEXTURE2D_DESC srcDesc;
+                ZeroMemory(&srcDesc, sizeof(srcDesc));
+                srcDesc.Width = 1;
+                srcDesc.Height = 1;
+                srcDesc.ArraySize = 1;
+                srcDesc.MipLevels = 0;
+                srcDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+                srcDesc.SampleDesc.Count = 1;
+                srcDesc.SampleDesc.Quality = 0;
+                srcDesc.Usage = D3D11_USAGE_STAGING;
+                srcDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+                srcDesc.BindFlags = 0;
+                srcDesc.MiscFlags = 0;
+                auto hres = pyr::Engine::d3ddevice().CreateTexture2D(&srcDesc, NULL, &StagingTexture);
+                if (hres != S_OK || !StagingTexture)
+                {
+                    HRESULT failed = pyr::Engine::d3ddevice().GetDeviceRemovedReason();
+                    PYR_ASSERT(false);
+                }
+            }
+
+            virtual ~PickerPass()
+            {
+                if (StagingTexture) {
+                    StagingTexture->Release();
+                }
+
             }
 
             virtual void apply() override
@@ -135,7 +170,7 @@ namespace pye
                         pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
                         if (sm)
                         {
-                            transformsToEdit.push_back(&sm->sourceMesh->getTransform());
+                            transformsToEdit.push_back(&sm->sourceMesh->GetTransform());
                             continue;
                         }
                         pye::pf_BillboardHUD* bb = dynamic_cast<pye::pf_BillboardHUD*>(actor);
@@ -192,7 +227,7 @@ namespace pye
 
 
                     smesh->bindModel();
-                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
                     pIdBuffer->setData(ActorPickerIDBuffer::data_t{ .id = smesh->GetActorID() });
 
                     m_pickEffect_Meshes->bindConstantBuffer("ActorPickerIDBuffer", pIdBuffer);
@@ -224,12 +259,8 @@ namespace pye
                     pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(bbs);
                     std::array<uint32_t, 64> ids; // only 64 selectable billboards ?
 
-                    int i = 0;
-                    for (const pyr::Billboard* billboard : bbs)
-                    {
-                        if (i < 64)
-                            ids[i++] = billboard->GetActorID();
-                    }
+                    for (size_t i = 0; i < bbs.size() && i < ids.size(); i++)
+                        ids[i] = bbs[i]->GetActorID();
 
                     pBillboardIDBuffer->setData(
                         BillboardPickerIDBuffer::data_t{ .ids = ids[0] });
@@ -272,33 +303,9 @@ namespace pye
             /// Returns the editor actor ID, or ID_NONE (== -1) if the operation fails.
             /// Note that editor ID start at 1, so reading 0 is valid and corresponds to basically no actor.
             int ReadActorIDFromTexture() {
-            
+
+                // -- Get the source texture where we rendered stuff
                 pyr::Texture sourceTexture = m_idTarget.getTargetAsTexture(pyr::FrameBuffer::COLOR_0);
-
-                D3D11_SHADER_RESOURCE_VIEW_DESC sourceDesc{};
-                sourceTexture.getRawTexture()->GetDesc(&sourceDesc);
-
-                // -- Create a staging texture with the format of the source texture
-                ID3D11Texture2D* StagingTexture;
-                D3D11_TEXTURE2D_DESC srcDesc;
-                ZeroMemory(&srcDesc, sizeof(srcDesc));
-                srcDesc.Width = 1;
-                srcDesc.Height = 1;
-                srcDesc.ArraySize = 1;
-                srcDesc.MipLevels = 0;
-                srcDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-                srcDesc.SampleDesc.Count = 1;
-                srcDesc.SampleDesc.Quality = 0;
-                srcDesc.Usage = D3D11_USAGE_STAGING;
-                srcDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-                srcDesc.BindFlags = 0;
-                srcDesc.MiscFlags = 0;
-                auto hres = pyr::Engine::d3ddevice().CreateTexture2D(&srcDesc, NULL, &StagingTexture);
-                if (hres != S_OK || !StagingTexture)
-                {
-                    HRESULT failed = pyr::Engine::d3ddevice().GetDeviceRemovedReason();
-                    return ID_NONE;
-                }
 
                 // -- Copy the 1x1 clicked pixel 
                 D3D11_BOX Region;
@@ -330,9 +337,6 @@ namespace pye
 
                 pyr::Engine::d3dcontext().Unmap(StagingTexture, 0);
 
-                if (StagingTexture) {
-                    StagingTexture->Release();
-                }
 
                 return actorId;
             }
@@ -444,7 +448,7 @@ namespace pye
                     }
 
                     sm->sourceMesh->bindModel();
-                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->getTransform().getWorldMatrix() });
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = sm->sourceMesh->GetTransform().getWorldMatrix() });
                     m_gridDepthEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                     m_gridDepthEffect->bind();
                     std::span<const pyr::SubMesh> submeshes = sm->sourceMesh->getModel()->getRawMeshData()->getSubmeshes();
@@ -496,6 +500,8 @@ namespace pye
                 pyr::RenderProfiles::popBlendProfile();
             }
 
+
+     
         };
 
     }

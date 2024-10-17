@@ -57,7 +57,7 @@ namespace pyr
 			for (const pyr::Billboard* billboard : sceneBillboards)
 			{
 				// -- Register texture and get id
-				if (!PYR_ENSURE(res.textures.size() < 16))
+				if (!PYR_ENSURE(res.textures.size() <= 16))
 				{
 					PYR_LOGF(LogBillboards, WARN, "Trying to add a billboard, but more than 16 textures have been registered. Not implementing that soon. Too bad !");
 					break; // or continue ?
@@ -65,14 +65,14 @@ namespace pyr
 
 				if (!res.textures.contains(billboard->texture))
 				{
-					res.textures[billboard->texture] = res.textures.size();
+					res.textures[billboard->texture] = static_cast<int>(res.textures.size());
 				} 
 
 				Billboard::billboard_vertex_t vertex;
 				vertex.instanceTexId		= res.textures[billboard->texture];
 				vertex.instanceTransform	= billboard->transform.getWorldMatrix();
 				vertex.instanceUvs			= billboard->instanceUVs;
-				vertex.data					= (float)billboard->type;
+				vertex.data					= static_cast<float>(billboard->type);
 				instanceVertices.push_back(vertex);
 
 			}

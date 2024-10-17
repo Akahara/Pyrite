@@ -19,7 +19,6 @@ namespace pyr {
 
 enum LightTypeID : uint32_t
 {
-	Undefined = 0,
 	Directional = 1,
 	Point = 2,
 	Spotlight = 3,
@@ -59,7 +58,7 @@ struct BaseLight : public Actor
 		GetTransform().rotation = vec4{ 0,-1,0,0 };
 	}
 
-	virtual LightTypeID getType() const { return Undefined; }
+	virtual LightTypeID getType() const = 0;
 };
 
 template<class L> requires std::derived_from<L, BaseLight>
@@ -197,6 +196,8 @@ struct LightsCollections {
 	template<size_t N = 16>
 	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL() const
 	{
+		if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
+
 		std::array<hlsl_GenericLight, N> res;
 
 		auto it = res.begin();
@@ -213,7 +214,7 @@ struct LightsCollections {
 	std::vector<BaseLight*> toBaseLights() const
 	{
 		std::vector<BaseLight*> res;
-		for (auto& p : Points) res.push_back((BaseLight*)&p);
+		for (auto& p : Points) res.push_back((BaseLight*)(&p));
 		for (auto& d : Directionals) res.push_back((BaseLight*)&d);
 		for (auto& l : Spots) res.push_back((BaseLight*)&l);
 		return res;

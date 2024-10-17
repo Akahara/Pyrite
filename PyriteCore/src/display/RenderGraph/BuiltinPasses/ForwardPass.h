@@ -63,14 +63,14 @@ public:
 
         // -- Get all the lights in the context, and bind them
         LightsBuffer::data_t light_data{};
-        std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), 16, std::begin(light_data.lights));
+        std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
         pLightBuffer->setData(light_data);
 
         // Render all objects 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
         {
             mesh->bindModel();
-            pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->getTransform().getWorldMatrix() });
+            pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->GetTransform().getWorldMatrix() });
             std::span<const SubMesh> submeshes = mesh->getModel()->getRawMeshData()->getSubmeshes();
             std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
             
@@ -85,7 +85,6 @@ public:
                 
                 effect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
-                effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
                 effect->bindConstantBuffer("lightsBuffer", pLightBuffer);
 

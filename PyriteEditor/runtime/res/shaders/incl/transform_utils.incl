@@ -17,62 +17,7 @@ float4x4 RotateModelToFaceNormal(float4x4 modelMatrix, float3 targetNormal)
     return mul(modelMatrix, transpose(rotationMatrix));
 }
 
-float4x4 RotateModelToFaceNormal2(float4x4 modelMatrix, float3 targetNormal, float3 objectPosition)
-{
-    // Normalize the target normal to ensure proper direction
-    targetNormal = normalize(targetNormal);
-    
-    // Define the world up vector
-    float3 worldUp = float3(0.0f, 1.0f, 0.0f);
-    
-    // Adjust the target normal by subtracting the object's position
-    float3 adjustedNormal = normalize(targetNormal - objectPosition);
-
-    // Recompute the right and front vectors based on the adjusted normal
-    float3 right = normalize(cross(adjustedNormal, worldUp));
-    float3 front = cross(right, adjustedNormal);
-    
-    // Build the rotation matrix based on the right, front, and adjusted normal vectors
-    float4x4 rotationMatrix = float4x4(
-        float4(right, 0.0f),
-        float4(front, 0.0f),
-        float4(adjustedNormal, 0.0f),
-        float4(0.0f, 0.0f, 0.0f, 1.0f)
-    );
-
-    // Apply the transpose of the rotation matrix to the model matrix to rotate it
-    return mul(transpose(rotationMatrix), modelMatrix);
-}
-
-float4x4 RotateModelToFaceNormal3(float4x4 modelMatrix, float3 targetNormal)
-{
-    // Normalize the target normal to ensure proper direction
-    targetNormal = normalize(targetNormal);
-    
-    // Define the world up vector, assuming Y is up in the world space
-    float3 worldUp = float3(0.0f, 1.0f, 0.0f);
-
-    // Check if the targetNormal is nearly parallel to the up vector to avoid issues
-    if (abs(dot(targetNormal, worldUp)) > 0.999f)
-    {
-        // Use another up vector in case of near-parallel situation
-        worldUp = float3(1.0f, 0.0f, 0.0f); // X-axis as up vector as a fallback
-    }
-
-    // Compute the right vector by taking the cross product of targetNormal and worldUp
-    float3 right = normalize(cross(targetNormal, worldUp));
-
-    // Compute the up vector (recomputed front) based on the targetNormal and right vector
-    float3 front = cross(right, targetNormal);
-    
-    // Build the rotation matrix with right, front, and targetNormal
-    float4x4 rotationMatrix = float4x4(
-        float4(right, 0.0f),    // X-axis aligned to right
-        float4(front, 0.0f),    // Y-axis aligned to the computed up/front vector
-        float4(targetNormal, 0.0f), // Z-axis aligned to the target normal (facing direction)
-        float4(0.0f, 0.0f, 0.0f, 1.0f)
-    );
-
-    // Return the new model matrix by applying the rotation to the current model matrix
-    return mul(rotationMatrix, modelMatrix);
-}
+//float4x4 RotateModelToFaceNormal65(float4x4 modelMatrix, float3 targetNormal)
+//{
+            // FART
+//}

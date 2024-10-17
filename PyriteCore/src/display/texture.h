@@ -57,14 +57,6 @@ private:
   ID3D11DepthStencilView *m_asDepthView = nullptr;
 };
 
-// TODO : TextureHandles
-
-//struct TextureHandle
-//{
-//    size_t id;
-//    class GraphicalResourceRegistry* owner;
-//};
-
 struct GlobalTextureSet {
     Texture WhitePixel;
     Texture BlackPixel;

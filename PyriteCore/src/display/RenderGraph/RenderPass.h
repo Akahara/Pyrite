@@ -24,6 +24,8 @@ namespace pyr
 
     public:
 
+        virtual ~RenderPass() = default;
+
         class RenderGraph* owner;
         bool m_bIsEnabled = true;
         std::string displayName = "N/A";

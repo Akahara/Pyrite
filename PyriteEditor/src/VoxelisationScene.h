@@ -74,7 +74,7 @@ public:
     return (*this)[{x, y, z}];
   }
 
-  const Transform& getTransform() const
+  const Transform& GetTransform() const
   {
     return m_transform;
   }
@@ -269,8 +269,8 @@ public:
 
     ImGui::Begin("Voxelization");
     static ivec3 dims = m_voxelGrid.getDimensions();
-    static vec3 position = m_voxelGrid.getTransform().position;
-    static vec3 scale = m_voxelGrid.getTransform().scale;
+    static vec3 position = m_voxelGrid.GetTransform().position;
+    static vec3 scale = m_voxelGrid.GetTransform().scale;
     static bool autogen = true;
     static bool showMesh = true;
     ImGui::Checkbox("Autogen", &autogen);
@@ -301,7 +301,7 @@ public:
     pyr::RenderProfiles::popBlendProfile();
     pyr::RenderProfiles::popDepthProfile();
 
-    pyr::drawDebugBox(m_voxelGrid.getTransform());
+    pyr::drawDebugBox(m_voxelGrid.GetTransform());
   }
 };
 }

@@ -59,8 +59,6 @@ public:
 
 private:
 
-  friend static Scene* getActiveScene();
-
   std::map<std::string, SceneSupplier> m_knownScenes;
   std::string m_activeSceneName;
   SceneSupplier m_nextScene;

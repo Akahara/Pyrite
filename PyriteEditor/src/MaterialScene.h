@@ -94,7 +94,7 @@ namespace pye
             for (int i = 0; i < gridSize * gridSize; i++)
             {
                 m_balls.push_back(pyr::StaticMesh{ m_ballModel });
-                m_balls[i].getTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
+                m_balls[i].GetTransform().position = { (i % gridSize) * 2.f , (i / gridSize) * 2.f ,0};
                 
                 pyr::MaterialRenderingCoefficients coefs;
                 coefs.Ka = { 1,0,1 };

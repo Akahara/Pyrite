@@ -3,6 +3,13 @@
 #include "world/Lights/Light.h"
 #include "utils/debug.h"
 
+namespace pyr
+{
+	struct LightsCollections;
+	struct BaseLight;
+	enum LightTypeID : uint32_t;
+}
+
 namespace pye
 {
 	template<>
@@ -12,9 +19,7 @@ namespace pye
 		pyr::BaseLight* sourceLight;
 
 	public:
-		enum Type { UNDEFINED, DIR, POINT, SPOT,};
 		std::string name;
-		Type type;
 	};
 
 	using pf_Light = EditorActor_Impl<pyr::BaseLight>;
@@ -41,17 +46,16 @@ namespace pye
 
 		void registerLight(pyr::BaseLight* l) // stupid signature, todo make all of this variants
 		{
-			pf_Light* editorLight = new pf_Light;
-			pf_Light::Type type = (pf_Light::Type)l->getType();
+			pf_Light* editorLight = new pf_Light; // todo remove this stupid heap allocated stuff
 			editorLight->sourceLight = l;
-			size_t id = std::ranges::count_if(EditorFormatPtrs, [type](pf_Light* light) { return light->type == type; });
-			switch (type)
+			pyr::LightTypeID lightType = l->getType();
+			size_t id = std::ranges::count_if(EditorFormatPtrs, [lightType](pf_Light* light) { return light->sourceLight->getType() == lightType; });
+			switch (lightType)
 			{
-				case pf_Light::POINT: editorLight->name = std::format("Pointlight #{}", id + 1); break;
-				case pf_Light::SPOT : editorLight->name = std::format("SpotLight #{}", id++); break;
-				case pf_Light::DIR : editorLight->name = std::format("DirectionalLight #{}", id++); break;
+				case pyr::LightTypeID::Point: editorLight->name = std::format("Pointlight #{}", id + 1); break;
+				case pyr::LightTypeID::Directional: editorLight->name = std::format("DirectionalLight #{}", id++); break;
+				case pyr::LightTypeID::Spotlight: editorLight->name = std::format("SpotLight #{}", id++); break;
 			}
-			editorLight->type = type;
 			EditorFormatPtrs.push_back(editorLight);
 		}
 

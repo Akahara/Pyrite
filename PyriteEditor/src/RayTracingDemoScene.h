@@ -54,7 +54,7 @@ public:
     cubeModel = pyr::MeshImporter::ImportMeshesFromFile("res/meshes/axes.obj").at(0);
     cubeInstance = pyr::StaticMesh{ cubeModel };
     //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
-    Transform& cubeTransform = cubeInstance.getTransform();
+    Transform& cubeTransform = cubeInstance.GetTransform();
     cubeTransform = Transform{ vec3(1,2,3), vec3(1,.5f,2.f), quat::CreateFromAxisAngle(mathf::normalize(vec3(1,2,3)), 1.f) };
 
     // Setup this scene's rendergraph
