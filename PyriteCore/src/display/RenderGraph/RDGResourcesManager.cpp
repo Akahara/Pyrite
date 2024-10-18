@@ -1,8 +1,11 @@
 #include "RDGResourcesManager.h"
 
+#include "RenderGraph.h"
 #include "RenderPass.h"
+#include "utils/debug.h"
+#include <optional>
 
-#define ENSURE_IS_IN_GRAPH(pass) if (!m_passResources.contains(pass)) throw Errors::PassNotInManager{};
+#define ASSERT_IS_IN_GRAPH(pass) PYR_ASSERT(m_passResources.contains(pass));
 
 namespace pyr
 {
@@ -17,8 +20,12 @@ namespace pyr
 
 	void RenderGraphResourceManager::linkResource(RenderPass* from, const char* resName, RenderPass* to)
 	{
-		ENSURE_IS_IN_GRAPH(from)
-		ENSURE_IS_IN_GRAPH(to)
+		ASSERT_IS_IN_GRAPH(from);
+		if (!PYR_ENSURE(m_passResources.contains(to)))
+		{
+			PYR_LOGF(LogRenderGraph, WARN, "Trying to link resource  \"{}\" to pass {} that is not in graph !", resName, to->displayName);
+		}
+		//ASSERT_IS_IN_GRAPH(to)
 
 		std::optional<NamedOutput> resource = from->getOutputResource(resName);
 		if (resource.has_value()) {
@@ -31,7 +38,7 @@ namespace pyr
 
 	void RenderGraphResourceManager::addProduced(RenderPass* pass, const char* resName)
 	{
-		ENSURE_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass)
 
 		std::optional<NamedOutput> resource = pass->getOutputResource(resName);
 		if (resource.has_value()) m_passResources[pass].producedResources[resName] = resource.value();
@@ -42,7 +49,7 @@ namespace pyr
 
 	void RenderGraphResourceManager::addRequirement(RenderPass* pass, const char* resName)
 	{
-		ENSURE_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass)
 
 		m_passResources[pass].requiredResources.insert(resName);
 	}

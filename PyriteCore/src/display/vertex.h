@@ -15,6 +15,9 @@ namespace pyr
 		COLOR,
 		INSTANCE_COLOR,
 		INSTANCE_TRANSFORM,
+		INSTANCE_TEXID,
+		INSTANCE_UV,
+		INSTANCE_DATA, // < value
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +64,24 @@ namespace pyr
 	    static constexpr const char* semanticName = "INSTANCE_TRANSFORM";
 	    static constexpr bool bIsInstanced = true;
 	    alignas(sizeof(vec4)) mat4 instanceTransform;
+	};
+
+	template <> struct VertexParameter<INSTANCE_UV> {
+		static constexpr const char* semanticName = "INSTANCE_UV";
+		static constexpr bool bIsInstanced = true;
+		alignas(sizeof(vec4)) vec4 instanceUvs;
+	};
+
+	template <> struct VertexParameter<INSTANCE_TEXID> {
+		static constexpr const char* semanticName = "INSTANCE_TEXID";
+		static constexpr bool bIsInstanced = true;
+		alignas(sizeof(float)) float instanceTexId;
+	};
+
+	template <> struct VertexParameter<INSTANCE_DATA> {
+		static constexpr const char* semanticName = "INSTANCE_DATA";
+		static constexpr bool bIsInstanced = true;
+		alignas(sizeof(float)) float data;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////

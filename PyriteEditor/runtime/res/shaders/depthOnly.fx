@@ -2,12 +2,6 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-cbuffer CameraBuffer
-{
-    float4x4 ViewProj;
-    float3 cameraPosition;
-};
-
 struct VertexInput
 {
     float4 Pos : POSITION;

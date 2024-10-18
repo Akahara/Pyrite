@@ -18,8 +18,8 @@ namespace pyr
         IndexBuffer::size_type startIndex   = 0;
         IndexBuffer::size_type endIndex     = 0;
         size_t materialIndex                = 0;
-#ifdef _DEBUG
         std::string matName;
+#ifdef _DEBUG
 #endif
 
         IndexBuffer::size_type getIndexCount() const noexcept { return endIndex - startIndex; }

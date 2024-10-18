@@ -71,7 +71,6 @@ namespace pye
         bool bRuntimeFramebufferIrradianceCapture = false;
         bool bRuntimeFramebufferPrefilterCapture = false;
         bool bRenderIrradianceMap = false;
-        bool bShouldEndRenderDocCapture = false;
         bool bSkipImgui = false;
 
 
@@ -84,14 +83,6 @@ namespace pye
 
         CubemapBuilderScene()
         {
-            // At init, on windows
-            if (HMODULE mod = LoadLibraryA("renderdoc.dll"))
-            {
-                pRENDERDOC_GetAPI RENDERDOC_GetAPI =
-                    (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
-                int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&rdoc_api);
-                assert(ret == 1);
-            }
 
             m_hdrMap                    = m_registry.loadTexture(DefaultHDRMap);
             m_skyboxEffect              = m_registry.loadEffect(L"res/shaders/skybox.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::EmptyVertex>());
@@ -223,10 +214,6 @@ namespace pye
             // -- Reset render mode
             bSkipImgui = false;
             renderMode = RenderMode::SKYBOX;
-            if (rdoc_api)
-            {
-                bShouldEndRenderDocCapture = true;
-            }
         }
 
         void update(float delta) override

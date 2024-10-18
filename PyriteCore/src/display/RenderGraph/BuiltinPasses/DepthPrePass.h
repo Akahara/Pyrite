@@ -1,10 +1,11 @@
 #pragma once
 
 #include "display/RenderGraph/RenderPass.h"
+#include "display/RenderGraph/RenderGraph.h"
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
-
+#include "display/FrameBuffer.h"
 
 namespace pyr
 {
@@ -40,17 +41,18 @@ namespace pyr
 
             virtual void apply() override
             {
-                // Render all objects to a depth only texture
+                if (!PYR_ENSURE(owner)) return;
 
+                // Render all objects to a depth only texture
                 m_depthTarget.clearTargets();
                 m_depthTarget.bind();
 
-                for (const StaticMesh* smesh : m_meshes)
+                for (const StaticMesh* smesh : owner->GetContext().ActorsToRender.meshes)
                 {
 
                     smesh->bindModel();
 
-                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->getTransform().getWorldMatrix() });
+                    pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
                     m_depthOnlyEffect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                     m_depthOnlyEffect->bind();
                     

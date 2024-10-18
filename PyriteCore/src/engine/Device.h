@@ -5,9 +5,24 @@
 #include <vector>
 
 #include "Directxlib.h"
+#include "RenderDoc/renderdoc_app.h"
+
 
 namespace pyr
 {
+    class RenderDoc
+    {
+    public:
+        using RenderDocPtr = RENDERDOC_API_1_1_2*;
+        static RenderDocPtr Get() 
+        {
+            return m_api;
+        }
+    private:
+        friend class Device;
+        static bool Init();
+        static inline RenderDocPtr m_api = nullptr;
+    };
 
 class FrameBuffer;
 

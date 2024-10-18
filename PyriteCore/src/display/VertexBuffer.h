@@ -2,9 +2,11 @@
 
 #include <d3d11.h>
 #include <vector>
+#include <span>
 
 #include "Vertex.h"
 #include "engine/Engine.h"
+#include "utils/debug.h"
 
 namespace pyr
 {
@@ -18,8 +20,10 @@ namespace pyr
     public:
 
         template<class V> requires std::derived_from<V, BaseVertex>
-        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable=false) : m_stride(sizeof(V))
+        explicit VertexBuffer(std::span<V> vertices, bool bMutable=false) : m_stride(sizeof(V))
         {
+            PYR_ASSERT(vertices.size() > 0);
+
             m_vertexCount = vertices.size();
 
             D3D11_BUFFER_DESC descriptor{};
@@ -38,6 +42,10 @@ namespace pyr
 
             Engine::d3ddevice().CreateBuffer(&descriptor, &initData, &m_vbo);
         }
+
+        template<class V> requires std::derived_from<V, BaseVertex>
+        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable = false) : VertexBuffer(std::span{ vertices })
+        {}
 
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
