@@ -39,7 +39,7 @@ namespace pye
             using ActorPickerIDBuffer = pyr::ConstantBuffer<InlineStruct( uint32_t id) > ;
             std::shared_ptr<ActorPickerIDBuffer> pIdBuffer = std::make_shared<ActorPickerIDBuffer>();
 
-            using BillboardPickerIDBuffer = pyr::ConstantBuffer<InlineStruct(uint32_t ids[64]) >;
+            using BillboardPickerIDBuffer = pyr::ConstantBuffer < InlineStruct(struct test { alignas(16) uint32_t id; }; test ids[16]) > ;
             std::shared_ptr<BillboardPickerIDBuffer> pBillboardIDBuffer = std::make_shared<BillboardPickerIDBuffer>();
 
             // -- MVP
@@ -257,14 +257,12 @@ namespace pye
                         bbs.push_back(editorBB->editorBillboard);
                     }
                     pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(bbs);
-                    std::array<uint32_t, 64> ids; // only 64 selectable billboards ?
 
-                    for (size_t i = 0; i < bbs.size() && i < ids.size(); i++)
-                        ids[i] = bbs[i]->GetActorID();
+                    BillboardPickerIDBuffer::data_t data{};
+                    for (size_t i = 0; i < bbs.size(); i++)
+                        data.ids[i].id = bbs[i]->GetActorID();
 
-                    pBillboardIDBuffer->setData(
-                        BillboardPickerIDBuffer::data_t{ .ids = ids[0] });
-                    
+                    pBillboardIDBuffer->setData(data);
 
                 	m_pickEffect_Billboards->bindConstantBuffer("CameraBuffer", pcameraBuffer);
                     m_pickEffect_Billboards->bindConstantBuffer("BillboardPickerIDBuffer", pBillboardIDBuffer);

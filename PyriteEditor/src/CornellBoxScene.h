@@ -119,6 +119,10 @@ namespace pye
                 sceneMeshes.back().GetTransform().scale = { 10,10,10 };
             }
 
+            SceneActors.lights.Points.push_back({});
+            SceneActors.lights.Spots.push_back({});
+            SceneActors.lights.Points.back().GetTransform().position = { 0,-5.F,0 };
+            SceneActors.lights.Spots.back().GetTransform().position = { 0,-8.F,0 };
         }
 
         /// ------------------------------------------------------------------------------------------------------------------------------- ///
@@ -148,9 +152,6 @@ namespace pye
             {
                 SceneActors.registerForFrame(&m);
             }
-
-
-   
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);

@@ -14,7 +14,7 @@ cbuffer ActorPickerIDBuffer
 #ifdef USE_BILLBOARDS
 cbuffer BillboardPickerIDBuffer
 {
-    uint billboardsID[64];
+    uint billboardsID[16];
 };
 #endif
 
@@ -50,7 +50,6 @@ struct VertexOutput
     uint billboardActorId : TEXCOORD2;
 };
 
-StructuredBuffer<uint> billboardActorId : register(t9);
 static const int AUTO_FACING = 0;
 Texture2D textures[16];
 #endif
@@ -103,11 +102,10 @@ VertexOutput PickerVertexShader(VertexInput bbVSin, uint instanceID : SV_Instanc
     
     float4x4 MVP = mul(ViewProj, M);
     
-    uint currentID = vertexID - (instanceID * 6);
+    uint currentID = vertexID % 6;
     float4 vertex = VERTICES[currentID];
     float4 vertexLocalPos = float4(vertex.xy, 0, 1);
     vso.pos = mul(MVP, vertexLocalPos);
-    vso.billboardActorId = billboardActorId[instanceID];
     vso.billboardActorId = billboardsID[instanceID];
 
     vso.uv = vertex.zw * bbVSin.instanceUVs.zw + bbVSin.instanceUVs.xy;

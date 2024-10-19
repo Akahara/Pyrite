@@ -40,6 +40,7 @@ namespace pye
 					LightsCollectionView.bIsWidgetDirty)
 				{
 					// Initial update, register all lights
+	
 					LightsCollectionView.sourceCollection = &currentScene->SceneActors.lights;
 					auto baseLights = LightsCollectionView.sourceCollection->toBaseLights();
 					LightsCollectionView.EditorFormatLights.clear();
@@ -80,16 +81,19 @@ namespace pye
 						{
 							LightsCollectionView.sourceCollection->Points.push_back({});
 							LightsCollectionView.bIsWidgetDirty = true;
+							LightsCollectionView.selectedLight = nullptr;
 						}
 						if (ImGui::Selectable("Spot light")) 
 						{
 							LightsCollectionView.sourceCollection->Spots.push_back({}); 
 							LightsCollectionView.bIsWidgetDirty = true;
+							LightsCollectionView.selectedLight = nullptr;
 						}
 						if (ImGui::Selectable("Directional light"))
 						{
 							LightsCollectionView.sourceCollection->Directionals.push_back({});
 							LightsCollectionView.bIsWidgetDirty = true;
+							LightsCollectionView.selectedLight = nullptr;
 						}
 						ImGui::SetNextItemWidth(-FLT_MIN);
 						ImGui::EndPopup();

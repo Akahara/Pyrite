@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#define InlineStruct(...) decltype([]() {\
+#define InlineStruct(body) decltype([]() {\
     struct ConstantBufferData_t {\
-        struct alignas(16) {__VA_ARGS__ ;};\
+        struct alignas(16) {body;};\
     } _;\
     return _; \
 }())\
@@ -18,8 +18,8 @@ namespace pyr
     struct BaseConstantBuffer {
     protected:
         
-        BaseConstantBuffer() {};
-        ID3D11Buffer* m_buffer;
+        BaseConstantBuffer() = default;
+        ID3D11Buffer* m_buffer = nullptr;
 
     public:
         [[nodiscard]] const ID3D11Buffer* getRawBuffer() const noexcept { return m_buffer; }
