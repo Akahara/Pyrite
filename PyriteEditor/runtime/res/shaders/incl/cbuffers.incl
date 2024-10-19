@@ -5,6 +5,12 @@ cbuffer InverseCameraBuffer
 	float4x4 Proj;
 }
 
+cbuffer CameraBuffer
+{
+    float4x4 ViewProj;
+    float3 cameraPosition;
+};
+
 cbuffer ActorBuffer 
 {
 	float4x4 ModelMatrix;	

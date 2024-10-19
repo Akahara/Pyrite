@@ -27,19 +27,12 @@ namespace pye
 
 	struct WidgetsContainer
 	{
-		
 		std::vector<Widget*> widgets;
-
 		void Render()
 		{
 			for (Widget* widget : widgets)
-			{
 				widget->display();
-			}
 		}
-
 	};
-
-
 
 }

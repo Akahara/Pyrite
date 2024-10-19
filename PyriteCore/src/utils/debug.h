@@ -19,13 +19,15 @@ PYR_DECLARELOG(LogDebug);
 #define PYR_ENSURE(x, ...)\
   ([&]{\
     static bool _triggered = false;\
-    bool valid = !!(x);\
-    if (!valid && !_triggered) {\
+    bool _valid = !!(x);\
+    if (!_valid && !_triggered) {\
       PYR_LOG(LogDebug, WARN, "Ensure failed at " __FILE__ ":", __LINE__, " ", __VA_ARGS__);\
       _triggered = true;\
+      __debugbreak();\
     }\
-    return valid;\
+    return _valid;\
   }())
+
 #else
 #define PYR_DEBUG(x)
 #define PYR_ASSERT(x, ...)

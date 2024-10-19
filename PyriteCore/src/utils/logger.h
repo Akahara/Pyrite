@@ -48,6 +48,7 @@ public:
 
 		static std::stringstream ss;
 		ss.str("");
+		ss << m_name + ": ";
 		(ss << ... << std::forward<Args>(args));
 		ss << '\n';
 		std::cout << ss.str();
@@ -61,6 +62,7 @@ public:
 	      return;
 
 		std::string res = std::vformat(
+			m_name + ": " +
 			std::string(format) + "\n",
 			std::make_format_args(std::forward<Args>(args)...));
 

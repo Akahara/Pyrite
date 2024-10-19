@@ -2,6 +2,7 @@
 
 #include "utils/Math.h"
 #include "utils/Debug.h"
+#include "world/Actor.h"
 
 #include <iostream>
 
@@ -9,6 +10,8 @@ using namespace DirectX;
 
 
 static inline PYR_DEFINELOG(LogLights, VERBOSE);
+
+// TODO : Make light a variant
 
 namespace pyr {
 
@@ -41,30 +44,40 @@ struct hlsl_GenericLight
 
 /// =============================================================================================================================================================///
 
-struct BaseLight
+struct BaseLight : public Actor
 {
-	bool isOn = false;
+	bool isOn = true;
 	vec4 ambiant;
-	vec4 diffuse;
+	vec4 diffuse = {1,1,1,1};
+	BaseLight()
+	{
+		GetTransform().rotation = vec4{ 0,-1,0,0 }; // todo make this a directional arrow widget someday ? and make this cleaner
+	}
+	BaseLight(bool isOn, vec4 ambiant, vec4 diffuse) : isOn(isOn), ambiant(ambiant), diffuse(diffuse)
+	{
+		GetTransform().rotation = vec4{ 0,-1,0,0 };
+	}
+
+	virtual LightTypeID getType() const = 0;
 };
 
 template<class L> requires std::derived_from<L, BaseLight>
-hlsl_GenericLight convertLightTo_HLSL(const L& light);
+inline hlsl_GenericLight convertLightTo_HLSL(const L& light);
 
 
 /// =============================================================================================================================================================///
 
 struct DirectionalLight : public BaseLight {
 
-	vec4 direction = { 0.f,0.f,-1.f,0.f };
 	float strength = 1.0F;
+	virtual LightTypeID getType() const override final { return Directional; }
 };
 
 template<>
-hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const DirectionalLight& light)
+inline hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const DirectionalLight& light)
 {
 	return hlsl_GenericLight{
-		.direction = light.direction,
+		.direction = light.GetTransform().rotation,
 		.range = {},
 		.position = {},
 		.ambiant = light.ambiant,
@@ -84,15 +97,18 @@ struct PointLight : public BaseLight {
 
 	int distance = 7; // lookup table
 	vec4 range = computeRangeFromDistance(7);
-	vec4 position;
 	float specularFactor = 1.0;
 
 	PointLight() = default;
-	PointLight(unsigned int d, vec4 pos, vec4 Ka, vec4 Kd, float f, bool on)
-		: BaseLight{ .isOn = on, .ambiant = Ka, .diffuse = Kd},
-		distance(d), range(computeRangeFromDistance(distance)), position(pos), 
+	PointLight(unsigned int d, vec3 pos, vec4 Ka, vec4 Kd, float f, bool on)
+		: BaseLight{ on, Ka, Kd},
+		distance(d), range(computeRangeFromDistance(distance)), 
 		specularFactor(f)
-	{}
+	{
+		GetTransform().position = pos;
+	}
+
+	virtual LightTypeID getType() const override final { return Point; }
 
 	vec4 computeRangeFromDistance(unsigned int distance)
 	{
@@ -120,12 +136,12 @@ struct PointLight : public BaseLight {
 };
 
 template<>
-hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light)
+inline hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light)
 {
 	return hlsl_GenericLight{
 		.direction = {},
 		.range = light.range,
-		.position = light.position,
+		.position = vec4{light.GetTransform().position.x,light.GetTransform().position.y,light.GetTransform().position.z,0},
 		.ambiant = light.ambiant,
 		.diffuse = light.diffuse,
 		.specularFactor = light.specularFactor,
@@ -140,22 +156,20 @@ hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light)
 
 struct SpotLight : public  BaseLight {
 
-	vec4 direction = { 0.f,0.f,-1.f,0.f };
-	vec4 position;
-
-	float outsideAngle = 1.6f;
-	float insideAngle = 0.5f;
+	float outsideAngle = 0.150f;
+	float insideAngle = 0.450f;
 	float strength = 1.0f;
 	float specularFactor = 1.0f;
+	virtual LightTypeID getType() const override final { return Spotlight; }
 };
 
 template<>
-hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
+inline hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
 {
 	return hlsl_GenericLight{
-		.direction = light.direction,
+		.direction = light.GetTransform().rotation,
 		.range = {light.insideAngle,light.insideAngle,light.insideAngle,light.insideAngle},
-		.position = light.position,
+		.position = vec4{light.GetTransform().position.x,light.GetTransform().position.y,light.GetTransform().position.z,0},
 		.ambiant = light.ambiant,
 		.diffuse = light.diffuse,
 		.specularFactor = light.specularFactor,
@@ -168,7 +182,8 @@ hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
 
 /// =============================================================================================================================================================///
 
-///  Instanciate this into your scene, should have one in the editor part
+///  You should not instantiate this ! The sceneActors, present in every scene, contains this. 
+///	 Add you base lights directly to this, or use the widget. The widget will automatically fetch all the scene lights.
 
 /// =============================================================================================================================================================///
 
@@ -179,8 +194,10 @@ struct LightsCollections {
 	std::vector<DirectionalLight> Directionals;
 
 	template<size_t N = 16>
-	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL()
+	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL() const
 	{
+		if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
+
 		std::array<hlsl_GenericLight, N> res;
 
 		auto it = res.begin();
@@ -192,6 +209,32 @@ struct LightsCollections {
 			*(it++) = convertLightTo_HLSL<DirectionalLight>(dir);
 
 		return res;
+	}
+
+	// Will do the trick for now, as i don't want to return const ptr and i need this method to be const. Too bad !
+	std::vector<BaseLight*> toBaseLights() const
+	{
+		std::vector<BaseLight*> res;
+		for (auto& p : Points)			res.push_back((BaseLight*) & p);
+		for (auto& d : Directionals) res.push_back((BaseLight*)&d);
+		for (auto& l : Spots)				res.push_back((BaseLight*)&l);
+		return res;
+	}
+
+
+	void AddLight(const BaseLight* light)
+	{
+		switch (light->getType())
+		{
+		case LightTypeID::Point: Points.push_back(*reinterpret_cast<const PointLight*>(light)); break;
+		case LightTypeID::Directional: Directionals.push_back(*reinterpret_cast<const DirectionalLight*>(light)); break;
+		case LightTypeID::Spotlight: Spots.push_back(*reinterpret_cast<const SpotLight*>(light)); break;
+		}
+	}
+
+	void Clear()
+	{
+		Spots.clear(), Directionals.clear(); Points.clear();
 	}
 
 	void RemoveLight(BaseLight* light)
@@ -209,7 +252,6 @@ struct LightsCollections {
 			Directionals.erase(first, last);
 		}
 	}
-
 };
 
 

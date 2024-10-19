@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <d3dcompiler.h>
 #include <fstream>
+#include <ranges>
 
 #include "engine/Directxlib.h"
 #include "GraphicalResource.h"
@@ -40,9 +41,10 @@ struct RawEffect {
   ID3DX11EffectTechnique* technique = nullptr;
   ID3DX11EffectPass* pass = nullptr;
   D3DX11_EFFECT_SHADER_DESC effectVSDesc2{};
+  std::vector<D3D_SHADER_MACRO> macros{};
 };
 
-RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed)
+RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed, const std::vector<Effect::define_t>& defines = {})
 {
   auto &device = Engine::d3ddevice();
 
@@ -50,7 +52,14 @@ RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed)
   ID3DBlob *errors = nullptr;
   IncludeManager includes{};
 
-  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), nullptr, &includes, D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 2, &device, &effect, &errors);
+  std::vector<D3D_SHADER_MACRO> macros;
+  for (const auto& [name, value] : defines)
+  {
+      macros.push_back(D3D_SHADER_MACRO{ name.c_str(), value.c_str() });
+  }
+  macros.push_back(D3D_SHADER_MACRO{ nullptr, nullptr }); // stupid null terminated api
+
+  HRESULT compilationSuccess = D3DX11CompileEffectFromFile(path.c_str(), macros.data(), &includes, D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 2, &device, &effect, &errors);
 
   if (compilationSuccess != S_OK) {
     const char* errorMessage = errors
@@ -72,15 +81,15 @@ RawEffect makeRawEffect(const std::wstring& path, bool mustSucceed)
   D3DX11_EFFECT_SHADER_DESC effectVSDesc2;
   effectVSDesc.pShaderVariable->GetShaderDesc(effectVSDesc.ShaderIndex, &effectVSDesc2);
 
-  return { effect, technique, pass, effectVSDesc2 };
+  return { effect, technique, pass, effectVSDesc2, macros };
 }
 
-std::shared_ptr<Effect> ShaderManager::makeEffect(const std::wstring &path, const InputLayout& layout)
+std::shared_ptr<Effect> ShaderManager::makeEffect(const std::wstring& path, const InputLayout& layout, const std::vector<Effect::define_t>& defines /* = {} */)
 {
-  auto [effect, technique, pass, effectVSDesc2] = makeRawEffect(path, true);
+  auto [effect, technique, pass, effectVSDesc2, d3dmacros] = makeRawEffect(path, true, defines);
   ID3D11InputLayout *inputLayout = createVertexLayout(layout, effectVSDesc2.pBytecode, effectVSDesc2.BytecodeLength);
 
-  std::shared_ptr<Effect> e = std::make_shared<Effect>(effect, technique, pass, inputLayout);
+  std::shared_ptr<Effect> e = std::make_shared<Effect>(effect, technique, pass, inputLayout, defines);
   e->m_effectFile = widestring2string(path);
   creationHooks(e);
   return e;
@@ -88,7 +97,7 @@ std::shared_ptr<Effect> ShaderManager::makeEffect(const std::wstring &path, cons
 
 void ShaderManager::reloadEffect(Effect &e)
 {
-  auto [effect, technique, pass, effectVSDesc2] = makeRawEffect(string2widestring(e.getFilePath()), false);
+  auto [effect, technique, pass, effectVSDesc2, d3dmacros] = makeRawEffect(string2widestring(e.getFilePath()), false, e.m_defines);
   if (effect == nullptr) return; // Invalid shader code
   DXRelease(e.m_effect);
   e.clearBindingCache();
@@ -170,6 +179,14 @@ void Effect::bindTexture(const Texture &texture, const std::string &name) const
 void Effect::bindCubemap(const Cubemap &cubemap, const std::string &name) const
 {
   DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(cubemap.getRawCubemap()), "Could not bind a cubemap to an effect");
+}
+
+void Effect::bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const
+{
+    // TODO : don't use vector here unless there are more than 16 elements or something
+    auto view = textures | std::views::transform([](const pyr::Texture& t) { return (ID3D11ShaderResourceView*)t.getRawTexture(); });
+    std::vector<ID3D11ShaderResourceView*> views(view.begin(), view.end());
+    bindTextures(views, name);
 }
 
 void Effect::bindTextures(const std::vector<ID3D11ShaderResourceView*> &textures, const std::string &name) const

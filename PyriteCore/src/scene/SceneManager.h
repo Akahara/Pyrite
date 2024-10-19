@@ -14,7 +14,14 @@ using SceneSupplier = std::function<std::unique_ptr<Scene>()>;
 class SceneManager
 {
 public:
-  static SceneManager &getInstance() { return s_singleton; }
+  static SceneManager& getInstance() { 
+      static SceneManager instance;
+      return instance; 
+  }
+  static Scene* getActiveScene() { return getInstance().m_activeScene.get(); }
+  static RegisteredRenderableActorCollection& GetCurrentSceneActors() { return getActiveScene()->SceneActors; }
+
+public:
 
   template<class SceneType> requires std::is_base_of_v<Scene, SceneType>
   void registerScene(const std::string& name, auto&&... sceneArgs)
@@ -28,7 +35,6 @@ public:
     return it != m_knownScenes.end() ? it->second : SceneSupplier{};
   }
 
-  Scene* getActiveScene() const { return m_activeScene.get(); }
   void transitionToScene(SceneSupplier nextSceneSupplier);
   bool transitionToScene(const std::string& sceneName);
   void dispose();
@@ -49,8 +55,9 @@ public:
     };
   }
 
+
+
 private:
-  static SceneManager s_singleton;
 
   std::map<std::string, SceneSupplier> m_knownScenes;
   std::string m_activeSceneName;

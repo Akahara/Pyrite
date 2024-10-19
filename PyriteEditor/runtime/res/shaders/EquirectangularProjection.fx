@@ -1,14 +1,6 @@
 #include "incl/samplers.incl"
 #include "incl/cbuffers.incl"
 
-cbuffer CameraBuffer
-{
-    float4x4 ViewProj;
-    float3 cameraPosition;
-};
-
-
-
 static float4 VERTICES[36] =
 {
     float4(-1, -1, +1, 1), float4(-1, -1, -1, 1), float4(-1, +1, +1, 1),

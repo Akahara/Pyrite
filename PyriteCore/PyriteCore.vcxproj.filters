@@ -38,11 +38,12 @@
     <ClCompile Include="src\world\RayCasting.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\utils\Debug.cpp" />
-    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\BuiltinPasses.cpp" />
     <ClCompile Include="src\display\RenderGraph\RDGResourcesManager.cpp" />
     <ClCompile Include="src\display\CubemapBuilder.cpp" />
     <ClCompile Include="src\world\Mesh\RawMeshData.cpp" />
     <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
+    <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
+    <ClCompile Include="src\world\Billboards\Billboard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -111,6 +112,10 @@
     <ClInclude Include="src\display\CubemapBuilder.h" />
     <ClInclude Include="src\world\Mesh\RawMeshData.h" />
     <ClInclude Include="vendor\ddstextureloader\WICTextureLoader11.h" />
+    <ClInclude Include="src\world\Billboards\Billboard.h" />
+    <ClInclude Include="src\world\Actor.h" />
+    <ClInclude Include="src\scene\RenderableActorCollection.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BillboardsPass.h" />
     <ClInclude Include="src\world\Lights\Light.h" />
   </ItemGroup>
   <ItemGroup>

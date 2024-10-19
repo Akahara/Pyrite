@@ -175,8 +175,8 @@ void FreecamController::processUserInputs(double deltaTime)
   if (UserInputs::isKeyPressed(keys::SC_A)) movementDelta -= m_camera->getRight();
   if (UserInputs::isKeyPressed(keys::SC_S)) movementDelta -= m_camera->getFlatForward();
   if (UserInputs::isKeyPressed(keys::SC_D)) movementDelta += m_camera->getRight();
-  if (UserInputs::isKeyPressed(keys::SC_LEFT_SHIFT)) movementDelta += vec3::Up;
-  if (UserInputs::isKeyPressed(keys::SC_LEFT_CTRL))  movementDelta -= vec3::Up;
+  if (UserInputs::isKeyPressed(keys::SC_SPACE))  movementDelta += vec3::Up;
+  if (UserInputs::isKeyPressed(keys::SC_LEFT_SHIFT)) movementDelta -= vec3::Up;
 
   m_camera->move(static_cast<float>(deltaTime) * m_playerSpeed * movementDelta);
 

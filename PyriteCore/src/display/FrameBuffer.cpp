@@ -34,12 +34,11 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 	renderTextureDesc.Height = m_height;
 	renderTextureDesc.MipLevels = 1;
 	renderTextureDesc.ArraySize = 1;
-	renderTextureDesc.Format = DXGI_FORMAT_R11G11B10_FLOAT;
+	renderTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	renderTextureDesc.SampleDesc.Count = isMultisampled ? MSAA_LEVEL : 1;
 	renderTextureDesc.SampleDesc.Quality = 0;
 	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
 	renderTextureDesc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
-	renderTextureDesc.CPUAccessFlags = 0;
 	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
 	m_textures.push_back(renderTexture);
 
@@ -109,7 +108,7 @@ FrameBuffer::FrameBuffer(IDXGISwapChain *swapChain, ID3D11Device *device, unsign
 void FrameBuffer::clearTargets() const
 {
   auto &context = Engine::d3dcontext();
-  constexpr float clearColor[4]{ .05f, .08f, .1f, 1.f };
+  constexpr float clearColor[4]{ .05f, .08f, .1f, 0.0f };
   if(m_depthStencilView) context.ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
   if(m_renderTargetView) context.ClearRenderTargetView(m_renderTargetView, clearColor);
 }
@@ -133,6 +132,7 @@ FrameBuffer::~FrameBuffer()
 
   DXRelease(m_depthStencilView);
   DXRelease(m_renderTargetView);
+  DXRelease(m_overridenDepth);
   if(!m_keepTextures) {
 	  std::ranges::for_each(m_targetsAsTextures, [](auto texture) { texture.releaseRawTexture(); });
   }
@@ -187,13 +187,19 @@ void FrameBuffer::unbind()
 void FrameBuffer::bindToD3DContext() const
 {
   D3D11_VIEWPORT viewport{ 0,0,static_cast<float>(m_width),static_cast<float>(m_height),0,1 };
-  Engine::d3dcontext().OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+  Engine::d3dcontext().OMSetRenderTargets(1, &m_renderTargetView, m_overridenDepth ? m_overridenDepth : m_depthStencilView);
   Engine::d3dcontext().RSSetViewports(1, &viewport);
 }
 
 size_t FrameBuffer::targetTypeToIndex(Target target)
 {
   return mathf::firstBitIndex(static_cast<target_t>(target));
+}
+
+void FrameBuffer::setDepthOverride(ID3D11DepthStencilView* depth)
+{ 
+	m_overridenDepth = depth; 
+	bindToD3DContext();
 }
 
 struct GlobalResources {

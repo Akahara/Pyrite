@@ -38,9 +38,11 @@ private:
   friend class ShaderManager;
   friend class GraphicalResourceRegistry;
 
+
 public:
-  Effect(ID3DX11Effect *effect, ID3DX11EffectTechnique *technique, ID3DX11EffectPass *pass, ID3D11InputLayout *inputLayout)
-	: m_effect(effect), m_technique(technique), m_pass(pass), m_inputLayout(inputLayout) { }
+  struct define_t { std::string name; std::string value; };// Name, value
+  Effect(ID3DX11Effect* effect, ID3DX11EffectTechnique* technique, ID3DX11EffectPass* pass, ID3D11InputLayout* inputLayout, const std::vector<Effect::define_t>& defines = {})
+	: m_effect(effect), m_technique(technique), m_pass(pass), m_inputLayout(inputLayout), m_defines(defines) { }
 
   Effect() = default;
   Effect(const Effect &) = delete;
@@ -53,7 +55,10 @@ public:
   static void unbindResources();
   void bindTexture(const Texture &texture, const std::string &name) const;
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
+
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
+  void bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const;
+
   void bindSampler(const SamplerState &sampler, const std::string &name) const;
 
   const std::string& getFilePath() const { return m_effectFile; }
@@ -141,7 +146,7 @@ private:
   void clearBindingCache() { m_variableBindingsCache.clear(); m_constantBufferBindingsCache.clear(); }
 
 private:
-  std::string m_effectFile;
+  std::string			 m_effectFile;
   ID3DX11Effect          *m_effect;
   ID3DX11EffectTechnique *m_technique;
   ID3DX11EffectPass      *m_pass;
@@ -149,9 +154,8 @@ private:
   mutable std::unordered_map<std::string, ID3DX11EffectVariable *> m_variableBindingsCache;
   mutable std::unordered_map<std::string, ID3DX11EffectConstantBuffer *> m_constantBufferBindingsCache;
 
-
   std::vector<ConstantBufferBinding> m_bindings; // todo say bind all cbuffers
-
+  std::vector<define_t> m_defines;
 };
 
 class ShaderManager
@@ -160,7 +164,7 @@ public:
   using ShaderCreationHook = std::function<void(std::shared_ptr<Effect> &)>;
   using ShaderCreationHookHandle = HookSet<ShaderCreationHook>::HookHandle;
 
-  static std::shared_ptr<Effect> makeEffect(const std::wstring& path, const InputLayout& layout);
+  static std::shared_ptr<Effect> makeEffect(const std::wstring& path, const InputLayout& layout, const std::vector<Effect::define_t>& defines = {});
   static void reloadEffect(Effect& effect);
   static inline HookSet<ShaderCreationHook> creationHooks;
 
