@@ -17,6 +17,7 @@
 #include "world/RayCasting.h"
 #include "RenderDoc/renderdoc_app.h"
 #include <display/CubemapBuilder.h>
+#include "world/Tools/CommonConstantBuffers.h"
 
 #include "RenderDoc/renderdoc_app.h"
 
@@ -53,7 +54,7 @@ namespace pye
         RenderMode renderMode = SKYBOX;
 
         pyr::GraphicalResourceRegistry m_registry;
-        std::shared_ptr<pyr::DefaultBufferCollection::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::DefaultBufferCollection::CameraBuffer>();
+        std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
 
         pyr::Camera m_camera;
         pyr::Texture m_hdrMap;
@@ -116,7 +117,7 @@ namespace pye
                 m_camera.lookAt(lookAtDirs[i]);
                 if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f); // why ? it works
                 if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f); // 
-                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+                pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
                 });
@@ -136,7 +137,7 @@ namespace pye
             OutputCubemaps.Cubemap = std::make_shared<pyr::Cubemap>(pyr::CubemapBuilder::MakeCubemapFromTextures(textures));
 
             // -- Convert the HDR cubemap to a precomputed irradiance cubemap
-            pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
                 });
@@ -146,7 +147,7 @@ namespace pye
                 m_camera.lookAt(lookAtDirs[i]);
                 if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f); 
                 if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f);
-                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+                pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                     .mvp = m_camera.getViewProjectionMatrix(),
                     .pos = m_camera.getPosition()
                 });
@@ -183,7 +184,7 @@ namespace pye
                     m_camera.lookAt(lookAtDirs[i]);
                     if (i == 2) m_camera.rotate(0.f, 3.14159f, 0.f);
                     if (i == 3) m_camera.rotate(0.f, 3.14159f, 0.f);
-                    pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+                    pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                         .mvp = m_camera.getViewProjectionMatrix(),
                         .pos = m_camera.getPosition()
                         });
@@ -219,7 +220,7 @@ namespace pye
         void update(float delta) override
         {
             m_camController.processUserInputs(delta);
-            pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                 .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
             });
@@ -312,7 +313,7 @@ namespace pye
                                 m_camera.lookAt(lookAtDirs[i]);
                                 if (i == 2) m_camera.rotate(0, 3.14159f, 0);
                                 if (i == 3) m_camera.rotate(0, 3.14159f, 0);
-                                pcameraBuffer->setData(pyr::DefaultBufferCollection::CameraBuffer::data_t{
+                                pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                                     .mvp = m_camera.getViewProjectionMatrix(),
                                     .pos = m_camera.getPosition()
                                     });

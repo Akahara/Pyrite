@@ -24,6 +24,13 @@ enum LightTypeID : uint32_t
 	Spotlight = 3,
 };
 
+enum ShadowMode : uint32_t
+{
+	NoShadow = 1,
+	DynamicShadow = 2,
+	StaticShadow = 3, // < will never implement this
+};
+
 struct hlsl_GenericLight
 {
 
@@ -39,7 +46,8 @@ struct hlsl_GenericLight
 	float isOn;
 
 	LightTypeID type;
-	float padding[3];
+	ShadowMode shadowMode = NoShadow;
+	float padding[2];
 };
 
 /// =============================================================================================================================================================///

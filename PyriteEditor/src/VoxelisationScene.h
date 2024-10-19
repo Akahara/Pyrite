@@ -210,6 +210,7 @@ public:
 
     voxeliseMesh();
     updateCubesToMatchVoxelGrid();
+    SceneActors.meshes.push_back(&m_mesh);
   }
 
   void update(float delta) override
@@ -265,8 +266,6 @@ public:
 
   void render() override
   {
-    SceneActors.registerForFrame(&m_mesh);
-
     ImGui::Begin("Voxelization");
     static ivec3 dims = m_voxelGrid.getDimensions();
     static vec3 position = m_voxelGrid.GetTransform().position;
@@ -275,8 +274,8 @@ public:
     static bool showMesh = true;
     ImGui::Checkbox("Autogen", &autogen);
     if (ImGui::Checkbox("ShowMesh", &showMesh)) {
-        SceneActors.clear();
-      if (showMesh) SceneActors.registerForFrame(&m_mesh);
+        SceneActors.meshes.clear();
+      if (showMesh && SceneActors.meshes.empty()) SceneActors.meshes.push_back(&m_mesh);
     }
     if ((ImGui::DragInt3("Dimensions", &dims.x, 1, 1, 100)
         + ImGui::DragFloat3("Position", &position.x)

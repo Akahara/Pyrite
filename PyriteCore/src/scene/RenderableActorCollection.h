@@ -16,11 +16,5 @@ namespace pyr
 		std::vector<const class StaticMesh*> meshes;
 		std::vector<const struct Billboard*> billboards;
 		pyr::LightsCollections lights;
-
-		void registerForFrame(const StaticMesh* mesh)		{ meshes.push_back(mesh); }
-		void registerForFrame(const Billboard* billboard)	{ billboards.push_back(billboard); }
-		//void registerForFrame(const BaseLight* light)		{ lights.AddLight(light); }
-
-		void clear() { meshes.clear(); billboards.clear(); }
 	};
 }

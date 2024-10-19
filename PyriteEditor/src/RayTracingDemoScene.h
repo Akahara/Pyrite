@@ -56,6 +56,7 @@ public:
     //cubeInstance.setBaseMaterial(std::make_shared<pyr::Material>(m_baseEffect));
     Transform& cubeTransform = cubeInstance.GetTransform();
     cubeTransform = Transform{ vec3(1,2,3), vec3(1,.5f,2.f), quat::CreateFromAxisAngle(mathf::normalize(vec3(1,2,3)), 1.f) };
+    SceneActors.meshes.push_back(&cubeInstance);
 
     // Setup this scene's rendergraph
     m_RDG.addPass(&m_forwardPass);
@@ -78,7 +79,6 @@ public:
 
   void render() override
   {
-    SceneActors.registerForFrame(&cubeInstance);
     ImGui::Begin("raytrace");
     static vec3 p0{ 3,3,3 }, p1{ -2,-3,-4 };
     ImGui::DragFloat3("P0", &p0.x, .25f);

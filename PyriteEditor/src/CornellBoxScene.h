@@ -38,8 +38,6 @@ namespace pye
         std::vector<std::shared_ptr<pyr::Model>> m_cornellBoxModels = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/CornellBox/scene.gltf");
         std::vector<pyr::StaticMesh> sceneMeshes;
 
-        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        std::shared_ptr<CameraBuffer>       pcameraBuffer = std::make_shared<CameraBuffer>();
 
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
@@ -51,14 +49,14 @@ namespace pye
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
-        using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
-        std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
+
+        std::shared_ptr<pyr::InverseCameraBuffer>   pinvCameBuffer  = std::make_shared<pyr::InverseCameraBuffer>();
+        std::shared_ptr<pyr::CameraBuffer>          pcameraBuffer   = std::make_shared<pyr::CameraBuffer>();
 
 
         pyr::Texture brdfLUT;
         std::shared_ptr<pyr::Cubemap> specularCubemap;
         std::shared_ptr<pyr::Cubemap> m_irradianceMap;
-
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
         pye::WidgetsContainer HUD;
@@ -123,6 +121,11 @@ namespace pye
             SceneActors.lights.Spots.push_back({});
             SceneActors.lights.Points.back().GetTransform().position = { 0,-5.F,0 };
             SceneActors.lights.Spots.back().GetTransform().position = { 0,-8.F,0 };
+
+            for (const auto& m : sceneMeshes)
+            {
+                SceneActors.meshes.push_back(&m); // < this assumes that the scene manager will eventually clear them at the end of the frame, which is a stupid idea. I hate me
+            }
         }
 
         /// ------------------------------------------------------------------------------------------------------------------------------- ///
@@ -130,29 +133,22 @@ namespace pye
         void update(float delta) override
         {
             m_camController.processUserInputs(delta);
-
-
         }
 
         /// ------------------------------------------------------------------------------------------------------------------------------- ///
         
         void render() override
         {
-            pcameraBuffer->setData(CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                 .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
             });
-            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+            pinvCameBuffer->setData(pyr::InverseCameraBuffer::data_t{
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
             });
-
-            for (const auto& m : sceneMeshes)
-            {
-                SceneActors.registerForFrame(&m);
-            }
-
+            
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
             pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);

@@ -15,6 +15,7 @@
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
 #include "MaterialScene.h"
+#include "ShadowScene.h"
 #include "CornellBoxScene.h"
 #include "utils/Debug.h"
 #include "engine/Engine.h"
@@ -52,6 +53,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::MaterialScene>("GGX Demo");
     scenes.registerScene<pye::CubemapBuilderScene>("IBL");
     scenes.registerScene<pye::CornellBoxScene>("CornellBox");
+    scenes.registerScene<pye::ShadowScene>("ShadowScene");
 
     // Load the scene that is passed on the command line by default
 #ifdef _CONSOLE

@@ -13,6 +13,7 @@
 #include "CubemapBuilderScene.h"
 #include "world/camera.h"
 #include "world/Mesh/MeshImporter.h"
+#include "world/Tools/CommonConstantBuffers.h"
 #include "display/GraphicalResource.h"
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
@@ -41,8 +42,8 @@ namespace pye
         std::vector<pyr::StaticMesh> m_balls;
         pyr::StaticMesh m_helmetStaticMesh;
 
-        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        std::shared_ptr<CameraBuffer>       pcameraBuffer = std::make_shared<CameraBuffer>();
+        std::shared_ptr<pyr::CameraBuffer>          pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
+        std::shared_ptr<pyr::InverseCameraBuffer>   pinvCameBuffer = std::make_shared<pyr::InverseCameraBuffer>();
 
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
@@ -54,8 +55,6 @@ namespace pye
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
-        using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
-        std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer = std::make_shared<InverseCameraBuffer>();
         
         pyr::Texture brdfLUT;
 
@@ -137,6 +136,10 @@ namespace pye
             fileDialog.SetTitle("Choose an HDR background");
             fileDialog.SetTypeFilters({ ".hdr" });
 
+            for (int i = 0; i < m_balls.size(); i++)
+            {
+                SceneActors.meshes.push_back(&m_balls[i]);
+            }
             pye::Editor::Get().UpdateRegisteredActors(SceneActors);
         }
 
@@ -144,21 +147,15 @@ namespace pye
         {
             // move this to pre-render fn
             m_camController.processUserInputs(delta);
-
         }
 
         void render() override
         {
-            for (int i = 0; i < m_balls.size(); i++)
-            {
-                SceneActors.registerForFrame(&m_balls[i]);
-            }
-
-            pcameraBuffer->setData(CameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                 .mvp = m_camera.getViewProjectionMatrix(),
                 .pos = m_camera.getPosition()
             });
-            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+            pinvCameBuffer->setData(pyr::InverseCameraBuffer::data_t{
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()

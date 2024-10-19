@@ -18,9 +18,9 @@ namespace pyr
 	public:
 
 		template<size_t mipCount>
-		static Cubemap MakeCubemapFromTexturesLOD(const std::span<pyr::Texture>& textures);
+		static Cubemap MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures);
 
-		static Cubemap MakeCubemapFromTextures(std::array<pyr::Texture, 6> textures)
+		static Cubemap MakeCubemapFromTextures(const std::array<pyr::Texture, 6>& textures)
 		{
 			return CubemapBuilder::MakeCubemapFromTexturesLOD<1>(textures);
 		}
@@ -28,7 +28,7 @@ namespace pyr
 	};
 
 	template<size_t M>
-	inline Cubemap CubemapBuilder::MakeCubemapFromTexturesLOD(const std::span<pyr::Texture>& textures)
+	inline Cubemap CubemapBuilder::MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures)
 	{
 		// -- Ensure texture count 
 		UINT mipCount = M;
