@@ -41,6 +41,8 @@ namespace pyr
 	{
 	public:
 
+		static constexpr size_t MAX_TEXTURE_COUNT = 16;
+
 		struct BillboardsRenderData
 		{
 			pyr::VertexBuffer instanceBuffer;
@@ -59,19 +61,16 @@ namespace pyr
 				// -- Register texture and get id
 				if (!res.textures.contains(billboard->texture))
 				{
-					if (res.textures.size() >= 16)
+					if (!PYR_ENSURE(res.textures.size() < MAX_TEXTURE_COUNT))
 					{
-						if (!PYR_ENSURE(res.textures.size() <= 16))
-						{
-							PYR_LOGF(LogBillboards, WARN, "Trying to add a billboard, but more than 16 textures have been registered. Not implementing that soon. Too bad !");
-							continue;
-						}
+						PYR_LOGF(LogBillboards, WARN, "Trying to add a billboard, but more than 16 textures have been registered. Not implementing that soon. Too bad !");
+						continue;
 					}
 					res.textures[billboard->texture] = static_cast<int>(res.textures.size());
 				}
 
 				Billboard::billboard_vertex_t vertex;
-				vertex.instanceTexId		= res.textures[billboard->texture];
+				vertex.instanceTexId		= static_cast<float>(res.textures[billboard->texture]);
 				vertex.instanceTransform	= billboard->transform.getWorldMatrix();
 				vertex.instanceUvs			= billboard->instanceUVs;
 				vertex.data					= static_cast<float>(billboard->type);

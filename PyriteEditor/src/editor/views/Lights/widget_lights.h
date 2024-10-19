@@ -5,6 +5,7 @@
 #include "display/texture.h"
 #include "editor/bridges/Lights/pf_Light.h"
 #include "editor/views/widget.h"
+#include "editor/Editor.h"
 
 
 /// <summary>
@@ -41,7 +42,7 @@ namespace pye
 					// Initial update, register all lights
 					LightsCollectionView.sourceCollection = &currentScene->SceneActors.lights;
 					auto baseLights = LightsCollectionView.sourceCollection->toBaseLights();
-					LightsCollectionView.EditorFormatPtrs.clear();
+					LightsCollectionView.EditorFormatLights.clear();
 					for (pyr::BaseLight* l : baseLights)
 						LightsCollectionView.registerLight(l);
 
@@ -55,13 +56,13 @@ namespace pye
 				// -- Import the icons and stuff
 				static pyr::Texture AddIcon = getWidgetAssetRegistry().loadTexture(L"res/editor/plus.png");
 				static pyr::Texture RemoveIcon = getWidgetAssetRegistry().loadTexture(L"res/editor/retirer.png");
-				auto makeSelectable = [](const char* label, int id, pf_Light* ref, pf_LightsCollection &LightsCollectionView)
+				auto makeSelectable = [](const char* label, int id, pf_Light& ref, pf_LightsCollection &LightsCollectionView)
 				{
 						ImGui::PushID(label);
 						if (ImGui::Selectable(label, LightsCollectionView.selectedId == id))
 						{
 							LightsCollectionView.selectedId = id;
-							LightsCollectionView.selectedLight = ref;
+							LightsCollectionView.selectedLight = &ref;
 
 							// TODO send info to PickerPass
 						}
@@ -108,12 +109,12 @@ namespace pye
 							{
 								PYR_LOG(LogWidgets, INFO, "Removing light.");
 								LightsCollectionView.sourceCollection->RemoveLight(LightsCollectionView.selectedLight->sourceLight);
-								LightsCollectionView.removeLight(LightsCollectionView.selectedLight);
+								LightsCollectionView.removeLight(*LightsCollectionView.selectedLight);
 
 								// Try to select automatically next light
-								if (LightsCollectionView.selectedId < LightsCollectionView.EditorFormatPtrs.size())
+								if (LightsCollectionView.selectedId < LightsCollectionView.EditorFormatLights.size())
 								{
-									LightsCollectionView.selectedLight = LightsCollectionView.EditorFormatPtrs[LightsCollectionView.selectedId];
+									LightsCollectionView.selectedLight = &LightsCollectionView.EditorFormatLights[LightsCollectionView.selectedId];
 
 								}
 								else
@@ -121,6 +122,8 @@ namespace pye
 									LightsCollectionView.selectedId = 0;
 									LightsCollectionView.selectedLight = nullptr;
 								}
+
+								LightsCollectionView.bIsWidgetDirty = true;
 
 							}
 						}
@@ -132,10 +135,9 @@ namespace pye
 				{
 					ImGui::BeginChild("left pane", ImVec2(150, 0), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX);
 					int id = 0;
-					for (pf_Light* pf_light : LightsCollectionView.EditorFormatPtrs)
+					for (pf_Light& pf_light : LightsCollectionView.EditorFormatLights)
 					{
-						if (pf_light)
-							makeSelectable(pf_light->name.c_str(), id++, pf_light, LightsCollectionView);
+						makeSelectable(pf_light.name.c_str(), id++, pf_light, LightsCollectionView);
 					}
 					ImGui::EndChild();
 				}
@@ -148,7 +150,7 @@ namespace pye
 					ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
 					ImGui::Text(LightsCollectionView.selectedLight->name.c_str());
 					ImGui::Separator();
-					inspectLight(LightsCollectionView.selectedLight);
+					inspectLight(*LightsCollectionView.selectedLight);
 					ImGui::EndChild(); 
 					ImGui::EndGroup(); 
 				}
@@ -157,20 +159,20 @@ namespace pye
 				ImGui::End();
 			}
 		
-			void inspectLight(pf_Light* light) {
+			void inspectLight(const pf_Light& light) {
 
-				if (!light || !light->sourceLight) return;
+				if (!light.sourceLight) return;
 
-				ImGui::Checkbox("IsOn", &light->sourceLight->isOn);
+				ImGui::Checkbox("IsOn", &light.sourceLight->isOn);
 				ImGui::Separator();
-				ImGui::ColorEdit3("Ambiant", &light->sourceLight->ambiant.x);
-				ImGui::ColorEdit3("Diffuse", &light->sourceLight->diffuse.x);
+				ImGui::ColorEdit3("Ambiant", &light.sourceLight->ambiant.x);
+				ImGui::ColorEdit3("Diffuse", &light.sourceLight->diffuse.x);
 				ImGui::Separator();
-				switch (light->sourceLight->getType())
+				switch (light.sourceLight->getType())
 				{
 				case pyr::LightTypeID::Directional:
 				{
-					pyr::DirectionalLight* sourceLight = static_cast<pyr::DirectionalLight*>(light->sourceLight);
+					pyr::DirectionalLight* sourceLight = static_cast<pyr::DirectionalLight*>(light.sourceLight);
 					if (!sourceLight) break;
 					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
 					ImGui::DragFloat("Strength", &sourceLight->strength, 1.0, 0);
@@ -178,7 +180,7 @@ namespace pye
 				}
 				case pyr::LightTypeID::Spotlight:
 				{
-					pyr::SpotLight* sourceLight = static_cast<pyr::SpotLight*>(light->sourceLight);
+					pyr::SpotLight* sourceLight = static_cast<pyr::SpotLight*>(light.sourceLight);
 					if (!sourceLight) break;
 					ImGui::DragFloat3("Position", &sourceLight->GetTransform().position.x);
 					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
@@ -190,7 +192,7 @@ namespace pye
 				}
 				case pyr::LightTypeID::Point:
 				{
-					pyr::PointLight* sourceLight = static_cast<pyr::PointLight*>(light->sourceLight);
+					pyr::PointLight* sourceLight = static_cast<pyr::PointLight*>(light.sourceLight);
 					if (!sourceLight) break;
 					if (ImGui::DragInt("Distance", &sourceLight->distance, 1, 0, 11))
 					{

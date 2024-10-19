@@ -183,6 +183,7 @@ void Effect::bindCubemap(const Cubemap &cubemap, const std::string &name) const
 
 void Effect::bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const
 {
+    // TODO : don't use vector here unless there are more than 16 elements or something
     auto view = textures | std::views::transform([](const pyr::Texture& t) { return (ID3D11ShaderResourceView*)t.getRawTexture(); });
     std::vector<ID3D11ShaderResourceView*> views(view.begin(), view.end());
     bindTextures(views, name);

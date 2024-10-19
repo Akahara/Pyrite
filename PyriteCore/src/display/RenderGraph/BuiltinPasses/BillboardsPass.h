@@ -56,11 +56,12 @@ namespace pyr
                 pyr::BillboardManager::BillboardsRenderData renderData = pyr::BillboardManager::makeContext(owner->GetContext().ActorsToRender.billboards);
                 m_billboardEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-                // Collect the view into a vector
+                // Collect the view into a vector, as the shader array signature is a vector and not a span (should be changed someday)
                 std::vector<pyr::Texture> sortedTextures;
-                sortedTextures.resize(16);
+                sortedTextures.resize(pyr::BillboardManager::MAX_TEXTURE_COUNT);
                 for (const auto& [texPtr, texId] : renderData.textures)
                 {
+                    if (!texPtr) continue;
                     sortedTextures[texId] = *texPtr;
                 }
                 m_billboardEffect->bindTextures(sortedTextures, "textures");

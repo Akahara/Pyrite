@@ -38,10 +38,10 @@ void pye::Editor::UpdateRegisteredActors(const pyr::RegisteredRenderableActorCol
 
 		switch (light->getType())
 		{
-		case pyr::LightTypeID::Directional	: bb->texture = &assets.directionalLight; break;
-		case pyr::LightTypeID::Point			: bb->texture = &assets.lightbulb; break;
-		case pyr::LightTypeID::Spotlight		: bb->texture = &assets.spotlight; break;
-		default: break;
+			case pyr::LightTypeID::Directional	: bb->texture = &assets.directionalLight; break;
+			case pyr::LightTypeID::Point			: bb->texture = &assets.lightbulb; break;
+			case pyr::LightTypeID::Spotlight		: bb->texture = &assets.spotlight; break;
+			default: break;
 		}
 
 		pf_BillboardHUD* editorBillboard = new pf_BillboardHUD;

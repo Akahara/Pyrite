@@ -36,41 +36,36 @@ namespace pye
 		pyr::LightsCollections* sourceCollection = nullptr; // this is the currentScene collection
 		
 		// -- Used by the widget to modify the engine-side light in the sourceCollection // 
-		std::vector<pf_Light*> EditorFormatPtrs;
+		std::vector<pf_Light> EditorFormatLights;
 		int selectedId = 0;
 		pf_Light* selectedLight = nullptr;
 
-		bool bIsWidgetDirty = false; // Force recomputation of scene actors
+		bool bIsWidgetDirty = false; // Force recomputation of scene actors, should not be here (should have some kind of event system)
 
 	public:
 
 		void registerLight(pyr::BaseLight* l) // stupid signature, todo make all of this variants
 		{
-			pf_Light* editorLight = new pf_Light; // todo remove this stupid heap allocated stuff
-			editorLight->sourceLight = l;
+			pf_Light editorLight; // todo remove this stupid heap allocated stuff
+			editorLight.sourceLight = l;
 			pyr::LightTypeID lightType = l->getType();
-			size_t id = std::ranges::count_if(EditorFormatPtrs, [lightType](pf_Light* light) { return light->sourceLight->getType() == lightType; });
+			size_t id = std::ranges::count_if(EditorFormatLights, [lightType](const pf_Light& light) { return light.sourceLight->getType() == lightType; });
 			switch (lightType)
 			{
-				case pyr::LightTypeID::Point: editorLight->name = std::format("Pointlight #{}", id + 1); break;
-				case pyr::LightTypeID::Directional: editorLight->name = std::format("DirectionalLight #{}", id++); break;
-				case pyr::LightTypeID::Spotlight: editorLight->name = std::format("SpotLight #{}", id++); break;
+				case pyr::LightTypeID::Point: editorLight.name = std::format("Pointlight #{}", id + 1); break;
+				case pyr::LightTypeID::Directional: editorLight.name = std::format("DirectionalLight #{}", id++); break;
+				case pyr::LightTypeID::Spotlight: editorLight.name = std::format("SpotLight #{}", id++); break;
 			}
-			EditorFormatPtrs.push_back(editorLight);
+			EditorFormatLights.push_back(editorLight);
 		}
 
-		void removeLight(pye::pf_Light* editorLight) 
+		void removeLight(const pye::pf_Light& editorLight) 
 		{
-			auto it = std::find(EditorFormatPtrs.begin(), EditorFormatPtrs.end(),editorLight);
-			if (it != EditorFormatPtrs.end()) {
-				EditorFormatPtrs.erase(it);
+			auto it = std::find_if(EditorFormatLights.begin(), EditorFormatLights.end(), [editorLight](const pf_Light& l) { return l.sourceLight == editorLight.sourceLight; });
+			if (it != EditorFormatLights.end()) {
+				EditorFormatLights.erase(it);
 			}
-			delete *it;
 		}
-		
-	
-		
-		// todo inspect, steall the wcode in the widget or smth
 	};
 
 }

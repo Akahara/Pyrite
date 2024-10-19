@@ -33,7 +33,7 @@ public:
 	///
 	IndexBuffer() = default;
 	explicit IndexBuffer(std::span<const size_type> indices);
-	IndexBuffer(const std::vector<size_type>& indices) : IndexBuffer(std::span{ indices }){}
+	explicit IndexBuffer(const std::vector<size_type>& indices) : IndexBuffer(std::span{ indices }){}
 
 	void swap(IndexBuffer& other) noexcept;
 	IndexBuffer(const IndexBuffer&) = delete;

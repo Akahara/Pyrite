@@ -116,6 +116,7 @@
     <ClInclude Include="src\world\Actor.h" />
     <ClInclude Include="src\scene\RenderableActorCollection.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BillboardsPass.h" />
+    <ClInclude Include="src\world\Lights\Light.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
