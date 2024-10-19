@@ -5,11 +5,13 @@
 #include <span>
 #include <memory>
 
+#include "utils/Debug.h"
 #include "display/RenderGraph/RenderPass.h"
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 #include "world/Transform.h"
+#include "world/camera.h" 
 #include "inputs/UserInputs.h"
 
 #include "editor/EditorActor.h"
@@ -18,9 +20,7 @@
 
 #include "imguizmo/ImGuizmo.h"
 
-#include <world/camera.h>
 
-#include "../../../PyriteCore/src/utils/Debug.h"
 
 namespace pye
 {

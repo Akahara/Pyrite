@@ -211,14 +211,16 @@ struct LightsCollections {
 		return res;
 	}
 
+	// Will do the trick for now, as i don't want to return const ptr and i need this method to be const. Too bad !
 	std::vector<BaseLight*> toBaseLights() const
 	{
 		std::vector<BaseLight*> res;
-		for (auto& p : Points) res.push_back((BaseLight*)(&p));
+		for (auto& p : Points)			res.push_back((BaseLight*) & p);
 		for (auto& d : Directionals) res.push_back((BaseLight*)&d);
-		for (auto& l : Spots) res.push_back((BaseLight*)&l);
+		for (auto& l : Spots)				res.push_back((BaseLight*)&l);
 		return res;
 	}
+
 
 	void AddLight(const BaseLight* light)
 	{

@@ -1,13 +1,13 @@
 #include "Editor.h"
 
+#include "editor/bridges/pf_BillboardHUD.h"
 #include "editor/bridges/pf_StaticMesh.h"
 #include "editor/bridges/Lights/pf_Light.h"
-#include "editor/bridges/pf_BillboardHUD.h"
 
-#include "world/Actor.h"
-#include "world/Mesh/StaticMesh.h"
 #include <scene/scene.h>
 #include <scene/SceneManager.h>
+#include "world/Actor.h"
+#include "world/Mesh/StaticMesh.h"
 
 pye::Editor::Editor()
 {
@@ -62,8 +62,7 @@ void pye::Editor::ClearRegisteredActors()
 		delete editBillboard;
 	}
 	for (auto& [id, actor] : RegisteredActors)
-	{
-		RegisteredActors[id] = nullptr;
+	{		RegisteredActors[id] = nullptr;
 		if (actor)
 			delete actor;
 	}
