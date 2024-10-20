@@ -11,7 +11,7 @@
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 #include "world/Transform.h"
-#include "world/camera.h" 
+#include "world/camera.h"
 #include "inputs/UserInputs.h"
 
 #include "editor/EditorActor.h"

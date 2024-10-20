@@ -1,12 +1,6 @@
 #include "incl/samplers.incl"
 #include "incl/cbuffers.incl"
 
-cbuffer CameraBuffer
-{
-    float4x4 ViewProj;
-    float3 cameraPosition;
-};
-
 cbuffer ColorBuffer
 {
     float4 colorShift;

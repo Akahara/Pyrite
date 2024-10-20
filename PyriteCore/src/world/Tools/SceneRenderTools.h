@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CommonConstantBuffers.h"
 #include "utils/math.h"
 #include "display/texture.h"
 
@@ -31,7 +32,7 @@ namespace SceneRenderTools
 		{
 			RenderGraph graph;
 			BuiltinPasses::DepthPrePass depthPass; // < note, works only for static meshes i think
-
+			std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
 			DepthOnlyDrawer()
 			{
 				graph.addPass(&depthPass);
@@ -45,15 +46,19 @@ namespace SceneRenderTools
 		pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
 		pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
+
+		drawer.pcameraBuffer->setData(pyr::CameraBuffer::data_t{
+		   .mvp = orthographicCamera.getViewProjectionMatrix(),
+		   .pos = orthographicCamera.getPosition()
+			});
+		drawer.depthPass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", drawer.pcameraBuffer);
 		
-		//drawer.depthPass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-		
-		drawer.graph.execute(pyr::RenderContext{ scene->SceneActors });
+		drawer.graph.execute(pyr::RenderContext{ scene->SceneActors, "Shadow Compute graph" });
 
 		pyr::RenderProfiles::popDepthProfile();
 		pyr::RenderProfiles::popRasterProfile();
 
-		return {};
+		return drawer.depthPass.getOutputDepth();
 
 	}
 

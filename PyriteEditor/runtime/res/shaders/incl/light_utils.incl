@@ -1,0 +1,21 @@
+#define DIRECTIONAL_LIGHT_TYPE 1
+#define POINT_LIGHT_TYPE 2
+#define SPOT_LIGHT_TYPE 3
+
+struct Light
+{
+    float4 direction; // For directional lights and spotlight
+    float4 range; // for pl + radius of spotlights
+    float4 position;
+    float4 ambiant;
+    float4 diffuse;
+    
+    float specularFactor;
+    float fallOff; // outside angle for spots
+    float strength;
+    float isOn;
+    
+    uint type;
+    float3 pading;
+};
+

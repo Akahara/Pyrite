@@ -13,7 +13,7 @@ void RenderGraph::execute(const RenderContext& frameRenderContext /* = {}*/) {
     HRESULT hr = pyr::Engine::d3dcontext().QueryInterface(__uuidof(pPerf), reinterpret_cast<void**>(&pPerf));
     if (FAILED(hr)) return;
 
-    pPerf->BeginEvent(L"Render graph start");
+    pPerf->BeginEvent(string2widestring(frameRenderContext.debugName).c_str());
     for (RenderPass* p : m_passes)
     {
         if (p->isEnabled())

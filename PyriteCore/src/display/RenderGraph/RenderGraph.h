@@ -11,6 +11,7 @@ namespace pyr
     struct RenderContext
     {
         RegisteredRenderableActorCollection ActorsToRender; // make this a ref
+        std::string debugName = "Main scene render graph"; 
     };
 
     class RenderGraph

@@ -1,11 +1,15 @@
 #pragma once
 
+#include "world/Material.h"
+#include "imgui.h"
 #include "display/IndexBuffer.h"
 #include "display/InputLayout.h"
 #include "display/Vertex.h"
 #include "display/VertexBuffer.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
+#include "world/Tools/SceneRenderTools.h"
+#include "display/DebugDraw.h"
 
 namespace pye
 {
@@ -39,11 +43,15 @@ namespace pye
         std::vector<pyr::StaticMesh> sceneMeshes;
         pye::WidgetsContainer HUD;
         pye::widgets::LightCollectionWidget LightCollectionWidget;
+
+        pyr::Camera orthoCam;
+        pyr::Camera* currentCam;
  
     public:
 
         ShadowScene()
         {
+            currentCam = &m_camera;
             HUD.widgets.push_back(&LightCollectionWidget);
             cubemapScene.ComputeIBLCubemaps();
             specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
@@ -52,10 +60,9 @@ namespace pye
             m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
             brdfLUT = cubemapScene.BRDF_Lut;
 
-            m_camera.setProjection(pyr::PerspectiveProjection{});
 
 #pragma region RDG
-            m_camController.setCamera(&m_camera);
+
             m_RDG.addPass(&m_depthPrePass);
             m_RDG.addPass(&m_SSAOPass);
             m_RDG.addPass(&m_forwardPass);
@@ -70,9 +77,9 @@ namespace pye
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_picker);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
-            m_forwardPass.boundCamera = &m_camera;
-            m_picker.boundCamera = &m_camera;
-            m_editorHUD.boundCamera = &m_camera;
+            m_forwardPass.boundCamera   = currentCam;
+            m_picker.boundCamera = currentCam;
+            m_editorHUD.boundCamera = currentCam;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
             for (const auto& model : m_catModels)
@@ -95,29 +102,41 @@ namespace pye
             SceneActors.lights.Points.push_back({});
             SceneActors.lights.Points.back().specularFactor = 10.F;
             SceneActors.lights.Points.back().GetTransform().position = { 3,5,0 };
+            
+            m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camera.setPosition({ -4, 3 ,8 });
             m_camera.lookAt({ 0,0,0 });
+
+            orthoCam.setProjection(pyr::OrthographicProjection{.width = 30.F, .height = 30.F, .zNear = -100.f, .zFar = 100.F});
+            orthoCam.setPosition({ 0,5,0 });
         }
 
         void update(float delta) override
         {
             static float elapsed = 0.0F;
             elapsed += 3*delta;
+            m_camController.setCamera(currentCam);
             m_camController.processUserInputs(delta);
             SceneActors.lights.Points.back().GetTransform().position = { 5 * sin(elapsed),5,  5 * cos(elapsed)};
+
         }
 
         void render() override
         {
+
             pcameraBuffer->setData(pyr::CameraBuffer::data_t{
-               .mvp = m_camera.getViewProjectionMatrix(),
-               .pos = m_camera.getPosition()
+               .mvp = currentCam->getViewProjectionMatrix(),
+               .pos = currentCam->getPosition()
                 });
             pinvCameBuffer->setData(pyr::InverseCameraBuffer::data_t{
-                .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
-                .inverseProj = m_camera.getProjectionMatrix().Invert(),
-                .Proj = m_camera.getProjectionMatrix()
+                .inverseViewProj    = currentCam->getViewProjectionMatrix().Invert(),
+                .inverseProj = currentCam->getProjectionMatrix().Invert(),
+                .Proj = currentCam->getProjectionMatrix()
                 });
+
+            pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(this, orthoCam);
+            pyr::MaterialBank::GetDefaultGGXShader()->setUniform<mat4>("testShadowVP", orthoCam.getViewProjectionMatrix());
+            pyr::MaterialBank::GetDefaultGGXShader()->bindTexture(shadowTexture, "testShadows");
 
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -133,7 +152,24 @@ namespace pye
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
-        
+            static bool bUseOrthocam = false;
+            ImGui::Checkbox("Use ortho cam", &bUseOrthocam);
+            ImGui::Image((void*)shadowTexture.getRawTexture(), ImVec2{ 256,256 });
+            if (bUseOrthocam)
+            {
+                static pyr::OrthographicProjection proj;
+
+	            if (
+                    ImGui::DragFloat("Width", &proj.width, 1, 1, 300) +
+                    ImGui::DragFloat("height", &proj.height,1, 1, 300) +
+                    ImGui::DragFloat("zNear", &proj.zNear, 0.1) +
+                    ImGui::DragFloat("zFar", &proj.zFar, 1, 1, 10000.F)
+                    )
+	            {
+                    orthoCam.setProjection(proj);
+	            }
+            }
+            currentCam = bUseOrthocam ? &orthoCam : &m_camera;
 
             HUD.Render();
         }

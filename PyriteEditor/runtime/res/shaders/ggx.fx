@@ -1,7 +1,10 @@
+//======================================================================================================================//
+// -- INCLUDES
+
 #include "incl/samplers.incl"
 #include "incl/cbuffers.incl"
-
-// struct to hold materials and sutff should come here
+#include "incl/shadow_utils.incl"
+#include "incl/light_utils.incl"
 
 // Explanation and goal of this file : build the Render equation using GGX BRDF.
 // GGX Brdf is a brdf defined as
@@ -25,23 +28,33 @@
 //
 // Finally, we do an approximation of the rendering equation using a riemann sum, and i think thats it for GGX pbs
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================================================//
+// -- DEFINES
+
+#define LIGHT_COUNT 16
+#define PI 3.14159
+
+//======================================================================================================================//
 
 // -- Definition of a material
 
 cbuffer ActorMaterials
 {
-    float4 Ka; // color
-    float4 Ks; // specular
-    float4 Ke; // emissive
-    float roughness; // specular exponent
-    float metallic; // specular exponent
-    float Ni; // optical density 
-    float d; // transparency
+    float4 Ka;          // color
+    float4 Ks;          // specular
+    float4 Ke;          // emissive
+    float roughness;    // specular exponent
+    float metallic;     // specular exponent
+    float Ni;           // optical density 
+    float d;            // transparency < todo 
 };
 
+cbuffer lightsBuffer
+{
+    Light lights[16];
+};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//======================================================================================================================//
 
 // -- Normal distribution function 
 float DistributionGGX(float3 normal, float3 halfway, float roughness)
@@ -79,7 +92,6 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 
     return ggx1 * ggx2;
 }
-// -- Fresnel
 
 float3 fresnelSchlick(float cosTheta, float3 F0)
 {
@@ -92,7 +104,12 @@ float3 fresnelSchlick(float3 H, float3 V, float3 F0)
     return fresnelSchlick(cosTheta, F0);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+float3 sampleFromTexture(Texture2D source, float2 uv)
+{
+    return source.Sample(MeshTextureSampler, uv).xyz;
+}
+
+//======================================================================================================================//
 
 Texture2D mat_albedo : register(t0);
 Texture2D mat_normal : register(t1);
@@ -100,8 +117,13 @@ Texture2D mat_ao : register(t2);
 Texture2D mat_roughness : register(t3);
 Texture2D mat_metalness : register(t4);
 Texture2D mat_height : register(t5);
+Texture2D ssaoTexture;
+TextureCube irrandiance_map;
+Texture2D brdfLUT;
+TextureCube prefilterMap;
 
-float3 sunPos = float3(300, 1000, 300);
+Texture2D testShadows;
+float4x4 testShadowVP;
 
 struct VertexInput
 {
@@ -118,11 +140,8 @@ struct VertexOut
     float2 uv : TEXCOORD1;
 };
 
-float3 sampleFromTexture(Texture2D source, float2 uv)
-{
-    return source.Sample(MeshTextureSampler, uv).xyz;
+//======================================================================================================================//
 
-}
 VertexOut GGXVertexShader(VertexInput vsIn)
 {
     VertexOut vso;
@@ -139,49 +158,13 @@ VertexOut GGXVertexShader(VertexInput vsIn)
     return vso;
 }
 
-
-float2 ParallaxMapping(float2 texCoords, float3 viewDir, Texture2D heightmap)
-{
-    float height = heightmap.Sample(MeshTextureSampler, texCoords).r;
-    float2 p = viewDir.xy / viewDir.z * (height * 0.0002);
-    return texCoords - p;
-}
-
-#define LIGHT_COUNT 16
-#define PI 3.14159
-
-struct Light
-{
-    float4 direction; // For directional lights and spotlight
-    float4 range; // for pl + radius of spotlights
-    float4 position;
-    float4 ambiant;
-    float4 diffuse;
-    
-    float specularFactor;
-    float fallOff; // outside angle for spots
-    float strength;
-    float isOn;
-    
-    uint type;
-    float3 pading;
-};
-
-cbuffer lightsBuffer
-{
-    Light lights[16];
-};
-
-Texture2D ssaoTexture;
-TextureCube irrandiance_map;
-Texture2D brdfLUT;
-TextureCube prefilterMap;
+//======================================================================================================================//
 
 float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
 {
     float3 V = normalize(cameraPosition - vsIn.worldpos.xyz);
     vsIn.uv.y = 1 - vsIn.uv.y;
-    float3 albedo = Ka;
+    float3 albedo = Ka.rgb;
     float4 sampleAlbedo = mat_albedo.Sample(MeshTextureSampler, vsIn.uv);
     albedo *= sampleAlbedo.xyz;
     albedo = pow(albedo, 2.2);
@@ -212,13 +195,13 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
         float3 radiance = 0.0.xxx;
         float3 L = normalize(1.0.xxx);
         
-        if (light.type == 1) // dir
+        if (light.type == DIRECTIONAL_LIGHT_TYPE) // dir
         {
             L = normalize(-light.direction);
             radiance = light.diffuse.xyz * light.strength * 5.f;
         }
         
-        if (light.type == 2) // point
+        if (light.type == POINT_LIGHT_TYPE) // point
         {
             float LightToPixel = light.position.xyz - vsIn.worldpos.xyz;
             float dist = length(LightToPixel);
@@ -228,7 +211,7 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
             radiance = light.diffuse.xyz * attenuation * light.specularFactor;
 
         }
-        if (light.type == 3) // spot
+        if (light.type == SPOT_LIGHT_TYPE) // spot
         {
             // compute pixel angle
             L = normalize(light.position.xyz - vsIn.worldpos.xyz);
@@ -278,8 +261,18 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 OutColor = ambient + Lo;
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
+    
+    
+    // -- Temp : Shadows
+    ShadowCaster_2D caster;
+    caster.Lightmap = testShadows;
+    caster.ViewProjection = testShadowVP;
+    float shadowFactor = getShadowFactor_2D(vsIn.worldpos.xyz, vsIn.norm.xyz, caster);    
+    
     return float4(OutColor, 1);
 }
+
+//======================================================================================================================//
 
 technique11 GGX
 {

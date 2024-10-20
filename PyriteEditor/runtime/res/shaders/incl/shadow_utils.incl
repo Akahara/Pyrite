@@ -1,0 +1,65 @@
+
+#include "samplers.incl"
+
+#define PCF_SAMPLE_COUNT 4
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+struct ShadowCaster_2D
+{
+    float4x4 ViewProjection;
+    Texture2D Lightmap;
+};
+
+struct ShadowCaster_3D
+{
+    float3 Origin;
+    TextureCube Lightmap;
+};
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+float getShadowFactor_2D(
+    float3 fragmentWorldPosition, 
+    float3 fragmentNormal, /* used for bias*/
+    ShadowCaster_2D shadowCaster)
+{
+    float shadow = 0.0;
+    
+    // -- Get the dimensions of the lightmap
+    uint w, h;
+    shadowCaster.Lightmap.GetDimensions(w, h);
+    float2 texelSize = float2(1.0, 1.0) / float2(w, h);
+    
+    // -- Convert our world position to the light space
+    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (shadowCaster.ViewProjection));
+    float2 uv = lightSpace.xy * .5f + .5f;
+    
+    uv = float2(uv.x, 1 - uv.y);
+    if (uv.x < 0 || uv.y < 0 || uv.x > 1 || uv.y > 1)
+        return 0.f;
+       
+    // -- Compare depth in lightspace to depth in the lightmap with a small bias
+    float closestDepth = shadowCaster.Lightmap.Sample(shadowSampler, uv).r;
+    float actualDepth = lightSpace.z;
+    float bias = 0.001f;
+    //float bias = max(0.1 * (1.0 - dot(fragmentNormal, normalize(actualsunPos).xyz)), 0.1f) / (sunRange.y - sunRange.x); // < TODO : do bias
+    
+    // -- PCF, accumulate and compute shadow factor
+    int sampleCount = PCF_SAMPLE_COUNT;
+    for (int x = -sampleCount; x <= sampleCount; ++x)
+    {
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+        {
+            float pcfDepth = shadowCaster.Lightmap.Sample(shadowSampler, uv + float2(x, y) * texelSize).r;
+            shadow += actualDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
+    
+    // v v v what is this
+    if (lightSpace.z > 1.0)
+        shadow = 0.0;
+    
+    return shadow;
+}

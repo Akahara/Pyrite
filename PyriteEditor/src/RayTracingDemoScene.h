@@ -26,6 +26,7 @@ private:
 
   pyr::RenderGraph m_RDG;
   pyr::BuiltinPasses::ForwardPass m_forwardPass;
+  pyr::BuiltinPasses::DepthPrePass   m_depthPrePass;
 
   std::shared_ptr<pyr::Model> cubeModel;
   pyr::StaticMesh cubeInstance;
@@ -59,9 +60,12 @@ public:
     SceneActors.meshes.push_back(&cubeInstance);
 
     // Setup this scene's rendergraph
+    m_RDG.addPass(&m_depthPrePass);
     m_RDG.addPass(&m_forwardPass);
+    m_RDG.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
+    m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
     m_RDG.getResourcesManager().checkResourcesValidity();
-    
+
     // Setup the camera
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);

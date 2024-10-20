@@ -132,6 +132,12 @@ private:
 	}
 
 	template<>
+	void setUniformImpl<mat4>(const std::string& uniformName, const mat4& data) const
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(data.m[0]);
+	}
+
+	template<>
 	void setUniformImpl<std::vector<vec4>>(const std::string& uniformName, const std::vector<vec4>& data) const
 	{
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVectorArray(
