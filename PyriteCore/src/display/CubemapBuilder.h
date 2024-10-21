@@ -18,17 +18,17 @@ namespace pyr
 	public:
 
 		template<size_t mipCount>
-		static Cubemap MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures);
+		static Cubemap MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures, bool bDepthOnly = false);
 
-		static Cubemap MakeCubemapFromTextures(const std::array<pyr::Texture, 6>& textures)
+		static Cubemap MakeCubemapFromTextures(const std::array<pyr::Texture, 6>& textures, bool bDepthOnly = false)
 		{
-			return CubemapBuilder::MakeCubemapFromTexturesLOD<1>(textures);
+			return CubemapBuilder::MakeCubemapFromTexturesLOD<1>(textures, bDepthOnly);
 		}
 
 	};
 
 	template<size_t M>
-	inline Cubemap CubemapBuilder::MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures)
+	inline Cubemap CubemapBuilder::MakeCubemapFromTexturesLOD(std::span<const pyr::Texture> textures, bool bDepthOnly /* = false */)
 	{
 		// -- Ensure texture count 
 		UINT mipCount = M;
@@ -44,7 +44,7 @@ namespace pyr
 		textureDesc.Height = width;
 		textureDesc.MipLevels = static_cast<UINT>(mipCount);
 		textureDesc.ArraySize = 6;
-		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		textureDesc.Format = bDepthOnly ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R32G32B32A32_FLOAT;
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.Usage = D3D11_USAGE_DEFAULT;
 		textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;

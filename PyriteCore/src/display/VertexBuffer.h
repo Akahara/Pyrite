@@ -44,7 +44,7 @@ namespace pyr
         }
 
         template<class V> requires std::derived_from<V, BaseVertex>
-        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable = false) : VertexBuffer(std::span{ vertices })
+        explicit VertexBuffer(const std::vector<V>& vertices, bool bMutable = false) : VertexBuffer(std::span{ vertices }, bMutable)
         {}
 
 

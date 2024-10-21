@@ -157,7 +157,6 @@ void Engine::runFrame(float deltaTime)
   ImGui::NewFrame();
   ImGui::SetNextWindowBgAlpha(0.0f);
   ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
-  DebugDraws::get().render();
   ImGuizmo::BeginFrame();
   SceneManager::getInstance().render();
   DebugDraws::get().render();
@@ -171,6 +170,7 @@ void Engine::runFrame(float deltaTime)
   ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
   pPerf->EndEvent();
   DXRelease(pPerf);
+
 }
 
 void Engine::postFrame()

@@ -122,8 +122,9 @@ TextureCube irrandiance_map;
 Texture2D brdfLUT;
 TextureCube prefilterMap;
 
-Texture2D testShadows;
+TextureCube testShadows;
 float4x4 testShadowVP;
+float4 lightPos;
 
 struct VertexInput
 {
@@ -262,12 +263,17 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
     
-    
     // -- Temp : Shadows
-    ShadowCaster_2D caster;
+    //ShadowCaster_2D caster;
+    //caster.Lightmap = testShadows;
+    //caster.ViewProjection = testShadowVP;
+    
+    ShadowCaster_3D caster;
     caster.Lightmap = testShadows;
-    caster.ViewProjection = testShadowVP;
-    float shadowFactor = getShadowFactor_2D(vsIn.worldpos.xyz, vsIn.norm.xyz, caster);    
+    caster.Origin = lightPos;
+    float shadowFactor = 1.f - getShadowFactor_3D(vsIn.worldpos.xyz, vsIn.norm.xyz, caster);    
+    return float4(shadowFactor.xxx, 1);
+    OutColor.xyz *= shadowFactor;
     
     return float4(OutColor, 1);
 }

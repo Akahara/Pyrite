@@ -38,11 +38,6 @@ Texture2D blueNoise;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float delinearize_depth(float d, float znear, float zfar)
-{
-    return znear * zfar / (zfar + d * (znear - zfar));
-}
-
 float3 calcWorldPos(float2 uv)
 {
     float fragmentDepth = depthBuffer.Sample(blitSamplerState, uv).r;

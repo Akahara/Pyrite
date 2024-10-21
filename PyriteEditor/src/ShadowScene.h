@@ -46,6 +46,7 @@ namespace pye
 
         pyr::Camera orthoCam;
         pyr::Camera* currentCam;
+
  
     public:
 
@@ -101,7 +102,7 @@ namespace pye
             }
             SceneActors.lights.Points.push_back({});
             SceneActors.lights.Points.back().specularFactor = 10.F;
-            SceneActors.lights.Points.back().GetTransform().position = { 3,5,0 };
+            SceneActors.lights.Points.back().GetTransform().position = { 0,5,0 };
             
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camera.setPosition({ -4, 3 ,8 });
@@ -109,6 +110,8 @@ namespace pye
 
             orthoCam.setProjection(pyr::OrthographicProjection{.width = 30.F, .height = 30.F, .zNear = -100.f, .zFar = 100.F});
             orthoCam.setPosition({ 0,5,0 });
+
+            drawDebugSetCamera(&m_camera);
         }
 
         void update(float delta) override
@@ -117,13 +120,13 @@ namespace pye
             elapsed += 3*delta;
             m_camController.setCamera(currentCam);
             m_camController.processUserInputs(delta);
-            SceneActors.lights.Points.back().GetTransform().position = { 5 * sin(elapsed),5,  5 * cos(elapsed)};
+            //SceneActors.lights.Points.back().GetTransform().position = { 5 * sin(elapsed),5,  5 * cos(elapsed)};
 
         }
 
         void render() override
         {
-
+           // drawDebugCamera(orthoCam);
             pcameraBuffer->setData(pyr::CameraBuffer::data_t{
                .mvp = currentCam->getViewProjectionMatrix(),
                .pos = currentCam->getPosition()
@@ -135,9 +138,11 @@ namespace pye
                 });
 
             pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(this, orthoCam);
-            pyr::MaterialBank::GetDefaultGGXShader()->setUniform<mat4>("testShadowVP", orthoCam.getViewProjectionMatrix());
-            pyr::MaterialBank::GetDefaultGGXShader()->bindTexture(shadowTexture, "testShadows");
+            pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
 
+            //pyr::MaterialBank::GetDefaultGGXShader()->setUniform<mat4>("testShadowVP", orthoCam.getViewProjectionMatrix());
+            pyr::MaterialBank::GetDefaultGGXShader()->setUniform<vec3>("lightPos", SceneActors.lights.Points.back().GetTransform().position);
+            pyr::MaterialBank::GetDefaultGGXShader()->bindCubemap(omniShadowTexture, "testShadows");
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
