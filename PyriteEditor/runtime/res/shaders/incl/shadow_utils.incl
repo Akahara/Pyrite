@@ -66,7 +66,7 @@ float getShadowFactor_2D(
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
-const float RENDER_CAMERA_ZFAR = 10000.f;
+const float RENDER_CAMERA_ZFAR = 1000.f;
 const float RENDER_CAMERA_ZNEAR = .1f;
 
 float linearize_depth(float d)
@@ -83,12 +83,12 @@ float getShadowFactor_3D(
     
     float3 pixelToLight = fragmentWorldPosition - shadowCaster.Origin;
     float  distance = length(pixelToLight);
-    float3 directionToPixel = normalize(pixelToLight);
+    float3 directionToPixel = normalize(-pixelToLight);
     
     float sampledDepth = shadowCaster.Lightmap.Sample(blitSamplerState, directionToPixel).r;
     float lightSpaceDepth = linearize_depth(sampledDepth);
     
-    float bias = 0.0001f;
+    float bias = 0.01f;
     shadow += distance - bias > lightSpaceDepth ? 1.0 : 0.0;
     
     return shadow;

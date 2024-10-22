@@ -318,4 +318,10 @@ void FrameBufferPipeline::unloadGlobalResources()
   delete s_globalResources;
 }
 
+Cubemap CubemapFramebuffer::getTargetAsCubemap(FrameBuffer::Target target) const
+{
+	Cubemap tex = m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(target)];
+	return tex;
+}
+
 }

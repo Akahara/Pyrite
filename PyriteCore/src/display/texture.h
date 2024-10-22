@@ -65,7 +65,7 @@ struct GlobalTextureSet {
 struct Cubemap
 {
   Cubemap() : m_resource(nullptr), m_texture(nullptr) {}
-  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {} // dont ùake this public
+  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *srv) : m_resource(resource), m_texture(srv) {} 
 
   ID3D11ShaderResourceView *getRawCubemap() const { return m_texture; }
 
@@ -76,6 +76,9 @@ private:
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
 };
+
+
+//===============================================================================================================================//
 
 struct SamplerState
 {

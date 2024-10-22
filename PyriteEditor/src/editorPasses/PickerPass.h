@@ -20,7 +20,7 @@
 
 #include "imguizmo/ImGuizmo.h"
 
-
+#define DEBUG_PICKER 0
 
 namespace pye
 {
@@ -203,8 +203,9 @@ namespace pye
                 m_idTarget.setDepthOverride(m_inputs["depthBuffer"].res.toDepthStencilView());
 
                 auto renderDoc = pyr::RenderDoc::Get();
+#if DEBUG_PICKER
                 if (renderDoc)    renderDoc->StartFrameCapture(nullptr, nullptr);
-
+#endif
                 m_idTarget.clearTargets();
                 m_idTarget.bind();
 
@@ -293,8 +294,10 @@ namespace pye
                     AddSelectedActor(actorId, bIsHoldingControl);
 
                 }
+#if DEBUG_PICKER
                 if (renderDoc)
                     renderDoc->EndFrameCapture(nullptr, nullptr);
+#endif            
             }
 
             /// Creates a staging texture to readback from the 1x1 target.

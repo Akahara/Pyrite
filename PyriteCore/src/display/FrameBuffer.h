@@ -40,14 +40,14 @@ public:
   void swap(FrameBuffer &other, bool checkForBoundBuffers=true) noexcept;
 
   void bind();
+  void bindToD3DContext() const;
   void unbind();
   void clearTargets() const;
   void setDepthOverride(ID3D11DepthStencilView* depth);
   Texture getTargetAsTexture(Target target) const;
 
-private:
-  void bindToD3DContext() const;
   static size_t targetTypeToIndex(Target target);
+private:
 
   static std::vector<FrameBuffer *> s_frameBuffersStack;
 
@@ -104,5 +104,166 @@ private:
   FrameBuffer m_pingPongBuffers[2];
   FrameBuffer *m_activeBuffer;
 };
+
+
+// Not sure how to call this, but this is basically a gpu side computed cubemap
+struct CubemapFramebuffer
+{
+public:
+
+    enum Face : uint8_t
+    {
+        X_PLUS,
+        X_MINUS,
+        Y_PLUS,
+        Y_MINUS,
+        Z_PLUS,
+        Z_MINUS
+    };
+
+    CubemapFramebuffer() = default;
+    CubemapFramebuffer(const CubemapFramebuffer&) = delete;
+    CubemapFramebuffer& operator=(const CubemapFramebuffer&) = delete;
+    CubemapFramebuffer(CubemapFramebuffer&& moved) noexcept
+    {
+        m_depths = std::exchange(moved.m_depths, {});
+        m_resolution = std::exchange(moved.m_resolution, {});
+        m_rtvs = std::exchange(moved.m_rtvs, {});
+        m_textures = std::exchange(moved.m_textures, {});
+        m_targetsAsCubemaps = std::exchange(moved.m_targetsAsCubemaps, {});
+    }
+    CubemapFramebuffer& operator=(CubemapFramebuffer&& moved) noexcept {
+        CubemapFramebuffer{ std::move(moved) }.swap(*this);
+        return *this;
+    }
+    void swap(CubemapFramebuffer& other, bool checkForBoundBuffers = true) noexcept
+    {
+        std::swap(m_depths, other.m_depths);
+        std::swap(m_resolution, other.m_resolution);
+        std::swap(m_rtvs, other.m_rtvs);
+        std::swap(m_textures, other.m_textures);
+        std::swap(m_targetsAsCubemaps, other.m_targetsAsCubemaps);
+    }
+    // TODO DETRUCTOR
+    CubemapFramebuffer(size_t resolution, FrameBuffer::target_t targets)
+        : m_resolution(std::max<UINT>(1, static_cast<UINT>(resolution)))
+    {
+        // If we have a color
+        if (targets & FrameBuffer::Target::COLOR_0) {
+            D3D11_TEXTURE2D_DESC textureDesc = {};
+            textureDesc.Width = m_resolution;
+            textureDesc.Height = m_resolution;
+            textureDesc.MipLevels = 1; // Set to the number of mip levels you want
+            textureDesc.ArraySize = 6;         // 6 faces for the cube
+            textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // Texture format
+            textureDesc.SampleDesc.Count = 1;
+            textureDesc.Usage = D3D11_USAGE_DEFAULT;
+            textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+            textureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE; // Flag for a cubemap
+
+            ID3D11Texture2D* resource;
+            DXTry(Engine::d3ddevice().CreateTexture2D(&textureDesc, nullptr, &resource), "Could not create a texture 2D");
+            m_textures.push_back(resource);
+
+            for (uint8_t face = 0; face < 6; face++)
+            {
+                D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+                rtvDesc.Format = textureDesc.Format;
+                rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+                rtvDesc.Texture2DArray.MipSlice = 0;
+                rtvDesc.Texture2DArray.FirstArraySlice = face;
+                rtvDesc.Texture2DArray.ArraySize = 1;
+
+                DXTry(Engine::d3ddevice().CreateRenderTargetView(resource, &rtvDesc, &m_rtvs[face]), "Could not create the rtv array of a cubemap");
+            }
+
+            ID3D11ShaderResourceView* cubeSRV;
+            D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
+            srDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+            srDesc.Texture2D.MipLevels = 1;
+            srDesc.Texture2D.MostDetailedMip = 0;
+            Engine::d3ddevice().CreateShaderResourceView(resource, &srDesc, &cubeSRV);
+            m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(FrameBuffer::Target::COLOR_0)] = Cubemap(resource, cubeSRV);
+        }
+
+
+        if (targets & FrameBuffer::Target::DEPTH_STENCIL) {
+            D3D11_TEXTURE2D_DESC depthTextureDesc;
+            ZeroMemory(&depthTextureDesc, sizeof(depthTextureDesc));
+            depthTextureDesc.Width = m_resolution;
+            depthTextureDesc.Height = m_resolution;
+            depthTextureDesc.MipLevels = 1;
+            depthTextureDesc.ArraySize = 6;
+            depthTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+            depthTextureDesc.SampleDesc.Count =  1;
+            depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+            depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+            depthTextureDesc.CPUAccessFlags = 0;
+            depthTextureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+            ID3D11Texture2D* depthTexture;
+            DXTry(Engine::d3ddevice().CreateTexture2D(&depthTextureDesc, NULL, &depthTexture), "Could not create a depth texture for a framebuffer");
+            m_textures.push_back(depthTexture);
+
+            for (uint8_t face = 0; face < 6; face++)
+            {
+                D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+                ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
+                depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+                depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+                depthStencilViewDesc.Texture2DArray.MipSlice = 0;
+                depthStencilViewDesc.Texture2DArray.FirstArraySlice = face;
+                depthStencilViewDesc.Texture2DArray.ArraySize = 1;
+                DXTry(Engine::d3ddevice().CreateDepthStencilView(depthTexture, &depthStencilViewDesc, &m_depths[face]), "Could not create a depth stencil view for a framebuffer");
+            }
+
+            D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
+            srDesc.Format = DXGI_FORMAT_R32_FLOAT;
+            srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+            srDesc.TextureCube.MipLevels = static_cast<UINT>(1);
+            srDesc.TextureCube.MostDetailedMip = 0;
+
+            //srDesc.Texture2D.MipLevels = 1;
+            //srDesc.Texture2D.MostDetailedMip = 0;
+            //srDesc.Texture2DArray.ArraySize = 6;
+            //srDesc.Texture2DArray.FirstArraySlice = 0;
+            //srDesc.Texture2DArray.MostDetailedMip = 0;
+            ID3D11ShaderResourceView* shaderResourceView;
+            DXTry(Engine::d3ddevice().CreateShaderResourceView(depthTexture, &srDesc, &shaderResourceView), "Could not create a shader resource view for a framebuffer");
+            m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(FrameBuffer::Target::DEPTH_STENCIL)] = Cubemap(depthTexture, shaderResourceView);
+        }
+
+    }
+    // Tricky, this is hard to work with the framebuffer pipeline. Don't forget to get the pipeline and rebind the current FBO after doing this
+    void bindFace(CubemapFramebuffer::Face face)
+    {
+        D3D11_VIEWPORT viewport{ 0,0,static_cast<float>(m_resolution),static_cast<float>(m_resolution),0,1 };
+        Engine::d3dcontext().OMSetRenderTargets(1, &m_rtvs[face], m_depths[face]);
+        Engine::d3dcontext().RSSetViewports(1, &viewport);
+    }
+
+    void clearFaceTargets(CubemapFramebuffer::Face face)
+    {
+        auto& context = Engine::d3dcontext();
+        constexpr float clearColor[4]{ .05f, .08f, .1f, 0.0f };
+        if (m_depths[face]) context.ClearDepthStencilView(m_depths[face], D3D11_CLEAR_DEPTH, 1.0f, 0);
+        if (m_rtvs[face]) context.ClearRenderTargetView(m_rtvs[face], clearColor);
+    }
+
+    Cubemap getTargetAsCubemap(FrameBuffer::Target target) const;
+
+private:
+    UINT m_resolution;
+
+    std::vector<ID3D11Texture2D*> m_textures;
+
+    std::array<ID3D11RenderTargetView*, 6> m_rtvs{};
+    std::array<ID3D11DepthStencilView*, 6> m_depths{};
+
+    std::array<Cubemap, FrameBuffer::Target::__COUNT> m_targetsAsCubemaps;
+
+};
+
 
 }

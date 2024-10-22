@@ -73,7 +73,7 @@ namespace SceneRenderTools
 				{0,0, 1},
 		} };
 		static pyr::Camera renderCamera{};
-		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = 3.141592f / 2.f, .aspect = 1.F });
+		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = 3.141592f / 2.f, .aspect = 1.F, .zFar = 1000.F });
 		renderCamera.setPosition(worldPositon);
 
 		// Todo : find a way to cache ?
@@ -125,6 +125,7 @@ namespace SceneRenderTools
 			}
 		};
 
+		CubemapFramebuffer cubemapFBO{512, FrameBuffer::Target::DEPTH_STENCIL};
 		pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
 		pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
@@ -138,21 +139,24 @@ namespace SceneRenderTools
 				.pos = renderCamera.getPosition()
 				});
 
-			cubeDrawer.framebuffers[faceID].clearTargets();
-			cubeDrawer.framebuffers[faceID].bind();
+			//cubeDrawer.framebuffers[faceID].clearTargets();
+			//cubeDrawer.framebuffers[faceID].bind();
+			auto currentFace = static_cast<pyr::CubemapFramebuffer::Face>(faceID);
+			cubemapFBO.clearFaceTargets(currentFace);
+			cubemapFBO.bindFace(currentFace);
 			m_depthOnlyEffect->bindConstantBuffer("CameraBuffer", cubeDrawer.pcameraBuffer);
 			renderFn();
 			m_depthOnlyEffect->unbindResources();
-			cubeDrawer.framebuffers[faceID].unbind();
-			textures[faceID] = cubeDrawer.framebuffers[faceID].getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
+			//cubeDrawer.framebuffers[faceID].unbind();
+			//textures[faceID] = cubeDrawer.framebuffers[faceID].getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
 		}
-
 		pyr::RenderProfiles::popDepthProfile();
 		pyr::RenderProfiles::popRasterProfile();
 
-		pyr::Cubemap finalCubemap = pyr::CubemapBuilder::MakeCubemapFromTextures(textures, true);
+		//pyr::Cubemap finalCubemap = pyr::CubemapBuilder::MakeCubemapFromTextures(textures, true);
 
-		return finalCubemap;
+		FrameBuffer::getActiveFrameBuffer().bindToD3DContext();
+		return cubemapFBO.getTargetAsCubemap(FrameBuffer::DEPTH_STENCIL);
 	}
 
 

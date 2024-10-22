@@ -25,6 +25,11 @@ namespace pyr
 			return CubemapBuilder::MakeCubemapFromTexturesLOD<1>(textures, bDepthOnly);
 		}
 
+		static bool WriteTexturesOnCubemap(Cubemap& outCubemap, const std::array<pyr::Texture, 6>& textures, bool bDepthOnly = false)
+		{
+
+		}
+
 	};
 
 	template<size_t M>
