@@ -212,4 +212,11 @@ const SamplerState &TextureManager::getSampler(SamplerState::SamplerType type)
   return s_samplers[type];
 }
 
+void Cubemap::releaseRawCubemap()
+{
+	DXRelease(m_resource);
+	DXRelease(m_texture);
+}
+
+
 }

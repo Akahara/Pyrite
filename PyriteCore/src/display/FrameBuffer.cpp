@@ -324,4 +324,14 @@ Cubemap CubemapFramebuffer::getTargetAsCubemap(FrameBuffer::Target target) const
 	return tex;
 }
 
+CubemapFramebuffer::~CubemapFramebuffer()
+{
+	for (int i = 0; i < 6; i++)
+	{
+		DXRelease(m_rtvs[i]);
+		DXRelease(m_depths[i]);
+	}
+	std::ranges::for_each(m_targetsAsCubemaps, [](auto texture) { texture.releaseRawCubemap(); });
+}
+
 }

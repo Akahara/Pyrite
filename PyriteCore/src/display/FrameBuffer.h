@@ -144,7 +144,8 @@ public:
         std::swap(m_textures, other.m_textures);
         std::swap(m_targetsAsCubemaps, other.m_targetsAsCubemaps);
     }
-    // TODO DETRUCTOR
+    ~CubemapFramebuffer();
+
     CubemapFramebuffer(size_t resolution, FrameBuffer::target_t targets)
         : m_resolution(std::max<UINT>(1, static_cast<UINT>(resolution)))
     {

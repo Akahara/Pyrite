@@ -68,6 +68,7 @@ struct Cubemap
   Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *srv) : m_resource(resource), m_texture(srv) {} 
 
   ID3D11ShaderResourceView *getRawCubemap() const { return m_texture; }
+  void releaseRawCubemap();
 
 private:
   friend class TextureManager;

@@ -138,7 +138,7 @@ namespace pye
                 });
 
             pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(this, orthoCam);
-            static pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
+            pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
             //if (ImGui::Button("Recompute shadows"))
             //{
             //    pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
