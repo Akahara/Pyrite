@@ -1,9 +1,11 @@
-
 #include "samplers.incl"
 
 #define PCF_SAMPLE_COUNT 4
 
 //--------------------------------------------------------------------------------------------------------------------------//
+
+Texture2DArray lightmaps_2D;
+TextureCubeArray lightmaps_3D;
 
 struct ShadowCaster_2D
 {
@@ -17,9 +19,19 @@ struct ShadowCaster_3D
     TextureCube Lightmap;
 };
 
+//  v v v v v v don't use this, read the projection in the light? 
+const float RENDER_CAMERA_ZFAR = 1000.f;
+const float RENDER_CAMERA_ZNEAR = .1f;
+
+float linearize_depth(float d)
+{
+    return RENDER_CAMERA_ZNEAR * RENDER_CAMERA_ZFAR / (RENDER_CAMERA_ZFAR + d * (RENDER_CAMERA_ZNEAR - RENDER_CAMERA_ZFAR));
+}
+
 //--------------------------------------------------------------------------------------------------------------------------//
 
-float getShadowFactor_2D(
+// -- Deprecated
+float getShadowFactor_2D_Ortho(
     float3 fragmentWorldPosition, 
     float3 fragmentNormal, /* used for bias*/
     ShadowCaster_2D shadowCaster)
@@ -35,15 +47,16 @@ float getShadowFactor_2D(
     float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (shadowCaster.ViewProjection));
     float2 uv = lightSpace.xy * .5f + .5f;
     
+    if (lightSpace.z > 1.0)
+        shadow = 0.0;
+    
     uv = float2(uv.x, 1 - uv.y);
     if (uv.x < 0 || uv.y < 0 || uv.x > 1 || uv.y > 1)
         return 0.f;
        
     // -- Compare depth in lightspace to depth in the lightmap with a small bias
-    float closestDepth = shadowCaster.Lightmap.Sample(shadowSampler, uv).r;
     float actualDepth = lightSpace.z;
     float bias = 0.001f;
-    //float bias = max(0.1 * (1.0 - dot(fragmentNormal, normalize(actualsunPos).xyz)), 0.1f) / (sunRange.y - sunRange.x); // < TODO : do bias
     
     // -- PCF, accumulate and compute shadow factor
     int sampleCount = PCF_SAMPLE_COUNT;
@@ -56,24 +69,80 @@ float getShadowFactor_2D(
         }
     }
     shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
+    return shadow;
+}
+
+float getShadowFactor_2D_Perspective(
+    float3 fragmentWorldPosition,
+    float3 fragmentNormal, /* used for bias*/
+    int lightmapIndex,
+    float4x4 ViewProjection)
+{
+    float shadow = 0.0;
     
-    // v v v what is this
+    // -- Get the dimensions of the lightmap (for pcf)
+    uint w, h, _;
+    //lightmaps_2D.GetDimensions(w, h);
+    lightmaps_2D.GetDimensions(w, h, _);
+    float2 texelSize = float2(1.0, 1.0) / float2(w, h);
+    
+    // -- Convert our world position to the light space
+    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (ViewProjection));
+    lightSpace /= lightSpace.w;
+    float2 uv = lightSpace.xy * .5f + .5f;
+    
     if (lightSpace.z > 1.0)
         shadow = 0.0;
+    
+    uv = float2(uv.x, 1 - uv.y);
+    if (uv.x < 0 || uv.y < 0 || uv.x > 1 || uv.y > 1)
+        return 0.f;
+       
+    // -- Compare depth in lightspace to depth in the lightmap with a small bias
+    float actualDepth = lightSpace.z;
+    float bias = 0.001f;
+    
+    // -- PCF, accumulate and compute shadow factor
+    int sampleCount = PCF_SAMPLE_COUNT;
+    for (int x = -sampleCount; x <= sampleCount; ++x)
+    {
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+        {
+            shadow += lightmaps_2D.SampleCmpLevelZero(shadowSamplerCompare, float3(uv, lightmapIndex), actualDepth - bias, int2(x, y)).r;
+        }
+    }
+    shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
+    
     
     return shadow;
 }
 
+
 //--------------------------------------------------------------------------------------------------------------------------//
 
-const float RENDER_CAMERA_ZFAR = 1000.f;
-const float RENDER_CAMERA_ZNEAR = .1f;
 
-float linearize_depth(float d)
+float getShadowFactor_3D(
+    float3 fragmentWorldPosition,
+    float3 fragmentNormal,
+    int lightmapIndex,
+    float3 origin)
 {
-    return RENDER_CAMERA_ZNEAR * RENDER_CAMERA_ZFAR / (RENDER_CAMERA_ZFAR + d * (RENDER_CAMERA_ZNEAR - RENDER_CAMERA_ZFAR));
+    float shadow = 0.0;
+    
+    float3 pixelToLight = fragmentWorldPosition - origin;
+    float distance = length(pixelToLight);
+    float3 directionToPixel = normalize(-pixelToLight);
+    
+    float sampledDepth = lightmaps_3D.Sample(shadowSampler, float4(directionToPixel, lightmapIndex)).r;
+    float lightSpaceDepth = linearize_depth(sampledDepth);
+    
+    float bias = 0.5f;
+    shadow += distance - bias > lightSpaceDepth ? 1.0 : 0.0;
+    return shadow;
+    return abs(distance - lightSpaceDepth);
 }
 
+// -- Deprecated
 float getShadowFactor_3D(
     float3 fragmentWorldPosition,
     float3 fragmentNormal, 
@@ -88,8 +157,7 @@ float getShadowFactor_3D(
     float sampledDepth = shadowCaster.Lightmap.Sample(blitSamplerState, directionToPixel).r;
     float lightSpaceDepth = linearize_depth(sampledDepth);
     
-    float bias = 0.01f;
+    float bias = 0.5f;
     shadow += distance - bias > lightSpaceDepth ? 1.0 : 0.0;
-    
     return shadow;
 }

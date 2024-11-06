@@ -26,7 +26,7 @@ private:
 		RenderGraph graph;
 		BuiltinPasses::DepthPrePass depthPass; // < note, works only for static meshes i think
 		std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
-		DepthOnlyDrawer()
+		DepthOnlyDrawer() : depthPass(512, 512)
 		{
 			graph.addPass(&depthPass);
 		}
@@ -36,14 +36,9 @@ private:
 
 public:
 
-	static Texture MakeSceneDepth(const Scene* scene, const Camera& orthographicCamera)
+	static Texture MakeSceneDepth(const RegisteredRenderableActorCollection& sceneDescription, const Camera& camera)
 	{
-		if (!PYR_ENSURE(std::holds_alternative<OrthographicProjection>(orthographicCamera.getProjection())))
-		{
-			//PYR_LOG()
-			return {};
-		}
-
+		auto test = camera.getViewProjectionMatrix();
 		static DepthOnlyDrawer drawer;
 
 		pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -51,13 +46,13 @@ public:
 		pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
 		drawer.pcameraBuffer->setData(pyr::CameraBuffer::data_t{
-		   .mvp = orthographicCamera.getViewProjectionMatrix(),
-		   .pos = orthographicCamera.getPosition()
+		   .mvp = camera.getViewProjectionMatrix(),
+		   .pos = camera.getPosition()
 			});
 
 		drawer.depthPass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", drawer.pcameraBuffer);
 		
-		drawer.graph.execute(pyr::RenderContext{ scene->SceneActors, "Shadow Compute graph" });
+		drawer.graph.execute(pyr::RenderContext{ sceneDescription, "Shadow Compute graph" });
 
 		pyr::RenderProfiles::popDepthProfile();
 		pyr::RenderProfiles::popRasterProfile();
@@ -66,14 +61,14 @@ public:
 
 	}
 
-	static Cubemap MakeSceneDepthCubemapFromPoint(const Scene* scene, const vec3& worldPositon, unsigned int resolution)
+	static Cubemap MakeSceneDepthCubemapFromPoint(const RegisteredRenderableActorCollection& sceneDescription, const vec3& worldPositon, unsigned int resolution)
 	{
 		static constexpr std::array<vec3, 6> directions{ 
 			{
 				{-1,0,0},
 				{1,0,0},
-				{0,1,0},
 				{0,-1,0},
+				{0,1,0},
 				{0,0,-1},
 				{0,0, 1},
 		} };
@@ -86,8 +81,8 @@ public:
 		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = 3.141592f / 2.f, .aspect = 1.F, .zFar = 1000.F });
 		renderCamera.setPosition(worldPositon);
 
-		auto renderFn = [scene]() {
-			for (const StaticMesh* smesh : scene->SceneActors.meshes)
+		auto renderFn = [&sceneDescription]() {
+			for (const StaticMesh* smesh : sceneDescription.meshes)
 			{
 
 				smesh->bindModel();
@@ -113,6 +108,7 @@ public:
 		// -- Draw the 6 faces
 		for (int faceID = 0; faceID < 6; faceID++)
 		{
+			if (faceID == 2) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
 			renderCamera.lookAt(renderCamera.getPosition() + directions[faceID]);
 			pcameraBuffer->setData(pyr::CameraBuffer::data_t{
 				.mvp = renderCamera.getViewProjectionMatrix(),
@@ -134,7 +130,5 @@ public:
 
 		return cubemapFBO.getTargetAsCubemap(FrameBuffer::DEPTH_STENCIL);
 	}
-
-
-};
+}; 
 }

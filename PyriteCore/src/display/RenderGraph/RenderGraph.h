@@ -28,6 +28,7 @@ namespace pyr
 
         RenderGraphResourceManager& getResourcesManager() noexcept { return m_manager; }
         const RenderContext& GetContext() const { return m_renderContext; }
+        RenderContext& GetContext() { return m_renderContext; }
     public:
 
         void execute(const RenderContext& frameRenderContext = {});

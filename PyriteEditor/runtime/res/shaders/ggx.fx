@@ -111,6 +111,7 @@ float3 sampleFromTexture(Texture2D source, float2 uv)
 
 //======================================================================================================================//
 
+
 Texture2D mat_albedo : register(t0);
 Texture2D mat_normal : register(t1);
 Texture2D mat_ao : register(t2);
@@ -120,11 +121,8 @@ Texture2D mat_height : register(t5);
 Texture2D ssaoTexture;
 TextureCube irrandiance_map;
 Texture2D brdfLUT;
+Texture2D dummyTexture;
 TextureCube prefilterMap;
-
-TextureCube testShadows;
-float4x4 testShadowVP;
-float4 lightPos;
 
 struct VertexInput
 {
@@ -161,6 +159,7 @@ VertexOut GGXVertexShader(VertexInput vsIn)
 
 //======================================================================================================================//
 
+
 float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
 {
     float3 V = normalize(cameraPosition - vsIn.worldpos.xyz);
@@ -186,6 +185,7 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 F0 = Ni.xxx; 
     F0 = lerp(F0, albedo.xyz, computed_metallic);
     float3 Lo = float3(0,0,0);
+    float shadowAccumulation = 0.0f;
     // -- For each light, compute the specular --//
     for (int i = 0; i < LIGHT_COUNT; ++i)
     {
@@ -195,26 +195,55 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
         
         float3 radiance = 0.0.xxx;
         float3 L = normalize(1.0.xxx);
+        bool bShouldCastShadows = light.shadowType == 1;
         
         if (light.type == DIRECTIONAL_LIGHT_TYPE) // dir
         {
+            float shadow_attenation = 1.F;
+            
+            if (bShouldCastShadows)
+            {
+                //ShadowCaster_2D shadowCaster;
+                //shadowCaster.Lightmap = Lightmap2D_Array[light.lightmap_index];
+                //shadowCaster.ViewProjection= light.position;
+                //shadowAccumulation += getShadowFactor_3D(vsIn.worldpos.xyz, vsIn.norm.xyz, shadowCaster);
+            }
+            
             L = normalize(-light.direction);
             radiance = light.diffuse.xyz * light.strength * 5.f;
+            
         }
         
         if (light.type == POINT_LIGHT_TYPE) // point
         {
+
+            float shadow_attenuation = 1.F;
+            if (bShouldCastShadows)
+            {
+                ShadowCaster_3D shadowCaster;
+                shadow_attenuation = 1.f - getShadowFactor_3D(vsIn.worldpos.xyz, vsIn.norm.xyz, light.lightmap_index, light.position);
+            }
+            
             float LightToPixel = light.position.xyz - vsIn.worldpos.xyz;
             float dist = length(LightToPixel);
             float attenuation = 1.0 / (light.range.y + light.range.z * dist + light.range.w * (dist * dist));
             //float attenuation = 1.0 / (dist * dist);
             L = normalize(light.position.xyz - vsIn.worldpos.xyz);
             radiance = light.diffuse.xyz * attenuation * light.specularFactor;
+            radiance *= shadow_attenuation;
 
         }
         if (light.type == SPOT_LIGHT_TYPE) // spot
         {
-            // compute pixel angle
+            float shadow_attenation = 1.F;
+            
+            if (bShouldCastShadows)
+            {
+                shadow_attenation = 1.f - getShadowFactor_2D_Perspective(
+                    vsIn.worldpos.xyz, vsIn.norm.xyz,
+                    light.lightmap_index, CreateViewProjectionMatrixForLight_Perspective(light));
+            }
+            
             L = normalize(light.position.xyz - vsIn.worldpos.xyz);
             float smallAngle = light.range.x;
             float largeAngle = smallAngle + light.fallOff;
@@ -225,6 +254,7 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
             ));
             float t = smoothstep(0, 1, (pixelToSpotAngle - cos(largeAngle)) / (cos(smallAngle) - cos(largeAngle)));
             radiance = light.diffuse.rgb * lights[i].strength * t;
+            radiance *= shadow_attenation;
         }
         
         float3 H = normalize(L + V);
@@ -255,25 +285,18 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) + 0.001;
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
-    float occlusion = ssaoTexture.Load(vpos.xyz);
+    float occlusion = ssaoTexture.Load(vpos.xyz) * matOcclusion;
     float3 ambient = (kD * diffuse + specular) * occlusion;
     
     // -- Tonemapping -- //
-    float3 OutColor = ambient + Lo;
+    float3 OutColor = ambient + Lo * occlusion;
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
     
     // -- Temp : Shadows
-    //ShadowCaster_2D caster;
-    //caster.Lightmap = testShadows;
-    //caster.ViewProjection = testShadowVP;
-    
-    ShadowCaster_3D caster;
-    caster.Lightmap = testShadows;
-    caster.Origin = lightPos;
-    float shadowFactor = 1.f - getShadowFactor_3D(vsIn.worldpos.xyz, vsIn.norm.xyz, caster);    
-    return float4(shadowFactor.xxx, 1);
-    OutColor.xyz *= shadowFactor;
+
+    //return float4(shadowFactor.xxx, 1);
+    //return testShadows.Sample(blitSamplerState, normalize(vsIn.worldpos.xyz - cameraPosition));
     
     return float4(OutColor, 1);
 }

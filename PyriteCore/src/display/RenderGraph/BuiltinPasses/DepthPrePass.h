@@ -28,6 +28,11 @@ namespace pyr
 
         public:
 
+            DepthPrePass(unsigned int outputWidth, unsigned int outputHeight) : DepthPrePass()
+            {
+                m_depthTarget = FrameBuffer{ outputWidth, outputHeight, FrameBuffer::DEPTH_STENCIL };
+            }
+
             DepthPrePass()
             {
                 displayName = "Depth pre-pass";

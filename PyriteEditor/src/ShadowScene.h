@@ -60,7 +60,10 @@ namespace pye
             m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
             m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
             brdfLUT = cubemapScene.BRDF_Lut;
-
+            const pyr::Effect* ggxShader = pyr::MaterialBank::GetDefaultGGXShader();
+            ggxShader->bindTexture(brdfLUT, "brdfLUT");
+            ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
+            ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
 
 #pragma region RDG
 
@@ -100,9 +103,12 @@ namespace pye
             {
                 SceneActors.meshes.push_back(&m);
             }
-            SceneActors.lights.Points.push_back({});
-            SceneActors.lights.Points.back().specularFactor = 10.F;
-            SceneActors.lights.Points.back().GetTransform().position = { 0,5,0 };
+            SceneActors.lights.Spots.push_back({});
+            SceneActors.lights.Spots.back().GetTransform().position = { -2.3,3.39,-0.3 };
+            SceneActors.lights.Spots.back().GetTransform().rotation = { 0.69, -0.724 };
+            SceneActors.lights.Spots.back().strength = 300;
+            SceneActors.lights.Spots.back().insideAngle = 0.650;
+            SceneActors.lights.Spots.back().outsideAngle = 0;
             
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camera.setPosition({ -4, 3 ,8 });
@@ -137,16 +143,8 @@ namespace pye
                 .Proj = currentCam->getProjectionMatrix()
                 });
 
-            pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(this, orthoCam);
-            pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
-            //if (ImGui::Button("Recompute shadows"))
-            //{
-            //    pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(this, SceneActors.lights.Points.back().GetTransform().position, 512);
-            //}
-
-            //pyr::MaterialBank::GetDefaultGGXShader()->setUniform<mat4>("testShadowVP", orthoCam.getViewProjectionMatrix());
-            pyr::MaterialBank::GetDefaultGGXShader()->setUniform<vec3>("lightPos", SceneActors.lights.Points.back().GetTransform().position);
-            pyr::MaterialBank::GetDefaultGGXShader()->bindCubemap(omniShadowTexture, "testShadows");
+            pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(SceneActors, orthoCam);
+            //pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(SceneActors, SceneActors.lights.Points.back().GetTransform().position, 512);
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
@@ -161,24 +159,7 @@ namespace pye
 
             pyr::RenderProfiles::popDepthProfile();
             pyr::RenderProfiles::popRasterProfile();
-            static bool bUseOrthocam = false;
-            ImGui::Checkbox("Use ortho cam", &bUseOrthocam);
-            ImGui::Image((void*)shadowTexture.getRawTexture(), ImVec2{ 256,256 });
-            if (bUseOrthocam)
-            {
-                static pyr::OrthographicProjection proj;
-
-	            if (
-                    ImGui::DragFloat("Width", &proj.width, 1, 1, 300) +
-                    ImGui::DragFloat("height", &proj.height,1, 1, 300) +
-                    ImGui::DragFloat("zNear", &proj.zNear, 0.1) +
-                    ImGui::DragFloat("zFar", &proj.zFar, 1, 1, 10000.F)
-                    )
-	            {
-                    orthoCam.setProjection(proj);
-	            }
-            }
-            currentCam = bUseOrthocam ? &orthoCam : &m_camera;
+           
 
             HUD.Render();
         }

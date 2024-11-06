@@ -9,9 +9,9 @@
 #include "display/RenderProfiles.h"
 #include "world/Mesh/StaticMesh.h"
 #include "world/Lights/Light.h"
+#include "world/Shadows/Lightmap.h"
+#include "world/Tools/SceneRenderTools.h"
 #include "scene/SceneManager.h"
-
-#include <iterator>
 
 namespace pyr
 {
@@ -26,16 +26,10 @@ private:
 
     Effect* m_skyboxEffect;
 
-    using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
-    std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
-    Effect* m_defaultGGXEffect;
-
-    using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; vec3 pos) > ;
-    std::shared_ptr<CameraBuffer>           pcameraBuffer = std::make_shared<CameraBuffer>();
-    
-    using LightsBuffer = pyr::ConstantBuffer < InlineStruct(pyr::hlsl_GenericLight lights[16]; ) > ;
+    std::shared_ptr<ActorBuffer>     pActorBuffer = std::make_shared<ActorBuffer>();
+    std::shared_ptr<CameraBuffer>    pcameraBuffer = std::make_shared<CameraBuffer>();
     std::shared_ptr<LightsBuffer>    pLightBuffer = std::make_shared<LightsBuffer>();
-
+    
 public:
 
     Cubemap m_skybox;
@@ -43,11 +37,10 @@ public:
 
     ForwardPass()
     {
-        displayName = "Forward";
+        displayName = "Forward pass";
         
         static constexpr wchar_t DEFAULT_SKYBOX_TEXTURE[] = L"res/textures/pbr/testhdr.dds"; // todo avoid this as the core engine does not have runtime textures
         loadSkybox(DEFAULT_SKYBOX_TEXTURE);
-        m_defaultGGXEffect = m_registry.loadEffect(L"res/shaders/ggx.fx", InputLayout::MakeLayoutFromVertex<RawMeshData::mesh_vertex_t>());
     }
 
     virtual void apply() override
@@ -62,11 +55,74 @@ public:
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
 
         // -- Get all the lights in the context, and bind them
+        const pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
+        auto castsShadows = [](pyr::BaseLight* light) -> bool { return light->isOn && light->shadowMode == pyr::DynamicShadow; };
+        int shadow_map_index = 0;
+        // don't use vectors here... don't duplicate code here.... why am i doing this
+        std::vector<Texture> lightmaps_2D{};
+        std::vector<Cubemap> lightmaps_3D{};
+        static TextureArray lightmaps_2DArray{ 512,512, 8, true };
+        static TextureArray lightmaps_3DArray{ 512,512, 8, true, true};
+
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&castsShadows, &shadow_map_index, &lightmaps_3D, this](pyr::PointLight& light) {
+            if (castsShadows(&light))
+            {
+                pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, 512);
+                light.shadowMapIndex = 16 + (lightmaps_3D.size());
+                lightmaps_3D.push_back(lightmap);
+            }
+        });
+
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Spots, [&castsShadows, &shadow_map_index, &lightmaps_2D, this](pyr::SpotLight& light) {
+            if (castsShadows(&light))
+            {
+                pyr::Camera camera{};
+                camera.setProjection(light.shadow_projection);
+                camera.setPosition(light.GetTransform().position);
+                vec3 fuck = { light.GetTransform().rotation.x, light.GetTransform().rotation.y, light.GetTransform().rotation.z };
+                camera.lookAt(light.GetTransform().position + fuck);
+                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera);
+                light.shadowMapIndex = (shadow_map_index++);
+                lightmaps_2D.push_back(lightmap);
+            }
+            });
+
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Directionals, [&castsShadows, &shadow_map_index, &lightmaps_2D, this](pyr::DirectionalLight& light) {
+            if (castsShadows(&light))
+            {
+                pyr::Camera camera{};
+                camera.setProjection(light.shadow_projection);
+                camera.setPosition(light.GetTransform().position);
+                vec3 fuck = { light.GetTransform().rotation.x, light.GetTransform().rotation.y, light.GetTransform().rotation.z };
+                camera.lookAt(light.GetTransform().position + fuck);
+                camera.rotate(XM_PIDIV2, 0, 0);
+                auto test = camera.getViewProjectionMatrix();
+                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera);
+                light.shadowMapIndex = (shadow_map_index++);
+                lightmaps_2D.push_back(lightmap);
+            }
+        });
+
+        TextureArray::CopyToTextureArray(lightmaps_2D, lightmaps_2DArray);
+        TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
+
+        {
+        ImGui::Begin("Debug lightmaps");
+
+        for (auto& lightmap : lightmaps_2D)
+        {
+            ImGui::Image((void*)lightmap.getRawTexture(), ImVec2{ 256,256 });
+        }
+
+        ImGui::End();
+        }
+
         LightsBuffer::data_t light_data{};
         std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
+
         pLightBuffer->setData(light_data);
 
-        // Render all objects 
+        // -- Render all objects 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
         {
             mesh->bindModel();
@@ -87,6 +143,9 @@ public:
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
                 effect->bindConstantBuffer("lightsBuffer", pLightBuffer);
+                effect->bindTexture(lightmaps_2DArray, "testArray");
+                effect->bindTexture(lightmaps_3DArray, "testArrayCube");
+                effect->bindCubemaps(lightmaps_3D, "Lightmap3D_Array");
 
 
                 if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");

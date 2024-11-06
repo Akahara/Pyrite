@@ -120,7 +120,10 @@ namespace pye
             SceneActors.lights.Points.push_back({});
             SceneActors.lights.Spots.push_back({});
             SceneActors.lights.Points.back().GetTransform().position = { 0,-5.F,0 };
-            SceneActors.lights.Spots.back().GetTransform().position = { 0,-8.F,0 };
+            SceneActors.lights.Spots.back().GetTransform().position = { 0,14.F,28 };
+            SceneActors.lights.Spots.back().GetTransform().rotation = { 0,0, -1.0f };
+            SceneActors.lights.Spots.back().strength = 26.f;
+            SceneActors.lights.Spots.back().shadowMode = pyr::DynamicShadow;
 
             for (const auto& m : sceneMeshes)
             {

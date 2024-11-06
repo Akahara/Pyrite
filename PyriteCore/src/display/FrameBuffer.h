@@ -225,11 +225,6 @@ public:
             srDesc.TextureCube.MipLevels = static_cast<UINT>(1);
             srDesc.TextureCube.MostDetailedMip = 0;
 
-            //srDesc.Texture2D.MipLevels = 1;
-            //srDesc.Texture2D.MostDetailedMip = 0;
-            //srDesc.Texture2DArray.ArraySize = 6;
-            //srDesc.Texture2DArray.FirstArraySlice = 0;
-            //srDesc.Texture2DArray.MostDetailedMip = 0;
             ID3D11ShaderResourceView* shaderResourceView;
             DXTry(Engine::d3ddevice().CreateShaderResourceView(depthTexture, &srDesc, &shaderResourceView), "Could not create a shader resource view for a framebuffer");
             m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(FrameBuffer::Target::DEPTH_STENCIL)] = Cubemap(depthTexture, shaderResourceView);

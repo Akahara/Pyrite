@@ -26,3 +26,11 @@ SamplerState shadowSampler
     AddressV = Wrap;
     Filter = MIN_MAG_MIP_POINT;
 }; 
+
+SamplerComparisonState shadowSamplerCompare
+{
+    AddressU = Wrap;
+    AddressV = Wrap;
+    Filter = COMPARISON_MIN_MAG_MIP_LINEAR;
+    ComparisonFunc = GREATER;
+};

@@ -196,11 +196,6 @@ namespace pye
                 m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
             }
 
-            if (m_picker.Selected)
-            {
-                m_picker.Selected->inspect();
-            }
-
             HUD.Render();
         }
 

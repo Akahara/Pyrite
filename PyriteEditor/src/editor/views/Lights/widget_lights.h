@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include "display/texture.h"
+
 #include "editor/bridges/Lights/pf_Light.h"
 #include "editor/views/widget.h"
 #include "editor/Editor.h"
@@ -169,6 +170,30 @@ namespace pye
 
 				ImGui::Checkbox("IsOn", &light.sourceLight->isOn);
 				ImGui::Separator();
+				ImGui::Checkbox("Cast dynamic shadows", (bool*)&light.sourceLight->shadowMode);
+				if (light.sourceLight->shadowMode == pyr::DynamicShadow && light.sourceLight->getType() != pyr::LightTypeID::Point)
+				{
+					ImGui::Text("Projection Parameters");
+					if (pyr::DirectionalLight* asDirectional = dynamic_cast<pyr::DirectionalLight*>(light.sourceLight))
+					{
+						ImGui::SliderFloat("Width", &asDirectional->shadow_projection.width, 1.F, 1000.F);
+						ImGui::SliderFloat("Height", &asDirectional->shadow_projection.height, 1.F, 1000.F);
+						ImGui::SliderFloat("zNear", &asDirectional->shadow_projection.zNear, 0.01F, 1.F);
+						ImGui::SliderFloat("zFar", &asDirectional->shadow_projection.zFar,  1.F, 100.F);
+					}
+					if (pyr::SpotLight* asSpotlight = dynamic_cast<pyr::SpotLight*>(light.sourceLight))
+					{
+						ImGui::SliderFloat("Fov", &asSpotlight->shadow_projection.fovy, 0.01f, XM_PI);
+						ImGui::SliderFloat("zNear", &asSpotlight->shadow_projection.zNear, 0.01F, 1.F);
+						ImGui::SliderFloat("zFar", &asSpotlight->shadow_projection.zFar, 1.1F, 100.F);
+					}
+					bool dummy;
+					if (ImGui::Checkbox("Debug", &dummy))
+					{
+
+					}
+				}
+				ImGui::Separator();
 				ImGui::ColorEdit3("Ambiant", &light.sourceLight->ambiant.x);
 				ImGui::ColorEdit3("Diffuse", &light.sourceLight->diffuse.x);
 				ImGui::Separator();
@@ -189,8 +214,8 @@ namespace pye
 					ImGui::DragFloat3("Position", &sourceLight->GetTransform().position.x);
 					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
 					ImGui::DragFloat("Strength", &sourceLight->strength);
-					ImGui::DragFloat("Inside angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_2PI);
-					ImGui::DragFloat("Outside angle", &sourceLight->outsideAngle, 0.05f, 0.f, XM_2PI);
+					ImGui::DragFloat("Hard light angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_PI);
+					ImGui::DragFloat("Fall-off angle", &sourceLight->outsideAngle, 0.05f, 0.0f, XM_PI);
 					ImGui::DragFloat("SpecularFactor", &sourceLight->specularFactor, 1.0f, 0.F);
 					break;
 				}

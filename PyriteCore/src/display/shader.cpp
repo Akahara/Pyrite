@@ -176,14 +176,28 @@ void Effect::bindTexture(const Texture &texture, const std::string &name) const
   DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(texture.getRawTexture()), "Could not bind a texture to an effect");
 }
 
+void Effect::bindTexture(const TextureArray& texture, const std::string& name) const
+{
+  DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(texture.getRawTexture()), "Could not bind a texture to an effect");
+}
+
 void Effect::bindCubemap(const Cubemap &cubemap, const std::string &name) const
 {
   DXTry(getVariableBinding(name)->AsShaderResource()->SetResource(cubemap.getRawCubemap()), "Could not bind a cubemap to an effect");
 }
 
+void Effect::bindCubemaps(const std::vector<pyr::Cubemap>& cubemaps, const std::string& name) const
+{
+    if (cubemaps.empty()) return;
+    auto view = cubemaps | std::views::transform([](const pyr::Cubemap& t) { return (ID3D11ShaderResourceView*)t.getRawCubemap(); });
+    std::vector<ID3D11ShaderResourceView*> views(view.begin(), view.end());
+    bindTextures(views, name);
+}
+
 void Effect::bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const
 {
     // TODO : don't use vector here unless there are more than 16 elements or something
+    if (textures.empty()) return;
     auto view = textures | std::views::transform([](const pyr::Texture& t) { return (ID3D11ShaderResourceView*)t.getRawTexture(); });
     std::vector<ID3D11ShaderResourceView*> views(view.begin(), view.end());
     bindTextures(views, name);
