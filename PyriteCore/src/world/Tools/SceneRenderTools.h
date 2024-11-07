@@ -65,10 +65,10 @@ public:
 	{
 		static constexpr std::array<vec3, 6> directions{ 
 			{
-				{-1,0,0},
 				{1,0,0},
-				{0,-1,0},
+				{-1,0,0},
 				{0,1,0},
+				{0,-1,0},
 				{0,0,-1},
 				{0,0, 1},
 		} };
@@ -78,7 +78,7 @@ public:
 		static pyr::GraphicalResourceRegistry m_registry;
 		static pyr::Effect* m_depthOnlyEffect = m_registry.loadEffect(L"res/shaders/depthOnly.fx", InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
 		static pyr::Camera renderCamera{};
-		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = 3.141592f / 2.f, .aspect = 1.F, .zFar = 1000.F });
+		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = XM_PIDIV2 - 0.03F, .aspect = 1.F,.zNear = 0.01f,  .zFar = 10000.F });
 		renderCamera.setPosition(worldPositon);
 
 		auto renderFn = [&sceneDescription]() {
@@ -108,8 +108,11 @@ public:
 		// -- Draw the 6 faces
 		for (int faceID = 0; faceID < 6; faceID++)
 		{
-			if (faceID == 2) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
 			renderCamera.lookAt(renderCamera.getPosition() + directions[faceID]);
+			if (faceID == 2) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
+			if (faceID == 3) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
+			if (faceID == 4) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
+			if (faceID == 5) renderCamera.rotate(0.f, 3.14159f, 0.f); // why ? it works
 			pcameraBuffer->setData(pyr::CameraBuffer::data_t{
 				.mvp = renderCamera.getViewProjectionMatrix(),
 				.pos = renderCamera.getPosition()

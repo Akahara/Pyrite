@@ -106,6 +106,12 @@ public:
         TextureArray::CopyToTextureArray(lightmaps_2D, lightmaps_2DArray);
         TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
 
+        static bool once = true;
+        if (!lightmaps_3D.empty())
+        {
+            m_skybox = lightmaps_3D[0];
+        }
+
         {
         ImGui::Begin("Debug lightmaps");
 
@@ -143,9 +149,8 @@ public:
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
                 effect->bindConstantBuffer("lightsBuffer", pLightBuffer);
-                effect->bindTexture(lightmaps_2DArray, "testArray");
-                effect->bindTexture(lightmaps_3DArray, "testArrayCube");
-                effect->bindCubemaps(lightmaps_3D, "Lightmap3D_Array");
+                effect->bindTexture(lightmaps_2DArray, "lightmaps_2D");
+                effect->bindTexture(lightmaps_3DArray, "lightmaps_3D");
 
 
                 if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");

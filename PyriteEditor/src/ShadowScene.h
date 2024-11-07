@@ -109,6 +109,13 @@ namespace pye
             SceneActors.lights.Spots.back().strength = 300;
             SceneActors.lights.Spots.back().insideAngle = 0.650;
             SceneActors.lights.Spots.back().outsideAngle = 0;
+            SceneActors.lights.Spots.back().isOn = false;
+
+            SceneActors.lights.Points.push_back({});
+            SceneActors.lights.Points.back().GetTransform().position = { -2.3,3.39,-0.3 };
+            SceneActors.lights.Points.back().specularFactor = 20;
+            SceneActors.lights.Points.back().isOn = true;
+            SceneActors.lights.Points.back().shadowMode = pyr::DynamicShadow;
             
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camera.setPosition({ -4, 3 ,8 });

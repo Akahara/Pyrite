@@ -19,14 +19,7 @@ struct ShadowCaster_3D
     TextureCube Lightmap;
 };
 
-//  v v v v v v don't use this, read the projection in the light? 
-const float RENDER_CAMERA_ZFAR = 1000.f;
-const float RENDER_CAMERA_ZNEAR = .1f;
 
-float linearize_depth(float d)
-{
-    return RENDER_CAMERA_ZNEAR * RENDER_CAMERA_ZFAR / (RENDER_CAMERA_ZFAR + d * (RENDER_CAMERA_ZNEAR - RENDER_CAMERA_ZFAR));
-}
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
@@ -120,6 +113,14 @@ float getShadowFactor_2D_Perspective(
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
+//  v v v v v v don't use this, read the projection in the light? 
+const float RENDER_CAMERA_ZFAR = 10000.f;
+const float RENDER_CAMERA_ZNEAR = .01f;
+
+float linearize_depth(float d)
+{
+    return RENDER_CAMERA_ZNEAR * RENDER_CAMERA_ZFAR / (RENDER_CAMERA_ZFAR + d * (RENDER_CAMERA_ZNEAR - RENDER_CAMERA_ZFAR));
+}
 
 float getShadowFactor_3D(
     float3 fragmentWorldPosition,
@@ -130,16 +131,40 @@ float getShadowFactor_3D(
     float shadow = 0.0;
     
     float3 pixelToLight = fragmentWorldPosition - origin;
+    float3 directionToPixel = normalize(pixelToLight);
     float distance = length(pixelToLight);
-    float3 directionToPixel = normalize(-pixelToLight);
     
     float sampledDepth = lightmaps_3D.Sample(shadowSampler, float4(directionToPixel, lightmapIndex)).r;
     float lightSpaceDepth = linearize_depth(sampledDepth);
     
-    float bias = 0.5f;
-    shadow += distance - bias > lightSpaceDepth ? 1.0 : 0.0;
+    int w, h, e;
+    lightmaps_3D.GetDimensions(w, h, e);
+    float2 texelSize = float2(1.0, 1.0) / float2(w, h);
+    
+    // PCF Sampling around the main sample direction
+    
+    float bias = 1.F;
+    int sampleCount = PCF_SAMPLE_COUNT;
+    float totalSamples = float((sampleCount * 2 + 1) * (sampleCount * 2 + 1));
+    
+    for (int x = -sampleCount; x <= sampleCount; ++x)
+    {
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+        {
+            // Offset the sample direction slightly by texel size in spherical coordinates
+            float2 offset = float2(x, y) * texelSize; // Define TEXEL_SIZE based on the shadow map resolution
+            float3 sampleDirection = normalize(directionToPixel + float3(offset, 0));
+
+            // Sample depth with the offset direction and compare with light space depth
+            float sampleDepth = lightmaps_3D.Sample(shadowSampler, float4(sampleDirection, lightmapIndex)).r;
+            float sampleLightDepth = linearize_depth(sampleDepth);
+
+            shadow += (distance - bias > sampleLightDepth) ? 1.0 : 0.0;
+        }
+    }
+
+    shadow /= totalSamples; // Average the shadow factor from all PCF samples
     return shadow;
-    return abs(distance - lightSpaceDepth);
 }
 
 // -- Deprecated

@@ -214,8 +214,11 @@ namespace pye
 					ImGui::DragFloat3("Position", &sourceLight->GetTransform().position.x);
 					ImGui::DragFloat3("Direction", &sourceLight->GetTransform().rotation.x);
 					ImGui::DragFloat("Strength", &sourceLight->strength);
-					ImGui::DragFloat("Hard light angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_PI);
-					ImGui::DragFloat("Fall-off angle", &sourceLight->outsideAngle, 0.05f, 0.0f, XM_PI);
+					if (ImGui::DragFloat("Hard light angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_PI) +
+						ImGui::DragFloat("Fall-off angle", &sourceLight->outsideAngle, 0.05f, 0.0f, XM_PI))
+					{
+						sourceLight->shadow_projection.fovy = std::clamp<float>((sourceLight->insideAngle + sourceLight->outsideAngle) * 2.F, 0.01, XM_PI);
+					}
 					ImGui::DragFloat("SpecularFactor", &sourceLight->specularFactor, 1.0f, 0.F);
 					break;
 				}
