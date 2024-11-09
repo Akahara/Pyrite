@@ -62,7 +62,7 @@ public:
         std::vector<Texture> lightmaps_2D{};
         std::vector<Cubemap> lightmaps_3D{};
         static TextureArray lightmaps_2DArray{ 512,512, 8, true };
-        static TextureArray lightmaps_3DArray{ 512,512, 8, true, true};
+        static TextureArray lightmaps_3DArray{ 512,512, 8, false, true};
 
         std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&castsShadows, &shadow_map_index, &lightmaps_3D, this](pyr::PointLight& light) {
             if (castsShadows(&light))
@@ -109,7 +109,6 @@ public:
         static bool once = true;
         if (!lightmaps_3D.empty())
         {
-            m_skybox = lightmaps_3D[0];
         }
 
         {

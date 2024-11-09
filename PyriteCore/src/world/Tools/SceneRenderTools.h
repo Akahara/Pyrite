@@ -63,7 +63,7 @@ public:
 
 	static Cubemap MakeSceneDepthCubemapFromPoint(const RegisteredRenderableActorCollection& sceneDescription, const vec3& worldPositon, unsigned int resolution)
 	{
-		static constexpr std::array<vec3, 6> directions{ 
+		static constexpr std::array<vec3, 6> directions{
 			{
 				{1,0,0},
 				{-1,0,0},
@@ -76,12 +76,18 @@ public:
 		static std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
 		static std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
 		static pyr::GraphicalResourceRegistry m_registry;
-		static pyr::Effect* m_depthOnlyEffect = m_registry.loadEffect(L"res/shaders/depthOnly.fx", InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
+		static pyr::Effect* m_depthOnlyEffect = m_registry.loadEffect(
+			L"res/shaders/depthOnly.fx",
+			InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>(),
+			{ pyr::Effect::define_t{.name = "LINEARIZE_DEPTH", .value = "1" } }
+		);
 		static pyr::Camera renderCamera{};
-		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = XM_PIDIV2 - 0.03F, .aspect = 1.F,.zNear = 0.01f,  .zFar = 10000.F });
+		renderCamera.setProjection(pyr::PerspectiveProjection{ .fovy = XM_PIDIV2, .aspect = 1.F,.zNear = 0.01f,  .zFar = 1000.F });
 		renderCamera.setPosition(worldPositon);
 
-		auto renderFn = [&sceneDescription]() {
+		auto renderFn = [&sceneDescription, &worldPositon]() {
+			m_depthOnlyEffect->setUniform<vec3>("u_sourcePosition", worldPositon);
+			m_depthOnlyEffect->setUniform<float>("u_CameraFarPlane", std::get<PerspectiveProjection>(renderCamera.getProjection()).zFar);
 			for (const StaticMesh* smesh : sceneDescription.meshes)
 			{
 
@@ -99,10 +105,10 @@ public:
 			}
 		};
 
-		static CubemapFramebuffer cubemapFBO{ resolution, FrameBuffer::Target::DEPTH_STENCIL};
+		static CubemapFramebuffer cubemapFBO{ resolution, FrameBuffer::Target::COLOR_0 };
 
 		pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::CULLBACK_RASTERIZER);
+		pyr::RenderProfiles::pushRasterProfile(pyr::RasterizerProfile::NOCULL_RASTERIZER);
 		pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
 		// -- Draw the 6 faces
@@ -131,7 +137,7 @@ public:
 		// -- Rebind to context the previous framebuffer, this is a flaw of the cubemap FBO implementation with the stack...
 		FrameBuffer::getActiveFrameBuffer().bindToD3DContext();
 
-		return cubemapFBO.getTargetAsCubemap(FrameBuffer::DEPTH_STENCIL);
+		return cubemapFBO.getTargetAsCubemap(FrameBuffer::COLOR_0);
 	}
 }; 
 }
