@@ -124,7 +124,7 @@ float getShadowFactor_3D(
     float texelOffset = 1.f / w; // < we assume a cubemap is... well, a cube, so w == h
     
     float3 fragToLight = fragmentWorldPosition - origin;
-    float3 dir = normalize(fragToLight).xyz;
+    float3 dir = normalize(fragToLight + fragmentNormal * 0.05).xyz;
     
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
