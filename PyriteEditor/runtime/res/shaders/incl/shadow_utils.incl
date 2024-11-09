@@ -22,21 +22,21 @@ struct ShadowCaster_3D
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
-// v v v to be done for directional lights
 float getShadowFactor_2D_Ortho(
     float3 fragmentWorldPosition, 
     float3 fragmentNormal, /* used for bias*/
-    ShadowCaster_2D shadowCaster)
+    int lightmapIndex,
+    float4x4 ViewProjection)
 {
     float shadow = 0.0;
     
     // -- Get the dimensions of the lightmap (for pcf)
-    uint w, h;
-    shadowCaster.Lightmap.GetDimensions(w, h);
+    uint w, h, e;
+    lightmaps_2D.GetDimensions(w, h, e);
     float2 texelSize = float2(1.0, 1.0) / float2(w, h);
     
     // -- Convert our world position to the light space
-    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (shadowCaster.ViewProjection));
+    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (ViewProjection));
     float2 uv = lightSpace.xy * .5f + .5f;
     
     if (lightSpace.z > 1.0)
@@ -56,8 +56,7 @@ float getShadowFactor_2D_Ortho(
     {
         for (int y = -sampleCount; y <= sampleCount; ++y)
         {
-            float pcfDepth = shadowCaster.Lightmap.Sample(shadowSampler, uv + float2(x, y) * texelSize).r;
-            shadow += actualDepth - bias > pcfDepth ? 1.0 : 0.0;
+            shadow += lightmaps_2D.SampleCmpLevelZero(shadowSamplerCompare, float3(uv, lightmapIndex), actualDepth - bias, int2(x, y)).r;
         }
     }
     shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
@@ -68,7 +67,8 @@ float getShadowFactor_2D_Perspective(
     float3 fragmentWorldPosition,
     float3 fragmentNormal, /* used for bias*/
     int lightmapIndex,
-    float4x4 ViewProjection)
+    float4x4 ViewProjection,
+    float3 sourcePosition)
 {
     float shadow = 0.0;
     
@@ -129,7 +129,8 @@ float getShadowFactor_3D(
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
-    float bias = max(1.f * (1.0f - dot(fragmentNormal, dir)), 0.0005f);
+    float bias = max(.1f * (1.0f - dot(fragmentNormal, dir)), 0.0005f);
+    bias = lerp(0.05f, 0.5f, saturate(dot(fragmentNormal, dir)));
     int sampleCount = PCF_SAMPLE_COUNT_CUBEMAP;
     float totalSamples = float((sampleCount * 2 + 1) * (sampleCount * 2 + 1) * (sampleCount * 2 + 1));
     

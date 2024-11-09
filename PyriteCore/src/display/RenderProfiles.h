@@ -20,6 +20,7 @@ enum class RasterizerProfile
 {
   CULLBACK_RASTERIZER,
   NOCULL_RASTERIZER,
+  CULLFRONT_RASTERIZER,
 };
 
 class RenderProfiles

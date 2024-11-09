@@ -13,6 +13,8 @@
 #include "world/Tools/SceneRenderTools.h"
 #include "scene/SceneManager.h"
 
+#include <array>
+
 namespace pyr
 {
 
@@ -58,16 +60,30 @@ public:
         const pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
         auto castsShadows = [](pyr::BaseLight* light) -> bool { return light->isOn && light->shadowMode == pyr::DynamicShadow; };
         int shadow_map_index = 0;
+
         // don't use vectors here... don't duplicate code here.... why am i doing this
         std::vector<Texture> lightmaps_2D{};
         std::vector<Cubemap> lightmaps_3D{};
+
+        static std::array<pyr::FrameBuffer, 16> lightmaps_2D_fbos{};
+        static std::array<pyr::CubemapFramebuffer, 16> lightmaps_3D_fbos{};
+        static auto constructLightmaps = [&]() {
+            std::ranges::generate(lightmaps_2D_fbos, []() { return FrameBuffer{ 512, 512, FrameBuffer::DEPTH_STENCIL }; });
+            std::ranges::generate(lightmaps_3D_fbos, []() { return CubemapFramebuffer{ 512, FrameBuffer::Target::DEPTH_STENCIL | FrameBuffer::COLOR_0 }; });
+            return 0;
+        }();
+
+        for (int i = 0; i < 16; i++)
+        {
+            lightmaps_2D_fbos[i].clearTargets();
+        }
         static TextureArray lightmaps_2DArray{ 512,512, 8, true };
-        static TextureArray lightmaps_3DArray{ 512,512, 8, false, true};
+        static TextureArray lightmaps_3DArray{ 512,512, 8, false, true };
 
         std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&castsShadows, &shadow_map_index, &lightmaps_3D, this](pyr::PointLight& light) {
             if (castsShadows(&light))
             {
-                pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, 512);
+                pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, lightmaps_3D_fbos[lightmaps_3D.size()]);
                 light.shadowMapIndex = 16 + (lightmaps_3D.size());
                 lightmaps_3D.push_back(lightmap);
             }
@@ -81,7 +97,7 @@ public:
                 camera.setPosition(light.GetTransform().position);
                 vec3 fuck = { light.GetTransform().rotation.x, light.GetTransform().rotation.y, light.GetTransform().rotation.z };
                 camera.lookAt(light.GetTransform().position + fuck);
-                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera);
+                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera, lightmaps_2D_fbos[shadow_map_index]);
                 light.shadowMapIndex = (shadow_map_index++);
                 lightmaps_2D.push_back(lightmap);
             }
@@ -97,7 +113,7 @@ public:
                 camera.lookAt(light.GetTransform().position + fuck);
                 camera.rotate(XM_PIDIV2, 0, 0);
                 auto test = camera.getViewProjectionMatrix();
-                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera);
+                pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera, lightmaps_2D_fbos[shadow_map_index]);
                 light.shadowMapIndex = (shadow_map_index++);
                 lightmaps_2D.push_back(lightmap);
             }
@@ -105,22 +121,6 @@ public:
 
         TextureArray::CopyToTextureArray(lightmaps_2D, lightmaps_2DArray);
         TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
-
-        static bool once = true;
-        if (!lightmaps_3D.empty())
-        {
-        }
-
-        {
-        ImGui::Begin("Debug lightmaps");
-
-        for (auto& lightmap : lightmaps_2D)
-        {
-            ImGui::Image((void*)lightmap.getRawTexture(), ImVec2{ 256,256 });
-        }
-
-        ImGui::End();
-        }
 
         LightsBuffer::data_t light_data{};
         std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
@@ -198,7 +198,6 @@ private:
         RenderProfiles::popDepthProfile();
         RenderProfiles::popRasterProfile();
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(nullptr);
-
     }
 };
 }

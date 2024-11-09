@@ -28,7 +28,6 @@ VertexOut DepthVS(VertexInput vsIn)
 }
 
 #ifdef LINEARIZE_DEPTH
-float u_CameraFarPlane; // < would be great to have this stored in the cameraBuffer....
 float3 u_sourcePosition; 
 
 float LinearDepthFS(VertexOut vsIn) : SV_Target

@@ -222,9 +222,10 @@ void Cubemap::releaseRawCubemap()
 TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bool bIsDepthOnly /* = false */, bool bIsCubeArray /*= false*/)
 	: m_width(width)
 	, m_height(height)
-	, m_arrayCount(bIsCubeArray ? count : count * 6)
+	, m_arrayCount(count)
 	, m_isCubeArray(bIsCubeArray)
 {
+	if (bIsCubeArray) m_arrayCount *= 6;
 	D3D11_TEXTURE2D_DESC texDesc = {};
 	texDesc.Width = width;
 	texDesc.Height = height;
@@ -238,7 +239,7 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bo
 
 	// Create the texture array resource
 	ID3D11Texture2D* texture;
-	HRESULT hr = pyr::Engine::d3ddevice().CreateTexture2D(&texDesc, nullptr, &texture);
+	DXTry(pyr::Engine::d3ddevice().CreateTexture2D(&texDesc, nullptr, &texture), "Could not create the texture associated with the array");
 	m_resource = texture;
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -250,7 +251,7 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bo
 		srvDesc.TextureCubeArray.MostDetailedMip = 0;
 		srvDesc.TextureCubeArray.MipLevels = texDesc.MipLevels;
 		srvDesc.TextureCubeArray.First2DArrayFace = 0;
-		srvDesc.TextureCubeArray.NumCubes = m_arrayCount / 6;
+		srvDesc.TextureCubeArray.NumCubes = count;
 	}
 	else
 	{
@@ -261,7 +262,7 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bo
 		srvDesc.Texture2DArray.ArraySize = texDesc.ArraySize;
 	}
 
-	hr = pyr::Engine::d3ddevice().CreateShaderResourceView(texture, &srvDesc, &m_textureArray);
+	DXTry(pyr::Engine::d3ddevice().CreateShaderResourceView(texture, &srvDesc, &m_textureArray), "Could not create a TextureArray.");
 }
 
 TextureArray::~TextureArray()

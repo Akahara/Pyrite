@@ -184,7 +184,9 @@ public:
             srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
             srDesc.Texture2D.MipLevels = 1;
             srDesc.Texture2D.MostDetailedMip = 0;
-            Engine::d3ddevice().CreateShaderResourceView(resource, &srDesc, &cubeSRV);
+            srDesc.Texture2DArray.FirstArraySlice = 0;
+            srDesc.Texture2DArray.ArraySize = 6;
+            DXTry(Engine::d3ddevice().CreateShaderResourceView(resource, &srDesc, &cubeSRV), "Failed to create an SRV for the entier cube");
             m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(FrameBuffer::Target::COLOR_0)] = Cubemap(resource, cubeSRV);
         }
 

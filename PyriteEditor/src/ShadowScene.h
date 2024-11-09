@@ -150,7 +150,7 @@ namespace pye
                 .Proj = currentCam->getProjectionMatrix()
                 });
 
-            pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(SceneActors, orthoCam);
+            //pyr::Texture shadowTexture = pyr::SceneRenderTools::MakeSceneDepth(SceneActors, orthoCam);
             //pyr::Cubemap omniShadowTexture = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(SceneActors, SceneActors.lights.Points.back().GetTransform().position, 512);
 
             pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
