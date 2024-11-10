@@ -16,6 +16,8 @@
 #include "display/RenderProfiles.h"
 #include "world/RayCasting.h"
 
+#include "world/Tools/CommonConstantBuffers.h"
+
 namespace pye
 {
 
@@ -33,11 +35,8 @@ namespace pye
         pyr::BuiltinPasses::SSAOPass m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass m_depthPrePass;
 
-        using CameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 mvp; alignas(16) vec3 pos) > ;
-        using InverseCameraBuffer = pyr::ConstantBuffer < InlineStruct(mat4 inverseViewProj;  mat4 inverseProj; alignas(16) mat4 Proj) > ;
-
-        std::shared_ptr<CameraBuffer>           pcameraBuffer   = std::make_shared<CameraBuffer>();
-        std::shared_ptr<InverseCameraBuffer>    pinvCameBuffer  = std::make_shared<InverseCameraBuffer>();
+        std::shared_ptr<pyr::CameraBuffer>           pcameraBuffer   = std::make_shared<pyr::CameraBuffer>();
+        std::shared_ptr<pyr::InverseCameraBuffer>    pinvCameBuffer  = std::make_shared<pyr::InverseCameraBuffer>();
 
         std::vector<pyr::StaticMesh> sceneMeshes;
         pyr::Cubemap m_irradianceMap;
@@ -83,6 +82,11 @@ namespace pye
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
             m_forwardPass.boundCamera = &m_camera;
+
+            for (const auto& mesh : sceneMeshes)
+            {
+                SceneActors.meshes.push_back(&mesh);
+            }
         }
 
         void update(float delta) override
@@ -93,8 +97,8 @@ namespace pye
             m_camController.processUserInputs(delta);
             
             // Update Cbuffers
-            pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition()});
-            pinvCameBuffer->setData(InverseCameraBuffer::data_t{
+            pcameraBuffer->setData(pyr::CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition()});
+            pinvCameBuffer->setData(pyr::InverseCameraBuffer::data_t{
                 .inverseViewProj = m_camera.getViewProjectionMatrix().Invert(),
                 .inverseProj = m_camera.getProjectionMatrix().Invert(),
                 .Proj = m_camera.getProjectionMatrix()
@@ -103,12 +107,6 @@ namespace pye
         
         void render() override
         {
-
-            for (const auto& mesh : sceneMeshes)
-            {
-                SceneActors.registerForFrame(&mesh);
-            }
-
             ImGui::Begin("Forward Pass Scene");
             static vec3 sunPos = vec3{ 0,100,0 };
             if (ImGui::SliderFloat3("sunPos", &sunPos.x, -300, 300))

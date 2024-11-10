@@ -12,12 +12,13 @@ namespace pyr
 struct PerspectiveProjection
 {
   //float fovy   = PI * .4f;
-   float fovy = 1.02974f;
+  float fovy = 1.02974f;
   float aspect = 16.f/9.f;
   float zNear  = 0.1f;     // world space
   float zFar   = 10000.f; // world space
 
   mat4 buildProjectionMatrix() const;
+  vec4 packValues() const { return { fovy, aspect, zNear, zFar }; }
 };
 
 struct OrthographicProjection
@@ -28,6 +29,7 @@ struct OrthographicProjection
   float zFar = 10000.f;  // world space
 
   mat4 buildProjectionMatrix() const;
+  vec4 packValues() const { return { width, height, zNear, zFar }; }
 };
 
 using CameraProjection = std::variant<PerspectiveProjection, OrthographicProjection>;

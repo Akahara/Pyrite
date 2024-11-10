@@ -3,6 +3,7 @@
 #include "utils/Math.h"
 #include "utils/Debug.h"
 #include "world/Actor.h"
+#include "world/camera.h"
 
 #include <iostream>
 
@@ -24,6 +25,22 @@ enum LightTypeID : uint32_t
 	Spotlight = 3,
 };
 
+enum ShadowMode : uint32_t
+{
+	NoShadow = 0,
+	DynamicShadow = 1,
+	StaticShadow = 2, // < will never implement this
+};
+
+enum ShadowMapSlot : int
+{
+	// 0 - 15 are texture 2D, 16-31 are textureCube
+	None = -1,
+	Max_Texture2D_Slot = 15, 
+	Max_TextureCube_Slot = 31, 
+};
+
+
 struct hlsl_GenericLight
 {
 
@@ -32,6 +49,7 @@ struct hlsl_GenericLight
 	vec4	position;
 	vec4	ambiant;
 	vec4	diffuse;
+	vec4	projection; // < for shadows
 
 	float specularFactor;
 	float fallOff;
@@ -39,7 +57,9 @@ struct hlsl_GenericLight
 	float isOn;
 
 	LightTypeID type;
-	float padding[3];
+	ShadowMode shadowMode = NoShadow;
+	ShadowMapSlot shadowMapIndex = ShadowMapSlot::None; // -1 means no shadow, < 16 is 2d and < 32 is cube
+	float padding[1];
 };
 
 /// =============================================================================================================================================================///
@@ -49,6 +69,8 @@ struct BaseLight : public Actor
 	bool isOn = true;
 	vec4 ambiant;
 	vec4 diffuse = {1,1,1,1};
+	ShadowMode shadowMode = NoShadow;
+	int shadowMapIndex = -1;
 	BaseLight()
 	{
 		GetTransform().rotation = vec4{ 0,-1,0,0 }; // todo make this a directional arrow widget someday ? and make this cleaner
@@ -70,6 +92,7 @@ inline hlsl_GenericLight convertLightTo_HLSL(const L& light);
 struct DirectionalLight : public BaseLight {
 
 	float strength = 1.0F;
+	OrthographicProjection shadow_projection{};
 	virtual LightTypeID getType() const override final { return Directional; }
 };
 
@@ -82,11 +105,14 @@ inline hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const Directional
 		.position = {},
 		.ambiant = light.ambiant,
 		.diffuse = light.diffuse,
+		.projection = light.shadow_projection.packValues(),
 		.specularFactor = {},
 		.fallOff = {},
 		.strength = light.strength,
 		.isOn = static_cast<float>(light.isOn),
-		.type = LightTypeID::Directional
+		.type = LightTypeID::Directional,
+		.shadowMode = light.shadowMode,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 
@@ -148,7 +174,9 @@ inline hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light
 		.fallOff = {},
 		.strength = {},
 		.isOn = static_cast<float>(light.isOn),
-		.type = LightTypeID::Point
+		.type = LightTypeID::Point,
+		.shadowMode = light.shadowMode,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 
@@ -160,6 +188,7 @@ struct SpotLight : public  BaseLight {
 	float insideAngle = 0.450f;
 	float strength = 1.0f;
 	float specularFactor = 1.0f;
+	PerspectiveProjection shadow_projection{.fovy = XM_PIDIV2, .aspect = 1.F};
 	virtual LightTypeID getType() const override final { return Spotlight; }
 };
 
@@ -172,11 +201,14 @@ inline hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
 		.position = vec4{light.GetTransform().position.x,light.GetTransform().position.y,light.GetTransform().position.z,0},
 		.ambiant = light.ambiant,
 		.diffuse = light.diffuse,
+		.projection = light.shadow_projection.packValues(),
 		.specularFactor = light.specularFactor,
 		.fallOff = light.outsideAngle,
 		.strength = light.strength,
 		.isOn = static_cast<float>(light.isOn),
-		.type = LightTypeID::Spotlight
+		.type = LightTypeID::Spotlight,
+		.shadowMode = light.shadowMode,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 
@@ -216,8 +248,8 @@ struct LightsCollections {
 	{
 		std::vector<BaseLight*> res;
 		for (auto& p : Points)			res.push_back((BaseLight*) & p);
-		for (auto& d : Directionals) res.push_back((BaseLight*)&d);
-		for (auto& l : Spots)				res.push_back((BaseLight*)&l);
+		for (auto& d : Directionals)	res.push_back((BaseLight*)&d);
+		for (auto& l : Spots)			res.push_back((BaseLight*)&l);
 		return res;
 	}
 

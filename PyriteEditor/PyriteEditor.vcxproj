@@ -199,6 +199,7 @@
     <ClInclude Include="src\ForwardPassScene.h" />
     <ClInclude Include="src\MaterialScene.h" />
     <ClInclude Include="src\RayTracingDemoScene.h" />
+    <ClInclude Include="src\ShadowScene.h" />
     <ClInclude Include="src\TriangleScene.h" />
     <ClInclude Include="src\VoxelisationScene.h" />
     <ClInclude Include="vendor\efsw\include\efsw\efsw.h" />

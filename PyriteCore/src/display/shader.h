@@ -54,8 +54,10 @@ public:
   void bind() const;
   static void unbindResources();
   void bindTexture(const Texture &texture, const std::string &name) const;
+  void bindTexture(const TextureArray &texture, const std::string &name) const;
   void bindCubemap(const Cubemap &cubemap, const std::string &name) const;
 
+  void bindCubemaps(const std::vector<pyr::Cubemap>& cubemaps, const std::string &name) const;
   void bindTextures(const std::vector<ID3D11ShaderResourceView *> &textures, const std::string &name) const;
   void bindTextures(const std::vector<pyr::Texture>& textures, const std::string& name) const;
 
@@ -129,6 +131,12 @@ private:
 	{
 		const float vals[4] = { data.x, data.y, data.z, data.w };
 		m_effect->GetVariableByName(uniformName.c_str())->AsVector()->SetFloatVector(vals);
+	}
+
+	template<>
+	void setUniformImpl<mat4>(const std::string& uniformName, const mat4& data) const
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsMatrix()->SetMatrix(data.m[0]);
 	}
 
 	template<>

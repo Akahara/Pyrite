@@ -2,6 +2,7 @@
 
 #include <string>
 #include <array>
+#include <vector>
 
 struct ID3D11Resource;
 struct ID3D11ShaderResourceView;
@@ -65,9 +66,11 @@ struct GlobalTextureSet {
 struct Cubemap
 {
   Cubemap() : m_resource(nullptr), m_texture(nullptr) {}
-  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *raw) : m_resource(resource), m_texture(raw) {} // dont ùake this public
+  Cubemap(ID3D11Resource *resource, ID3D11ShaderResourceView *srv) : m_resource(resource), m_texture(srv) {} 
 
   ID3D11ShaderResourceView *getRawCubemap() const { return m_texture; }
+  ID3D11Resource            *getRawResource() const { return m_resource; }
+  void releaseRawCubemap();
 
 private:
   friend class TextureManager;
@@ -76,6 +79,36 @@ private:
   ID3D11Resource *m_resource;
   ID3D11ShaderResourceView *m_texture;
 };
+
+struct TextureArray
+{
+    enum TextureType { Texture2D, TextureCube };
+
+private:
+
+    size_t m_width, m_height;
+    ID3D11Resource* m_resource;
+    ID3D11ShaderResourceView* m_textureArray;
+    std::vector<Texture> m_textures;
+    size_t m_elementCount;
+    TextureType m_heldType;
+
+public:
+                                                                                // v v v todo : pyr_pixelFormat ?
+    TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly = false);
+    ~TextureArray();
+    static void CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray);
+    static void CopyToTextureArray(const std::vector<Cubemap>& cubes, TextureArray& outArray);
+    
+    ID3D11ShaderResourceView* getRawTexture()   const { return m_textureArray; }
+    ID3D11Resource* getRawResource()            const { return m_resource; }
+    size_t getWidth()                           const { return m_width; }
+    size_t getHeight()                          const { return m_height; }
+    size_t getTextureOrCubeCount()              const { return m_elementCount; }
+    bool isCubeArray()                          const { return m_heldType == TextureCube; }
+
+};
+//===============================================================================================================================//
 
 struct SamplerState
 {

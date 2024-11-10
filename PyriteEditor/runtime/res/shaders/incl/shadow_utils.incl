@@ -1,0 +1,155 @@
+#include "samplers.incl"
+
+#define PCF_SAMPLE_COUNT 4
+#define PCF_SAMPLE_COUNT_CUBEMAP 3
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+Texture2DArray lightmaps_2D;
+TextureCubeArray lightmaps_3D;
+
+struct ShadowCaster_2D
+{
+    float4x4 ViewProjection;
+    Texture2D Lightmap;
+};
+
+struct ShadowCaster_3D
+{
+    float3 Origin;
+    TextureCube Lightmap;
+};
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+float getShadowFactor_2D_Ortho(
+    float3 fragmentWorldPosition, 
+    float3 fragmentNormal, /* used for bias*/
+    int lightmapIndex,
+    float4x4 ViewProjection)
+{
+    float shadow = 0.0;
+    
+    // -- Get the dimensions of the lightmap (for pcf)
+    uint w, h, e;
+    lightmaps_2D.GetDimensions(w, h, e);
+    float2 texelSize = float2(1.0, 1.0) / float2(w, h);
+    
+    // -- Convert our world position to the light space
+    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (ViewProjection));
+    float2 uv = lightSpace.xy * .5f + .5f;
+    
+    if (lightSpace.z > 1.0)
+        shadow = 0.0;
+    
+    uv = float2(uv.x, 1 - uv.y);
+    if (uv.x < 0 || uv.y < 0 || uv.x > 1 || uv.y > 1)
+        return 0.f;
+       
+    // -- Compare depth in lightspace to depth in the lightmap with a small bias
+    float actualDepth = lightSpace.z;
+    float bias = 0.001f;
+    
+    // -- PCF, accumulate and compute shadow factor
+    int sampleCount = PCF_SAMPLE_COUNT;
+    for (int x = -sampleCount; x <= sampleCount; ++x)
+    {
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+        {
+            shadow += lightmaps_2D.SampleCmpLevelZero(shadowSamplerCompare, float3(uv, lightmapIndex), actualDepth - bias, int2(x, y)).r;
+        }
+    }
+    shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
+    return shadow;
+}
+
+float getShadowFactor_2D_Perspective(
+    float3 fragmentWorldPosition,
+    float3 fragmentNormal, /* used for bias*/
+    int lightmapIndex,
+    float4x4 ViewProjection,
+    float3 sourcePosition)
+{
+    float shadow = 0.0;
+    
+    // -- Get the dimensions of the lightmap (for pcf)
+    uint w, h, _;
+    //lightmaps_2D.GetDimensions(w, h);
+    lightmaps_2D.GetDimensions(w, h, _);
+    float2 texelSize = float2(1.0, 1.0) / float2(w, h);
+    
+    // -- Convert our world position to the light space
+    float4 lightSpace = mul(float4(fragmentWorldPosition, 1.0f), (ViewProjection));
+    lightSpace /= lightSpace.w;
+    float2 uv = lightSpace.xy * .5f + .5f;
+    
+    if (lightSpace.z > 1.0)
+        shadow = 0.0;
+    
+    uv = float2(uv.x, 1 - uv.y);
+    if (uv.x < 0 || uv.y < 0 || uv.x > 1 || uv.y > 1)
+        return 0.f;
+       
+    // -- Compare depth in lightspace to depth in the lightmap with a small bias
+    float actualDepth = lightSpace.z;
+    float bias = 0.001f;
+    
+    // -- PCF, accumulate and compute shadow factor
+    int sampleCount = PCF_SAMPLE_COUNT;
+    for (int x = -sampleCount; x <= sampleCount; ++x)
+    {
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+        {
+            shadow += lightmaps_2D.SampleCmpLevelZero(shadowSamplerCompare, float3(uv, lightmapIndex), actualDepth - bias, int2(x, y)).r;
+        }
+    }
+    shadow /= float(sampleCount * 2 + 1) * float(sampleCount * 2 + 1);
+    
+    
+    return shadow;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+float getShadowFactor_3D(
+    float3 fragmentWorldPosition,
+    float3 fragmentNormal,
+    int lightmapIndex,
+    float3 origin)
+{
+ 
+    int w, h, e;
+    lightmaps_3D.GetDimensions(w, h, e);
+    float texelOffset = 1.f / w; // < we assume a cubemap is... well, a cube, so w == h
+    
+    float3 fragToLight = fragmentWorldPosition - origin;
+    float3 dir = normalize(fragToLight + fragmentNormal * 0.05).xyz;
+    
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = max(.1f * (1.0f - dot(fragmentNormal, dir)), 0.0005f);
+    bias = lerp(0.05f, 0.5f, saturate(dot(fragmentNormal, dir)));
+    int sampleCount = PCF_SAMPLE_COUNT_CUBEMAP;
+    float totalSamples = float((sampleCount * 2 + 1) * (sampleCount * 2 + 1) * (sampleCount * 2 + 1));
+    
+    float shadow = 0.0F;
+    for (int z = -sampleCount; z <= sampleCount; ++z)
+        for (int y = -sampleCount; y <= sampleCount; ++y)
+            for (int x = -sampleCount; x <= sampleCount; ++x)
+            {
+                // Offset the sample direction slightly by texel size in spherical coordinates
+                float3 offset = float3(x, y, z) * texelOffset; // Define TEXEL_SIZE based on the shadow map resolution
+                float3 sampleDirection = normalize(dir + offset);
+    
+                // Sample depth with the offset direction and compare with light space depth
+                float sampleDepth = lightmaps_3D.Sample(shadowSampler, float4(sampleDirection, lightmapIndex)).r;
+    
+                shadow += (currentDepth - bias > sampleDepth) ? 1.0 : 0.0;
+            }
+    
+    shadow /= totalSamples; // Average the shadow factor from all PCF samples
+    return shadow;
+ 
+}

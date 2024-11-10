@@ -160,7 +160,7 @@ private:
 					if (currMeshMaterial->GetTextureCount(assimpType) >= 1)
 					{
 						aiReturn ref = currMeshMaterial->GetTexture(assimpType, 0, outputPath);
-						paths[pyrType] = outputPath->C_Str();
+						paths[pyrType] = "res/" + std::string(outputPath->C_Str());
 					}
 				}
 				delete outputPath;

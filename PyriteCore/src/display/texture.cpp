@@ -212,4 +212,114 @@ const SamplerState &TextureManager::getSampler(SamplerState::SamplerType type)
   return s_samplers[type];
 }
 
+void Cubemap::releaseRawCubemap()
+{
+	DXRelease(m_resource);
+	DXRelease(m_texture);
 }
+
+
+TextureArray::TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly /* = false */)
+	: m_width(width)
+	, m_height(height)
+	, m_elementCount(count)
+	, m_heldType(type)
+{
+	if (isCubeArray()) m_elementCount *= 6;
+	D3D11_TEXTURE2D_DESC texDesc = {};
+	texDesc.Width = width;
+	texDesc.Height = height;
+	texDesc.MipLevels = 1;
+	texDesc.ArraySize = m_elementCount;
+	texDesc.Format = bIsDepthOnly ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R32G32B32A32_FLOAT;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.Usage = D3D11_USAGE_DEFAULT;
+	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	if (isCubeArray()) texDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+	// Create the texture array resource
+	DXTry(pyr::Engine::d3ddevice().CreateTexture2D(&texDesc, nullptr, (ID3D11Texture2D**)(&m_resource)), "Could not create the texture associated with the array");
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = texDesc.Format;
+
+	if (isCubeArray())
+	{
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
+		srvDesc.TextureCubeArray.MostDetailedMip = 0;
+		srvDesc.TextureCubeArray.MipLevels = texDesc.MipLevels;
+		srvDesc.TextureCubeArray.First2DArrayFace = 0;
+		srvDesc.TextureCubeArray.NumCubes = count;
+	}
+	else
+	{
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+		srvDesc.Texture2DArray.MostDetailedMip = 0;
+		srvDesc.Texture2DArray.MipLevels = texDesc.MipLevels;
+		srvDesc.Texture2DArray.FirstArraySlice = 0;
+		srvDesc.Texture2DArray.ArraySize = texDesc.ArraySize;
+	}
+
+	DXTry(pyr::Engine::d3ddevice().CreateShaderResourceView(m_resource, &srvDesc, &m_textureArray), "Could not create a TextureArray.");
+}
+
+TextureArray::~TextureArray()
+{
+	DXRelease(m_textureArray);
+	DXRelease(m_resource);
+}
+
+void TextureArray::CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray)
+{
+	if (textures.empty()) return;
+
+	if (!PYR_ENSURE(!outArray.isCubeArray())) return;
+	if (!PYR_ENSURE(textures[0].getWidth() == outArray.getWidth())) return;
+	if (!PYR_ENSURE(textures[0].getHeight() == outArray.getHeight())) return;
+
+	ID3D11Texture2D* resource = static_cast<ID3D11Texture2D*>(outArray.getRawResource());
+
+	for (UINT i = 0; i < outArray.getTextureOrCubeCount() && i < textures.size(); ++i)
+	{
+		// Copy the texture to the corresponding slice in the array
+		pyr::Engine::d3dcontext().CopySubresourceRegion(
+			resource,
+			D3D11CalcSubresource(0, i, 1),		// MipSlice = 0, ArraySlice = i
+			0, 0, 0,                            // Destination X, Y, Z
+			textures[i].getRawResource(), 
+			0,                                  // Source subresource index
+			nullptr);                           // No source box, copy entire resource
+	}
+}
+
+void TextureArray::CopyToTextureArray(const std::vector<Cubemap>& cubemaps, TextureArray& outArray)
+{
+	if (cubemaps.empty()) return;
+
+	if (!PYR_ENSURE(outArray.isCubeArray())) return;
+
+	ID3D11Texture2D* resource = static_cast<ID3D11Texture2D*>(outArray.getRawResource());
+
+	// Iterate through each cubemap
+	for (UINT i = 0; i < outArray.getTextureOrCubeCount() && i < cubemaps.size(); ++i)
+	{
+		// We are copying cubemap faces to the corresponding slice in the array
+		for (UINT face = 0; face < 6; ++face)
+		{
+			// Calculate the slice index for this cubemap face
+			UINT sliceIndex = i * 6 + face;
+
+			// Copy the individual face to the corresponding slice in the cubemap array
+			pyr::Engine::d3dcontext().CopySubresourceRegion(
+				resource,
+				D3D11CalcSubresource(0, sliceIndex, 1), // MipSlice = 0, ArraySlice = sliceIndex
+				0, 0, 0,                                // Destination X, Y, Z
+				cubemaps[i].getRawResource(),           // Source cubemap resource
+				face,                                   // Copy the specific face (0-5 for cubemap faces)
+				nullptr);                               // No source box, copy the entire resource
+		}
+	}
+}
+
+
+} // end namespace pyr

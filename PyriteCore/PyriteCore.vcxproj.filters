@@ -44,6 +44,7 @@
     <ClCompile Include="vendor\ddstextureloader\WICTextureLoader11.cpp" />
     <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
     <ClCompile Include="src\world\Billboards\Billboard.cpp" />
+    <ClCompile Include="src\world\Shadows\Lightmap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -117,6 +118,9 @@
     <ClInclude Include="src\scene\RenderableActorCollection.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\BillboardsPass.h" />
     <ClInclude Include="src\world\Lights\Light.h" />
+    <ClInclude Include="src\world\Shadows\Lightmap.h" />
+    <ClInclude Include="src\world\Tools\SceneRenderTools.h" />
+    <ClInclude Include="src\world\Tools\CommonConstantBuffers.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

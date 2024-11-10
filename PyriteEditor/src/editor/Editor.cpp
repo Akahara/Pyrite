@@ -16,7 +16,7 @@ pye::Editor::Editor()
 	assets.directionalLight = m_editorAssetsLoader.loadTexture(L"editor/icons/world/lights/directionalLight.png", false);
 }
 
-// probably a terrible way of handling this lol
+// probably a terrible way of handling this lol, todo rename this better. This is needed to have editor side actors.........
 void pye::Editor::UpdateRegisteredActors(const pyr::RegisteredRenderableActorCollection& sceneActors)
 {
 	ClearRegisteredActors();

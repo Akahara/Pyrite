@@ -1,0 +1,105 @@
+#define DIRECTIONAL_LIGHT_TYPE 1
+#define POINT_LIGHT_TYPE 2
+#define SPOT_LIGHT_TYPE 3
+
+struct Light
+{
+    float4 direction; // For directional lights and spotlight
+    float4 range; // for pl + radius of spotlights
+    float4 position;
+    float4 ambiant;
+    float4 diffuse;
+    float4 projection;
+    
+    float specularFactor;
+    float fallOff; // outside angle for spots
+    float strength;
+    float isOn;
+    
+    uint type;
+    uint shadowType;
+    uint lightmap_index; // < 0-15 is for texture2D, 16-31 is for cubemaps
+    float pading;
+};
+
+// -- Thank you mister gpt
+float4x4 CreateViewProjectionMatrixForLight_Ortho(Light light)
+{
+    // Extract projection values
+    float width = light.projection.x;
+    float height = light.projection.y;
+    float nearPlane = light.projection.z;
+    float farPlane = light.projection.w;
+
+    // Extract position and direction
+    float3 position = light.position.xyz;
+    float3 direction = normalize(light.direction.xyz);
+
+    // Define an arbitrary world up vector (typically Y-axis)
+    float3 worldUp = normalize(float3(0.01, 0.99, 0.01));
+    
+    // Calculate right, up, and forward vectors
+    float3 forward = direction;
+    float3 right = normalize(cross(worldUp, forward));
+    float3 up = cross(forward, right);
+
+    // View matrix
+    float4x4 viewMatrix = float4x4(
+        right.x, up.x, forward.x, 0.0,
+        right.y, up.y, forward.y, 0.0,
+        right.z, up.z, forward.z, 0.0,
+        -dot(right, position), -dot(up, position), -dot(forward, position), 1.0
+    );
+    
+    // Orthographic projection matrix based on width, height, nearPlane, and farPlane
+    float4x4 projectionMatrix = float4x4(
+        2.0 / width, 0.0, 0.0, 0.0,
+        0.0, 2.0 / height, 0.0, 0.0,
+        0.0, 0.0, 1.0 / (farPlane - nearPlane), 0.0,
+        0.0, 0.0, -nearPlane / (farPlane - nearPlane), 1.0
+    );
+
+    // Return the combined view-projection matrix
+    return mul(viewMatrix, projectionMatrix);
+}
+
+float4x4 CreateViewProjectionMatrixForLight_Perspective(Light light)
+{
+    // Extract projection values
+    float fov_y = light.projection.x;
+    float aspect_ratio = light.projection.y;
+    float nearPlane = light.projection.z;
+    float farPlane = light.projection.w;
+
+    // Extract position and direction
+    float3 position = light.position.xyz;
+    float3 direction = normalize(light.direction.xyz);
+
+    // Define an arbitrary world up vector (typically Y-axis)
+    float3 worldUp = normalize(float3(0.01, 0.99, 0.01));
+    
+    // Calculate right, up, and forward vectors
+    float3 forward = direction;
+    float3 right = normalize(cross(worldUp, forward));
+    float3 up = cross(forward, right);
+
+    // View matrix
+    float4x4 viewMatrix = float4x4(
+        right.x, up.x, forward.x, 0.0,
+        right.y, up.y, forward.y, 0.0,
+        right.z, up.z, forward.z, 0.0,
+        -dot(right, position), -dot(up, position), -dot(forward, position), 1.0
+    );
+
+    // Perspective projection matrix
+    float f = 1.0 / tan(fov_y * 0.5); // Cotangent of half the FOV
+    float4x4 projectionMatrix = float4x4(
+        f / aspect_ratio, 0.0, 0.0, 0.0,
+        0.0, f, 0.0, 0.0,
+        0.0, 0.0, farPlane / (farPlane - nearPlane), 1.0,
+        0.0, 0.0, -nearPlane * farPlane / (farPlane - nearPlane), 0.0
+    );
+
+    // Return the combined view-projection matrix
+    return mul(viewMatrix, projectionMatrix);
+}

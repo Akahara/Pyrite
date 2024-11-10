@@ -5,6 +5,7 @@
 #include "display/GraphicalResource.h"
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
+#include "world/Tools/CommonConstantBuffers.h"
 #include "display/FrameBuffer.h"
 
 namespace pyr
@@ -19,7 +20,6 @@ namespace pyr
 
             pyr::GraphicalResourceRegistry m_registry;
 
-            using ActorBuffer = ConstantBuffer < InlineStruct(mat4 modelMatrix) >;
             std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
             
             // goal output a depth texture 

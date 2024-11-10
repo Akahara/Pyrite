@@ -100,6 +100,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\world\Shadows\Lightmap.cpp" />
     <ClCompile Include="src\display\CubemapBuilder.cpp" />
     <ClCompile Include="src\display\DebugDraw.cpp" />
     <ClCompile Include="src\display\FrameBuffer.cpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="vendor\stbi\stbi_impl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\world\Shadows\Lightmap.h" />
     <ClInclude Include="src\display\ConstantBuffer.h" />
     <ClInclude Include="src\display\ConstantBufferBinding.h" />
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -195,6 +197,8 @@
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
     <ClInclude Include="src\world\RayCasting.h" />
+    <ClInclude Include="src\world\Tools\CommonConstantBuffers.h" />
+    <ClInclude Include="src\world\Tools\SceneRenderTools.h" />
     <ClInclude Include="src\world\Transform.h" />
     <ClInclude Include="vendor\ddstextureloader\DDSTextureLoader11.h" />
     <ClInclude Include="vendor\ddstextureloader\WICTextureLoader11.h" />

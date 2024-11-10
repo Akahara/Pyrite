@@ -22,6 +22,7 @@ static struct Profiles
   ID3D11BlendState        *alphaBlendEnabled    = nullptr;
 
   ID3D11RasterizerState   *solidCullBackRS      = nullptr;
+  ID3D11RasterizerState   *solidCullFrontRS      = nullptr;
   ID3D11RasterizerState   *noCullBackRS         = nullptr;
 } g_renderProfiles;
 
@@ -130,6 +131,9 @@ static void initRasterizerProfiles()
   rsDesc.CullMode = D3D11_CULL_BACK;
   rsDesc.FrontCounterClockwise = true;
   DXTry(device.CreateRasterizerState(&rsDesc, &g_renderProfiles.solidCullBackRS), "Could not create a rasterizer state");
+  rsDesc.CullMode = D3D11_CULL_FRONT;
+  DXTry(device.CreateRasterizerState(&rsDesc, &g_renderProfiles.solidCullFrontRS), "Could not create a rasterizer state");
+
   rsDesc.CullMode = D3D11_CULL_NONE;
   DXTry(device.CreateRasterizerState(&rsDesc, &g_renderProfiles.noCullBackRS), "Could not create a rasterizer state");
 }
@@ -137,6 +141,7 @@ static void initRasterizerProfiles()
 void RenderProfiles::disposeProfiles()
 {
   DXRelease(g_renderProfiles.solidCullBackRS);
+  DXRelease(g_renderProfiles.solidCullFrontRS);
   DXRelease(g_renderProfiles.noCullBackRS);
   DXRelease(g_renderProfiles.alphaBlendDisabled);
   DXRelease(g_renderProfiles.alphaBlendEnabled);
@@ -173,8 +178,9 @@ void RenderProfiles::setActiveRasterProfile(RasterizerProfile profile)
   auto &context = Engine::d3dcontext();
   ID3D11RasterizerState *state = nullptr;
   switch (profile) {
-  case RasterizerProfile::CULLBACK_RASTERIZER: state = g_renderProfiles.solidCullBackRS; break;
-  case RasterizerProfile::NOCULL_RASTERIZER: state = g_renderProfiles.noCullBackRS; break;
+	case RasterizerProfile::CULLBACK_RASTERIZER: state = g_renderProfiles.solidCullBackRS; break;
+	case RasterizerProfile::CULLFRONT_RASTERIZER: state = g_renderProfiles.solidCullFrontRS; break;
+	case RasterizerProfile::NOCULL_RASTERIZER: state = g_renderProfiles.noCullBackRS; break;
   }
   context.RSSetState(state);
 }
