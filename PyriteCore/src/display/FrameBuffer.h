@@ -125,18 +125,18 @@ public:
     CubemapFramebuffer(const CubemapFramebuffer&) = delete;
     CubemapFramebuffer& operator=(const CubemapFramebuffer&) = delete;
     CubemapFramebuffer(CubemapFramebuffer&& moved) noexcept
-    {
-        m_depths = std::exchange(moved.m_depths, {});
-        m_resolution = std::exchange(moved.m_resolution, {});
-        m_rtvs = std::exchange(moved.m_rtvs, {});
-        m_textures = std::exchange(moved.m_textures, {});
-        m_targetsAsCubemaps = std::exchange(moved.m_targetsAsCubemaps, {});
-    }
+        : m_depths (std::exchange(moved.m_depths, {}))
+        , m_resolution (std::exchange(moved.m_resolution, {}))
+        , m_rtvs (std::exchange(moved.m_rtvs, {}))
+        , m_textures (std::exchange(moved.m_textures, {}))
+        , m_targetsAsCubemaps (std::exchange(moved.m_targetsAsCubemaps, {}))
+    {}
+
     CubemapFramebuffer& operator=(CubemapFramebuffer&& moved) noexcept {
         CubemapFramebuffer{ std::move(moved) }.swap(*this);
         return *this;
     }
-    void swap(CubemapFramebuffer& other, bool checkForBoundBuffers = true) noexcept
+    void swap(CubemapFramebuffer& other) noexcept
     {
         std::swap(m_depths, other.m_depths);
         std::swap(m_resolution, other.m_resolution);
@@ -147,7 +147,7 @@ public:
     ~CubemapFramebuffer();
 
     CubemapFramebuffer(size_t resolution, FrameBuffer::target_t targets)
-        : m_resolution(std::max<UINT>(1, static_cast<UINT>(resolution)))
+        : m_resolution(std::max<UINT>(1U, resolution))
     {
         // If we have a color
         if (targets & FrameBuffer::Target::COLOR_0) {
@@ -186,7 +186,7 @@ public:
             srDesc.Texture2D.MostDetailedMip = 0;
             srDesc.Texture2DArray.FirstArraySlice = 0;
             srDesc.Texture2DArray.ArraySize = 6;
-            DXTry(Engine::d3ddevice().CreateShaderResourceView(resource, &srDesc, &cubeSRV), "Failed to create an SRV for the entier cube");
+            DXTry(Engine::d3ddevice().CreateShaderResourceView(resource, &srDesc, &cubeSRV), "Failed to create an SRV for the entire cube");
             m_targetsAsCubemaps[FrameBuffer::targetTypeToIndex(FrameBuffer::Target::COLOR_0)] = Cubemap(resource, cubeSRV);
         }
 

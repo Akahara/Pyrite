@@ -21,23 +21,11 @@ private:
 	
 	SceneRenderTools() = delete;
 
-	struct DepthOnlyDrawer
-	{
-		RenderGraph graph;
-		BuiltinPasses::DepthPrePass depthPass; // < note, works only for static meshes i think
-		std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
-		DepthOnlyDrawer() : depthPass(512, 512)
-		{
-			graph.addPass(&depthPass);
-		}
-	};
-
 	struct DepthDrawer
 	{
 		pyr::Effect* depthOnlyEffect = nullptr;
 		pyr::Camera camera;
 		pyr::GraphicalResourceRegistry registry;
-		std::function<void(const RegisteredRenderableActorCollection& sceneDescription)> renderFn;
 		struct Buffers
 		{
 			std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
@@ -49,32 +37,32 @@ private:
 		{
 			std::vector<pyr::Effect::define_t> defines{};
 		
-			if (type == TextureCube) defines.push_back(pyr::Effect::define_t{ .name = "LINEARIZE_DEPTH", .value = "1"  });
+			if (type == TextureCube) defines.emplace_back("LINEARIZE_DEPTH", "1");
 
 			depthOnlyEffect = registry.loadEffect(
 				L"res/shaders/depthOnly.fx",
 				InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>(),
 				defines);
 
-			renderFn = [this](const RegisteredRenderableActorCollection& sceneDescription)
-			{
-				for (const StaticMesh* smesh : sceneDescription.meshes)
-				{
-					smesh->bindModel();
-					buffers.pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
-					depthOnlyEffect->bindConstantBuffer("ActorBuffer", buffers.pActorBuffer);
-					depthOnlyEffect->bind();
-					std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
-					for (auto& submesh : submeshes)
-					{
-						Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
-					}
-				}
-			};
 		}
+
+		void Render(const RegisteredRenderableActorCollection& sceneDescription)
+		{
+			for (const StaticMesh* smesh : sceneDescription.meshes)
+			{
+				smesh->bindModel();
+				buffers.pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
+				depthOnlyEffect->bindConstantBuffer("ActorBuffer", buffers.pActorBuffer);
+				depthOnlyEffect->bind();
+				std::span<const SubMesh> submeshes = smesh->getModel()->getRawMeshData()->getSubmeshes();
+				for (auto& submesh : submeshes)
+				{
+					Engine::d3dcontext().DrawIndexed(static_cast<UINT>(submesh.getIndexCount()), submesh.startIndex, 0);
+				}
+			}
+		}
+
 	};
-
-
 
 public:
 
@@ -93,7 +81,7 @@ public:
 		});
 
 		depthDrawer2D.depthOnlyEffect->bindConstantBuffer("CameraBuffer", depthDrawer2D.buffers.pcameraBuffer);
-		depthDrawer2D.renderFn(sceneDescription);
+		depthDrawer2D.Render(sceneDescription);
 		depthDrawer2D.depthOnlyEffect->unbindResources();
 
 
@@ -146,7 +134,7 @@ public:
 			outFramebuffer.bindFace(currentFace);
 			depthDrawer3D.depthOnlyEffect->bindConstantBuffer("CameraBuffer", depthDrawer3D.buffers.pcameraBuffer);
 			depthDrawer3D.depthOnlyEffect->setUniform("u_sourcePosition", worldPositon);
-			depthDrawer3D.renderFn(sceneDescription);
+			depthDrawer3D.Render(sceneDescription);
 			depthDrawer3D.depthOnlyEffect->unbindResources();
 		}
 		pyr::RenderProfiles::popDepthProfile();

@@ -219,33 +219,31 @@ void Cubemap::releaseRawCubemap()
 }
 
 
-TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bool bIsDepthOnly /* = false */, bool bIsCubeArray /*= false*/)
+TextureArray::TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly /* = false */)
 	: m_width(width)
 	, m_height(height)
-	, m_arrayCount(count)
-	, m_isCubeArray(bIsCubeArray)
+	, m_elementCount(count)
+	, m_heldType(type)
 {
-	if (bIsCubeArray) m_arrayCount *= 6;
+	if (isCubeArray()) m_elementCount *= 6;
 	D3D11_TEXTURE2D_DESC texDesc = {};
 	texDesc.Width = width;
 	texDesc.Height = height;
 	texDesc.MipLevels = 1;
-	texDesc.ArraySize = m_arrayCount;
+	texDesc.ArraySize = m_elementCount;
 	texDesc.Format = bIsDepthOnly ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R32G32B32A32_FLOAT;
 	texDesc.SampleDesc.Count = 1;
 	texDesc.Usage = D3D11_USAGE_DEFAULT;
 	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	if (bIsCubeArray) texDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+	if (isCubeArray()) texDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
 	// Create the texture array resource
-	ID3D11Texture2D* texture;
-	DXTry(pyr::Engine::d3ddevice().CreateTexture2D(&texDesc, nullptr, &texture), "Could not create the texture associated with the array");
-	m_resource = texture;
+	DXTry(pyr::Engine::d3ddevice().CreateTexture2D(&texDesc, nullptr, (ID3D11Texture2D**)(&m_resource)), "Could not create the texture associated with the array");
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = texDesc.Format;
 
-	if (bIsCubeArray)
+	if (isCubeArray())
 	{
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
 		srvDesc.TextureCubeArray.MostDetailedMip = 0;
@@ -262,7 +260,7 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count /*= 8*/, bo
 		srvDesc.Texture2DArray.ArraySize = texDesc.ArraySize;
 	}
 
-	DXTry(pyr::Engine::d3ddevice().CreateShaderResourceView(texture, &srvDesc, &m_textureArray), "Could not create a TextureArray.");
+	DXTry(pyr::Engine::d3ddevice().CreateShaderResourceView(m_resource, &srvDesc, &m_textureArray), "Could not create a TextureArray.");
 }
 
 TextureArray::~TextureArray()
@@ -274,13 +272,14 @@ TextureArray::~TextureArray()
 void TextureArray::CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray)
 {
 	if (textures.empty()) return;
-	//if (!PYR_ENSURE(textures.size() == outArray.getArrayCount())) return;
+
+	if (!PYR_ENSURE(!outArray.isCubeArray())) return;
 	if (!PYR_ENSURE(textures[0].getWidth() == outArray.getWidth())) return;
 	if (!PYR_ENSURE(textures[0].getHeight() == outArray.getHeight())) return;
 
 	ID3D11Texture2D* resource = static_cast<ID3D11Texture2D*>(outArray.getRawResource());
 
-	for (UINT i = 0; i < outArray.getArrayCount() && i < textures.size(); ++i)
+	for (UINT i = 0; i < outArray.getTextureOrCubeCount() && i < textures.size(); ++i)
 	{
 		// Copy the texture to the corresponding slice in the array
 		pyr::Engine::d3dcontext().CopySubresourceRegion(
@@ -296,14 +295,13 @@ void TextureArray::CopyToTextureArray(const std::vector<Texture>& textures, Text
 void TextureArray::CopyToTextureArray(const std::vector<Cubemap>& cubemaps, TextureArray& outArray)
 {
 	if (cubemaps.empty()) return;
-	// Ensure cubemaps and outArray dimensions match
-	//if (!PYR_ENSURE(cubemaps[0].getWidth() == outArray.getWidth())) return;
-	//if (!PYR_ENSURE(cubemaps[0].getHeight() == outArray.getHeight())) return;
+
+	if (!PYR_ENSURE(outArray.isCubeArray())) return;
 
 	ID3D11Texture2D* resource = static_cast<ID3D11Texture2D*>(outArray.getRawResource());
 
 	// Iterate through each cubemap
-	for (UINT i = 0; i < outArray.getArrayCount() && i < cubemaps.size(); ++i)
+	for (UINT i = 0; i < outArray.getTextureOrCubeCount() && i < cubemaps.size(); ++i)
 	{
 		// We are copying cubemap faces to the corresponding slice in the array
 		for (UINT face = 0; face < 6; ++face)

@@ -82,17 +82,20 @@ private:
 
 struct TextureArray
 {
+    enum TextureType { Texture2D, TextureCube };
+
+private:
 
     size_t m_width, m_height;
     ID3D11Resource* m_resource;
     ID3D11ShaderResourceView* m_textureArray;
     std::vector<Texture> m_textures;
-    size_t m_arrayCount;
-    bool m_isCubeArray = false;
+    size_t m_elementCount;
+    TextureType m_heldType;
 
 public:
-
-    TextureArray(size_t width, size_t height, size_t count = 8, bool bIsDepthOnly = false, bool bIsCubeArray = false);
+                                                                                // v v v todo : pyr_pixelFormat ?
+    TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly = false);
     ~TextureArray();
     static void CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray);
     static void CopyToTextureArray(const std::vector<Cubemap>& cubes, TextureArray& outArray);
@@ -101,8 +104,8 @@ public:
     ID3D11Resource* getRawResource()            const { return m_resource; }
     size_t getWidth()                           const { return m_width; }
     size_t getHeight()                          const { return m_height; }
-    size_t getArrayCount()                      const { return m_arrayCount; }
-    bool isCubeArray()                          const { return m_isCubeArray; }
+    size_t getTextureOrCubeCount()              const { return m_elementCount; }
+    bool isCubeArray()                          const { return m_heldType == TextureCube; }
 
 };
 //===============================================================================================================================//

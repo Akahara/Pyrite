@@ -77,10 +77,10 @@ public:
         {
             lightmaps_2D_fbos[i].clearTargets();
         }
-        static TextureArray lightmaps_2DArray{ 512,512, 8, true };
-        static TextureArray lightmaps_3DArray{ 512,512, 8, false, true };
+        static TextureArray lightmaps_2DArray{ 512,512, 8, TextureArray::Texture2D  , true  };
+        static TextureArray lightmaps_3DArray{ 512,512, 8, TextureArray::TextureCube, false };
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&castsShadows, &shadow_map_index, &lightmaps_3D, this](pyr::PointLight& light) {
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&](pyr::PointLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, lightmaps_3D_fbos[lightmaps_3D.size()]);
@@ -89,7 +89,7 @@ public:
             }
         });
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Spots, [&castsShadows, &shadow_map_index, &lightmaps_2D, this](pyr::SpotLight& light) {
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Spots, [&](pyr::SpotLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Camera camera{};
@@ -103,7 +103,7 @@ public:
             }
             });
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Directionals, [&castsShadows, &shadow_map_index, &lightmaps_2D, this](pyr::DirectionalLight& light) {
+        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Directionals, [&](pyr::DirectionalLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Camera camera{};
@@ -112,7 +112,6 @@ public:
                 vec3 fuck = { light.GetTransform().rotation.x, light.GetTransform().rotation.y, light.GetTransform().rotation.z };
                 camera.lookAt(light.GetTransform().position + fuck);
                 camera.rotate(XM_PIDIV2, 0, 0);
-                auto test = camera.getViewProjectionMatrix();
                 pyr::Texture lightmap = pyr::SceneRenderTools::MakeSceneDepth(owner->GetContext().ActorsToRender, camera, lightmaps_2D_fbos[shadow_map_index]);
                 light.shadowMapIndex = (shadow_map_index++);
                 lightmaps_2D.push_back(lightmap);

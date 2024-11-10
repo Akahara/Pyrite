@@ -174,23 +174,18 @@ namespace pye
 				if (light.sourceLight->shadowMode == pyr::DynamicShadow && light.sourceLight->getType() != pyr::LightTypeID::Point)
 				{
 					ImGui::Text("Projection Parameters");
-					if (pyr::DirectionalLight* asDirectional = dynamic_cast<pyr::DirectionalLight*>(light.sourceLight))
+					if (pyr::DirectionalLight* asDirectional = static_cast<pyr::DirectionalLight*>(light.sourceLight))
 					{
 						ImGui::SliderFloat("Width", &asDirectional->shadow_projection.width, 1.F, 1000.F);
 						ImGui::SliderFloat("Height", &asDirectional->shadow_projection.height, 1.F, 1000.F);
 						ImGui::SliderFloat("zNear", &asDirectional->shadow_projection.zNear, 0.01F, 1.F);
 						ImGui::SliderFloat("zFar", &asDirectional->shadow_projection.zFar,  1.F, 100.F);
 					}
-					if (pyr::SpotLight* asSpotlight = dynamic_cast<pyr::SpotLight*>(light.sourceLight))
+					if (pyr::SpotLight* asSpotlight = static_cast<pyr::SpotLight*>(light.sourceLight))
 					{
 						ImGui::SliderFloat("Fov", &asSpotlight->shadow_projection.fovy, 0.01f, XM_PI);
 						ImGui::SliderFloat("zNear", &asSpotlight->shadow_projection.zNear, 0.01F, 1.F);
 						ImGui::SliderFloat("zFar", &asSpotlight->shadow_projection.zFar, 1.1F, 100.F);
-					}
-					bool dummy;
-					if (ImGui::Checkbox("Debug", &dummy))
-					{
-
 					}
 				}
 				ImGui::Separator();

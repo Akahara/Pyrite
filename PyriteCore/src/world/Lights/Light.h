@@ -32,6 +32,15 @@ enum ShadowMode : uint32_t
 	StaticShadow = 2, // < will never implement this
 };
 
+enum ShadowMapSlot : int
+{
+	// 0 - 15 are texture 2D, 16-31 are textureCube
+	None = -1,
+	Max_Texture2D_Slot = 15, 
+	Max_TextureCube_Slot = 31, 
+};
+
+
 struct hlsl_GenericLight
 {
 
@@ -49,7 +58,7 @@ struct hlsl_GenericLight
 
 	LightTypeID type;
 	ShadowMode shadowMode = NoShadow;
-	int shadowMapIndex = -1; // -1 means no shadow, < 16 is 2d and < 32 is cube
+	ShadowMapSlot shadowMapIndex = ShadowMapSlot::None; // -1 means no shadow, < 16 is 2d and < 32 is cube
 	float padding[1];
 };
 
@@ -103,7 +112,7 @@ inline hlsl_GenericLight convertLightTo_HLSL<DirectionalLight>(const Directional
 		.isOn = static_cast<float>(light.isOn),
 		.type = LightTypeID::Directional,
 		.shadowMode = light.shadowMode,
-		.shadowMapIndex = light.shadowMapIndex,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 
@@ -167,7 +176,7 @@ inline hlsl_GenericLight convertLightTo_HLSL<PointLight>(const PointLight& light
 		.isOn = static_cast<float>(light.isOn),
 		.type = LightTypeID::Point,
 		.shadowMode = light.shadowMode,
-		.shadowMapIndex = light.shadowMapIndex,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 
@@ -199,7 +208,7 @@ inline hlsl_GenericLight convertLightTo_HLSL<SpotLight>(const SpotLight& light)
 		.isOn = static_cast<float>(light.isOn),
 		.type = LightTypeID::Spotlight,
 		.shadowMode = light.shadowMode,
-		.shadowMapIndex = light.shadowMapIndex,
+		.shadowMapIndex = static_cast<ShadowMapSlot>(light.shadowMapIndex),
 	};
 }
 

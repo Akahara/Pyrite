@@ -331,7 +331,7 @@ CubemapFramebuffer::~CubemapFramebuffer()
 		DXRelease(m_rtvs[i]);
 		DXRelease(m_depths[i]);
 	}
-	std::ranges::for_each(m_targetsAsCubemaps, [](auto texture) { texture.releaseRawCubemap(); });
+	std::ranges::for_each(m_targetsAsCubemaps, [](auto& texture) { texture.releaseRawCubemap(); });
 }
 
 }

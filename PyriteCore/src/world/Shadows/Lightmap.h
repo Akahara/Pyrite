@@ -3,9 +3,6 @@
 #include "display/texture.h"
 #include <variant>
 
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-
 namespace pyr
 {
 
@@ -19,11 +16,11 @@ private:
 
 public:
 
-	ID3D11ShaderResourceView* GetTexture() const { return std::visit<ID3D11ShaderResourceView*>(overloaded{
-		[](const Texture& asTexture) { return asTexture.getRawTexture(); },
-		[](const Cubemap& asCubemap) { return asCubemap.getRawCubemap(); },
-		},
-		m_resource); }
+	//ID3D11ShaderResourceView* GetTexture() const { 
+	//	return std::visit<ID3D11ShaderResourceView*>(overloaded{
+	//		[](const Texture& asTexture) { return asTexture.getRawTexture(); },
+	//		[](const Cubemap& asCubemap) { return asCubemap.getRawCubemap(); },
+	//	},	m_resource); }
 
 
 
