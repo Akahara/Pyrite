@@ -50,7 +50,7 @@ namespace pye
 			pyr::RegisteredRenderableActorCollection toRender;
 			
 			// TODO : environement here
-			int selectedMaterialID = 0;
+			size_t selectedMaterialID = 0;
 
 		
 		
@@ -95,11 +95,11 @@ namespace pye
 						ImGui::PushID((int)id);
 						if (ImGui::Selectable((ref->d_publicName + "##" + std::to_string(id)).c_str(), id == selectedMaterialID))
 						{
-							selectedMaterialID = (int)id;
+							selectedMaterialID = id;
 							ChangeMaterial(id);
 
 						}
-						if (id == selectedMaterialID)
+						if (id == static_cast<int>(selectedMaterialID))
 							ImGui::SetItemDefaultFocus();
 						ImGui::PopID();
 					}
@@ -172,7 +172,7 @@ namespace pye
 				PYR_ENSURE(asMesh->sourceMesh, "Editor-side mesh has no core-side mesh. Wtf ?");
 
 				// Current implementation is kinda stupid and each submesh is a mesh so this is a hack until we redo the import correctly for the 10th time
-				int firstSubmeshMaterial = asMesh->sourceMesh->getModel()->getRawMeshData()->getSubmeshes()[0].materialIndex;
+				size_t firstSubmeshMaterial = asMesh->sourceMesh->getModel()->getRawMeshData()->getSubmeshes()[0].materialIndex;
 				if (auto material = asMesh->sourceMesh->getMaterial(firstSubmeshMaterial))
 				{
 					ChangeMaterial(pyr::MaterialBank::GetMaterialGlobalId(material->d_publicName)); // i dont like this being name based

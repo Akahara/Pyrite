@@ -28,7 +28,7 @@ public:
 	void NotifyAll(FwdArgs... args)
 	{
 		for (auto& [handle, callback] : callbacks)
-			callback->invoke(std::forward<decltype(args)>(args)...);
+			callback->invoke(args...);
 	}
 
 	// For some reasons this definition is not needed, and function ptrs would work correctly with auto&& ? 
@@ -96,7 +96,7 @@ private:
 		}
 		virtual void invoke(FwdArgs... args) override
 		{
-			lambda(std::forward<decltype(args)>(args)...);
+			lambda(args...);
 		};
 
 	};
@@ -111,7 +111,7 @@ private:
 		}
 		virtual void invoke(FwdArgs... args) override
 		{
-			ptr(std::forward<decltype(args)>(args)...);
+			ptr(args...);
 		};
 	};
 
@@ -127,7 +127,7 @@ private:
 		}
 		virtual void invoke(FwdArgs... args) override
 		{
-			std::invoke(ptr, object, std::forward<decltype(args)>(args)...);
+			std::invoke(ptr, object, args...);
 		};
 	};
 
