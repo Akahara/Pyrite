@@ -81,7 +81,6 @@ namespace pye
             // Setup the camera
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
-            m_forwardPass.boundCamera = &m_camera;
 
             for (const auto& mesh : sceneMeshes)
             {

@@ -112,12 +112,12 @@ float3 sampleFromTexture(Texture2D source, float2 uv)
 //======================================================================================================================//
 
 
-Texture2D mat_albedo : register(t0);
-Texture2D mat_normal : register(t1);
-Texture2D mat_ao : register(t2);
-Texture2D mat_roughness : register(t3);
-Texture2D mat_metalness : register(t4);
-Texture2D mat_height : register(t5);
+Texture2D mat_albedo;
+Texture2D mat_normal ;
+Texture2D mat_ao ;
+Texture2D mat_roughness ;
+Texture2D mat_metalness;
+Texture2D mat_height ;
 Texture2D ssaoTexture;
 TextureCube irrandiance_map;
 Texture2D brdfLUT;
@@ -185,7 +185,7 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 F0 = Ni.xxx; 
     F0 = lerp(F0, albedo.xyz, computed_metallic);
     float3 Lo = float3(0,0,0);
-    float shadowAccumulation = 0.0f;
+    float shadow_attenuation = 1.0f;
     // -- For each light, compute the specular --//
     for (int i = 0; i < LIGHT_COUNT; ++i)
     {
@@ -196,12 +196,9 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
         float3 radiance = 0.0.xxx;
         float3 L = normalize(1.0.xxx);
         bool bShouldCastShadows = light.shadowType == 1;
-        float shadow_attenuation = 1.F;
         
         if (light.type == DIRECTIONAL_LIGHT_TYPE) // dir
         {
-            float shadow_attenation = 1.F;
-            
             if (bShouldCastShadows)
             {
                 shadow_attenuation = 1.f - getShadowFactor_2D_Ortho(vsIn.worldpos.xyz, vsIn.norm.xyz, light.lightmap_index, CreateViewProjectionMatrixForLight_Ortho(light));
@@ -276,11 +273,16 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) + 0.001;
     
     float matOcclusion = sampleFromTexture(mat_ao, vsIn.uv).r;
-    float occlusion = ssaoTexture.Load(vpos.xyz) * matOcclusion;
+    
+    float occlusion = matOcclusion;
+    
+    int w, h;
+    ssaoTexture.GetDimensions(w, h);
+    occlusion *= ssaoTexture.Load(float3(vpos.x % w, vpos.y % h, vpos.z));
     float3 ambient = (kD * diffuse + specular) * occlusion;
     
     // -- Tonemapping -- //
-    float3 OutColor = ambient + Lo * occlusion;
+    float3 OutColor = (ambient + Lo * occlusion);
     OutColor = OutColor / (OutColor + float3(1, 1, 1));
     OutColor = pow(OutColor, 0.4545.xxx);
     

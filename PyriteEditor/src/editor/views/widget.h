@@ -15,6 +15,7 @@ namespace pye
 	public:
 
 		virtual void display() {};
+		bool bDisplayWidget = false;
 	
 	protected:
 
@@ -24,15 +25,4 @@ namespace pye
 			return grr;
 		}
 	};
-
-	struct WidgetsContainer
-	{
-		std::vector<Widget*> widgets;
-		void Render()
-		{
-			for (Widget* widget : widgets)
-				widget->display();
-		}
-	};
-
 }

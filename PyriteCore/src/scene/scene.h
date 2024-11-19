@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderableActorCollection.h"
+#include "display/RenderGraph/RenderGraph.h"
 #include <vector>
 
 namespace pyr
@@ -15,6 +16,7 @@ public:
   virtual void render() = 0;
 
   RegisteredRenderableActorCollection SceneActors;
+  class pyr::RenderGraph SceneRenderGraph;
 };
 
 class EmptyScene : public Scene

@@ -6,10 +6,13 @@
 #include "display/FrameBuffer.h"
 #include "display/RenderProfiles.h"
 #include "utils/Clock.h"
+
 #include "imgui/imgui_impl_dx11.h"
 #include "imgui/imgui_impl_win32.h"
-#include "inputs/UserInputs.h"
 #include "imguizmo/ImGuizmo.h"
+#include "imNodesFlow/imnodes.h"
+
+#include "inputs/UserInputs.h"
 #include "scene/SceneManager.h"
 #include "utils/StringUtils.h"
 #include "display/GraphicalResource.h"
@@ -84,6 +87,7 @@ Engine::Engine(HINSTANCE hInstance, EngineSettings settings)
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImNodes::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -109,6 +113,7 @@ Engine::~Engine()
 
   ImGui_ImplDX11_Shutdown();
   ImGui_ImplWin32_Shutdown();
+  ImNodes::DestroyContext();
   ImGui::DestroyContext();
 
   s_engineSingleton = nullptr;

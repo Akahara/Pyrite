@@ -183,6 +183,12 @@
     <ClCompile Include="vendor\efsw\src\efsw\WatcherWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\editor\EditorEvents.h" />
+    <ClInclude Include="src\editor\EditorSceneInjector.h" />
+    <ClInclude Include="src\editor\views\EditorUI.h" />
+    <ClInclude Include="src\editor\views\Materials\widget_material.h" />
+    <ClInclude Include="src\editor\views\Rendergraph\widget_rendergraph.h" />
+    <ClInclude Include="src\SponzaScene.h" />
     <ClInclude Include="src\CornellBoxScene.h" />
     <ClInclude Include="src\CubemapBuilderScene.h" />
     <ClInclude Include="src\editorPasses\PickerPass.h" />

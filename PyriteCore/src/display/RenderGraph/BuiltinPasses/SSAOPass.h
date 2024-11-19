@@ -28,7 +28,11 @@ namespace pyr
             std::vector<vec4> m_kernel;
             Texture m_randomTexture;
 
+            std::shared_ptr<pyr::InverseCameraBuffer>   pinvCameBuffer = std::make_shared<pyr::InverseCameraBuffer>();
+            std::shared_ptr<pyr::CameraBuffer>          pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
+
         public:
+
 
 
             Effect* getSSAOEffect() const noexcept { return m_ssaoEffect; }
@@ -57,9 +61,25 @@ namespace pyr
 
             virtual void apply() override
             {
+                PYR_ENSURE(owner);
+                if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
+
+                pcameraBuffer->setData(pyr::CameraBuffer::data_t{
+                   .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(),
+                   .pos = owner->GetContext().contextCamera->getPosition()
+                });
+                pinvCameBuffer->setData(pyr::InverseCameraBuffer::data_t{
+                    .inverseViewProj = owner->GetContext().contextCamera->getViewProjectionMatrix().Invert(),
+                    .inverseProj = owner->GetContext().contextCamera->getProjectionMatrix().Invert(),
+                    .Proj = owner->GetContext().contextCamera->getProjectionMatrix()
+                });
+
                 // Compute the SSAO Texture
                 m_ssaoTextureTarget.clearTargets();
                 m_ssaoTextureTarget.bind();
+
+                m_ssaoEffect->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
+                m_ssaoEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
                 m_ssaoEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
                 m_ssaoEffect->bindTexture(m_randomTexture, "blueNoise");
@@ -80,26 +100,24 @@ namespace pyr
                 m_blurEffect->unbindResources();
                 
                 m_blurredSSAOTarget.unbind();
-
-                debugWindow();
             }
 
-            void debugWindow()
-            {
+            virtual void OpenDebugWindow() override {
+
                 ImGui::Begin("SSAO Pass Debug");
 
                 ImGui::Image((void*)m_inputs["depthBuffer"].res.getRawTexture(), ImVec2{ 256,256 });
-                ImGui::Image((void*)m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{256,256});
-                ImGui::Image((void*)m_blurredSSAOTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{256,256});
+                ImGui::Image((void*)m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{ 256,256 });
+                ImGui::Image((void*)m_blurredSSAOTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{ 256,256 });
 
-                static float sampleRad = 1.5f;
+                static float sampleRad = 0.1f;
                 static float u_bias = 0.0001f;
                 static float u_noiseSclae = 10.f;
                 static float u_tolerancy = -0.85f;
                 static float u_alpha = 0.005f;
                 static float u_blurStrength = 1.f;
-                
-                if (ImGui::SliderFloat("sampleRad", &sampleRad, 0, 5))              m_ssaoEffect->setUniform<float>("u_sampleRad",sampleRad);
+
+                if (ImGui::SliderFloat("sampleRad", &sampleRad, 0, 1.F))              m_ssaoEffect->setUniform<float>("u_sampleRad", sampleRad);
                 if (ImGui::SliderFloat("u_bias", &u_bias, -0.001f, 0.001f))           m_ssaoEffect->setUniform<float>("u_bias", u_bias);
                 if (ImGui::SliderFloat("u_noiseScale", &u_noiseSclae, 0, 10))       m_ssaoEffect->setUniform<float>("u_noiseScale", u_noiseSclae);
                 if (ImGui::SliderFloat("u_tolerancy", &u_tolerancy, -1, 1))         m_ssaoEffect->setUniform<float>("u_tolerancy", u_tolerancy);
@@ -109,6 +127,7 @@ namespace pyr
                 ImGui::End();
             }
 
+            virtual bool HasDebugWindow() override { return true; }
         private:
 
             std::vector<vec4> generateKernel(int sampleCount = 16)

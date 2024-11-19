@@ -35,7 +35,6 @@ private:
 public:
 
     Cubemap m_skybox;
-    pyr::Camera* boundCamera = nullptr;
 
     ForwardPass()
     {
@@ -48,8 +47,8 @@ public:
     virtual void apply() override
     {
         PYR_ENSURE(owner);
-        if (!PYR_ENSURE(boundCamera)) return;
-        pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+        if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
+        pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(), .pos = owner->GetContext().contextCamera->getPosition() });
 
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
@@ -73,18 +72,24 @@ public:
             return 0;
         }();
 
-        for (int i = 0; i < 16; i++)
-        {
-            lightmaps_2D_fbos[i].clearTargets();
-        }
         static TextureArray lightmaps_2DArray{ 512,512, 8, TextureArray::Texture2D  , true  };
         static TextureArray lightmaps_3DArray{ 512,512, 8, TextureArray::TextureCube, false };
+        static TextureArray empty_Array2D{ 1,1, 1, TextureArray::Texture2D, false };
+        static TextureArray empty_Array3D{ 1,1, 1, TextureArray::TextureCube, false };
+
+        if (!owner->GetContext().ActorsToRender.lights.Spots.empty() || !owner->GetContext().ActorsToRender.lights.Directionals.empty())
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                lightmaps_2D_fbos[i].clearTargets();
+            }
+        }
 
         std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&](pyr::PointLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, lightmaps_3D_fbos[lightmaps_3D.size()]);
-                light.shadowMapIndex = 16 + (lightmaps_3D.size());
+                light.shadowMapIndex = 16 + static_cast<int>((lightmaps_3D.size()));
                 lightmaps_3D.push_back(lightmap);
             }
         });
@@ -118,8 +123,10 @@ public:
             }
         });
 
-        TextureArray::CopyToTextureArray(lightmaps_2D, lightmaps_2DArray);
-        TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
+        if (!lightmaps_2D.empty())
+            TextureArray::CopyToTextureArray(lightmaps_2D, lightmaps_2DArray);
+        if (!lightmaps_3D.empty())
+            TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
 
         LightsBuffer::data_t light_data{};
         std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
@@ -147,11 +154,14 @@ public:
                 effect->bindConstantBuffer("ActorBuffer", pActorBuffer);
                 effect->bindConstantBuffer("ActorMaterials", submeshMaterial->coefsToCbuffer());
                 effect->bindConstantBuffer("lightsBuffer", pLightBuffer);
-                effect->bindTexture(lightmaps_2DArray, "lightmaps_2D");
-                effect->bindTexture(lightmaps_3DArray, "lightmaps_3D");
+                if (!lightmaps_2D.empty())
+                    effect->bindTexture(lightmaps_2DArray, "lightmaps_2D");
+                if (!lightmaps_3D.empty())
+                    effect->bindTexture(lightmaps_3DArray, "lightmaps_3D");
 
 
                 if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
+                else effect->bindTexture(pyr::Texture::getDefaultTextureSet().WhitePixel , "ssaoTexture");
                 if (submeshMaterial)
                 {
                     if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex)    effect->bindTexture(*tex, "mat_albedo");
@@ -168,6 +178,7 @@ public:
                 effect->unbindResources();
             }
         }
+
         pyr::RenderProfiles::popDepthProfile();
         renderSkybox();
     }
@@ -185,7 +196,6 @@ private:
 
     void renderSkybox()
     {
-        assert(boundCamera);
         m_skyboxEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
         m_skyboxEffect->bindCubemap(m_skybox, "cubemap");
         RenderProfiles::pushRasterProfile(RasterizerProfile::NOCULL_RASTERIZER);

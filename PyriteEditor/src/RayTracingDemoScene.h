@@ -70,7 +70,6 @@ public:
     m_camera.setProjection(pyr::PerspectiveProjection{});
     m_camController.setCamera(&m_camera);
     drawDebugSetCamera(&m_camera);
-    m_forwardPass.boundCamera = &m_camera;
   }
 
   void update(float delta) override

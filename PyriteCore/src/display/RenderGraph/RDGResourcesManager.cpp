@@ -25,8 +25,7 @@ namespace pyr
 		{
 			PYR_LOGF(LogRenderGraph, WARN, "Trying to link resource  \"{}\" to pass {} that is not in graph !", resName, to->displayName);
 		}
-		//ASSERT_IS_IN_GRAPH(to)
-
+		
 		std::optional<NamedOutput> resource = from->getOutputResource(resName);
 		if (resource.has_value()) {
 			to->addNamedInput(resource.value());
@@ -34,6 +33,24 @@ namespace pyr
 		}
 
 		else throw Errors::PassDoesNotProduceResource{} ;
+	}
+
+	void RenderGraphResourceManager::linkResource(const char* resName, RenderPass* to)
+	{
+		ASSERT_IS_IN_GRAPH(to);
+
+		for (auto& [pass, passResources] : m_passResources)
+		{
+			if (passResources.producedResources.contains(resName))
+			{
+				NamedOutput& output = passResources.producedResources[resName];
+				to->addNamedInput(output);
+				m_passResources[to].incomingResources[resName] = output;
+				return;
+			}
+		}
+
+		PYR_ASSERT(false, "Trying to link a resource that no renderpass produces in the graph... very sad");
 	}
 
 	void RenderGraphResourceManager::addProduced(RenderPass* pass, const char* resName)

@@ -89,6 +89,12 @@
     <ClInclude Include="src\editorPasses\WorldHUDPass.h" />
     <ClInclude Include="src\editor\bridges\pf_BillboardHUD.h" />
     <ClInclude Include="src\ShadowScene.h" />
+    <ClInclude Include="src\SponzaScene.h" />
+    <ClInclude Include="src\editor\EditorEvents.h" />
+    <ClInclude Include="src\editor\views\Materials\widget_material.h" />
+    <ClInclude Include="src\editor\views\Rendergraph\widget_rendergraph.h" />
+    <ClInclude Include="src\editor\views\EditorUI.h" />
+    <ClInclude Include="src\editor\EditorSceneInjector.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="vendor\efsw\src\efsw\Utf.inl" />

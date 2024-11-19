@@ -15,6 +15,7 @@
 #include "TriangleScene.h"
 #include "VoxelisationScene.h"
 #include "MaterialScene.h"
+#include "SponzaScene.h"
 #include "ShadowScene.h"
 #include "CornellBoxScene.h"
 #include "utils/Debug.h"
@@ -54,6 +55,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     scenes.registerScene<pye::CubemapBuilderScene>("IBL");
     scenes.registerScene<pye::CornellBoxScene>("CornellBox");
     scenes.registerScene<pye::ShadowScene>("ShadowScene");
+    scenes.registerScene<pye::SponzaScene>("Sponza");
 
     // Load the scene that is passed on the command line by default
 #ifdef _CONSOLE

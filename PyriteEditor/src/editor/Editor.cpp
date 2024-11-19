@@ -4,8 +4,9 @@
 #include "editor/bridges/pf_StaticMesh.h"
 #include "editor/bridges/Lights/pf_Light.h"
 
-#include <scene/scene.h>
-#include <scene/SceneManager.h>
+#include "scene/scene.h"
+#include "scene/SceneManager.h"
+
 #include "world/Actor.h"
 #include "world/Mesh/StaticMesh.h"
 
@@ -50,6 +51,7 @@ void pye::Editor::UpdateRegisteredActors(const pyr::RegisteredRenderableActorCol
 		bb->transform.position = { light->GetTransform().position.x,light->GetTransform().position.y,light->GetTransform().position.z };
 		WorldHUD.push_back(editorBillboard);
 		RegisteredActors[editorBillboard->editorBillboard->GetActorID()] = editorBillboard;
+		RegisteredActors[light->GetActorID()] = editorBillboard; // < register the light ID as the billboard for convenience purposes (picking events)
 
 	}
 }
@@ -80,8 +82,5 @@ void pye::Editor::UnselectedAllActors()
 	}
 
 	// TODO : note all scene have render graphs lol, how do we handle this
-	//currentScene->
-
-
 
 }

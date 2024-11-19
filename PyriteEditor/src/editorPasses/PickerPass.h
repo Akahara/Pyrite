@@ -16,7 +16,9 @@
 
 #include "editor/EditorActor.h"
 #include "editor/bridges/pf_StaticMesh.h"
+#include "editor/bridges/Lights/pf_Light.h"
 #include "editor/Editor.h"
+#include "editor/EditorEvents.h"
 
 #include "imguizmo/ImGuizmo.h"
 
@@ -72,11 +74,12 @@ namespace pye
 
             ID3D11Texture2D* StagingTexture;
 
+            pyr::Camera* boundCamera = nullptr;
+
         public:
 
             EditorActor* Selected = nullptr;
             std::vector<EditorActor*> selectedActors;
-            pyr::Camera* boundCamera = nullptr;
 
             PickerPass()
             {
@@ -138,6 +141,11 @@ namespace pye
                     HRESULT failed = pyr::Engine::d3ddevice().GetDeviceRemovedReason();
                     PYR_ASSERT(false);
                 }
+
+                pye::EditorEvents::OnActorSelectedEvent.BindCallback(*this, &PickerPass::OnEditorActorSelected);
+                pye::EditorEvents::OnActorAddedEvent.BindCallback(*this, &PickerPass::DeselectAll);
+                pye::EditorEvents::OnActorRemovedEvent.BindCallback(*this, &PickerPass::DeselectAll);
+
             }
 
             virtual ~PickerPass()
@@ -151,7 +159,9 @@ namespace pye
             virtual void apply() override
             {
                 if (!PYR_ENSURE(owner)) return;
-                if (!PYR_ENSURE(boundCamera)) return; // should just get the main camera somehow
+                if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
+
+                boundCamera = owner->GetContext().contextCamera;
 
                 if (pyr::UserInputs::consumeClick(pyr::MouseState::BUTTON_PRIMARY) && ImGui::GetIO().WantCaptureMouse == false)
                 {
@@ -182,7 +192,7 @@ namespace pye
 
                     }
                     
-                    EditTransforms(*boundCamera, transformsToEdit);
+                    EditTransforms(*owner->GetContext().contextCamera, transformsToEdit);
                 }
             }
 
@@ -345,6 +355,8 @@ namespace pye
             /// Gets all editor-side registered actors and check if the requested ID exists, and adds it accordingly to the selectedActor list.
             void AddSelectedActor(int actorId, bool bPushNewActor = false)
             {
+                if (actorId == ID_NONE) return;
+
                 auto& Editor = pye::Editor::Get();
                 bool bIsActorRegistered = Editor.RegisteredActors.contains(actorId);
                 if (bIsActorRegistered)
@@ -355,12 +367,12 @@ namespace pye
                         selectedActors.clear();
                     }
                     selectedActors.push_back(editorActor);
+                    pye::EditorEvents::OnActorPickedEvent.NotifyAll(editorActor);
                 }
                 else
                 {
                     selectedActors.clear();
                 }
-
             }
 
             /// !! WARNING !!
@@ -379,7 +391,7 @@ namespace pye
                 {
                     center.position += t->position;
                 }
-                center.position /= transforms.size();
+                center.position /= static_cast<float>(transforms.size());
                 center.scale = { 1,1,1 };
                 center.rotation = { 0,0,0 };
 
@@ -437,6 +449,7 @@ namespace pye
                 std::vector<const pyr::Billboard*> selectedBillboards; // < dirty thing
                 for (EditorActor* actor : selectedActors)
                 {
+                    if (!actor) continue;
                     pye::pf_StaticMesh* sm = dynamic_cast<pye::pf_StaticMesh*>(actor);
                     if (!sm) {
                         pye::pf_BillboardHUD* hud = dynamic_cast<pye::pf_BillboardHUD*>(actor);
@@ -501,6 +514,22 @@ namespace pye
                 pyr::RenderProfiles::popBlendProfile();
             }
 
+            void DeselectAll()
+            {
+                selectedActors.clear();
+            }
+        private:
+
+            /// Callback for when an actor is selected from the UI in the editor
+            void OnEditorActorSelected(pye::EditorActor* selectedActor)
+            {
+                PYR_ASSERT(selectedActor, "Selected actor is invalid.");
+
+                int actorId = ID_NONE;
+                if (auto* asStaticMesh = dynamic_cast<pye::pf_StaticMesh*>(selectedActor)) actorId = asStaticMesh->sourceMesh->GetActorID();
+                if (auto* asLight = dynamic_cast<pye::pf_Light*>(selectedActor)) actorId = asLight->sourceLight->GetActorID();
+                AddSelectedActor(actorId);
+            }
 
      
         };

@@ -147,7 +147,7 @@ public:
     ~CubemapFramebuffer();
 
     CubemapFramebuffer(size_t resolution, FrameBuffer::target_t targets)
-        : m_resolution(std::max<UINT>(1U, resolution))
+        : m_resolution(std::max<UINT>(1U, static_cast<UINT>(resolution)))
     {
         // If we have a color
         if (targets & FrameBuffer::Target::COLOR_0) {
