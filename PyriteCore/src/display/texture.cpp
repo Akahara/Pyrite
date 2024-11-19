@@ -227,10 +227,10 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count, TextureTyp
 {
 	if (isCubeArray()) m_elementCount *= 6;
 	D3D11_TEXTURE2D_DESC texDesc = {};
-	texDesc.Width = width;
-	texDesc.Height = height;
+	texDesc.Width =  static_cast<UINT>(width);
+	texDesc.Height = static_cast<UINT>(height);
 	texDesc.MipLevels = 1;
-	texDesc.ArraySize = m_elementCount;
+	texDesc.ArraySize = static_cast<UINT>(m_elementCount);
 	texDesc.Format = bIsDepthOnly ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R32G32B32A32_FLOAT;
 	texDesc.SampleDesc.Count = 1;
 	texDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -249,7 +249,7 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count, TextureTyp
 		srvDesc.TextureCubeArray.MostDetailedMip = 0;
 		srvDesc.TextureCubeArray.MipLevels = texDesc.MipLevels;
 		srvDesc.TextureCubeArray.First2DArrayFace = 0;
-		srvDesc.TextureCubeArray.NumCubes = count;
+		srvDesc.TextureCubeArray.NumCubes = static_cast<UINT>(count);
 	}
 	else
 	{

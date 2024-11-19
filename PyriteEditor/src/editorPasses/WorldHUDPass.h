@@ -40,7 +40,6 @@ namespace pye
 
         public:
 
-            pyr::Camera* boundCamera = nullptr;
 
             WorldHUDPass()
             {
@@ -55,7 +54,7 @@ namespace pye
             virtual void apply() override
             {
                 if (!PYR_ENSURE(owner)) return;
-                if (!PYR_ENSURE(boundCamera)) return;
+                if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
 
                 auto& Editor = pye::Editor::Get();
 
@@ -64,7 +63,7 @@ namespace pye
                 pyr::Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
 
-                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
+                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(), .pos = owner->GetContext().contextCamera->getPosition() });
 
                 // - First step should be to sort the billboards, whether they are HUD (autofacing, no depth test, depth write for the picker) ect
                 std::vector<const pyr::Billboard*> bbs;

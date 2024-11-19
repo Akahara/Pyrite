@@ -79,7 +79,7 @@ namespace pye
 
         pyr::Texture BRDF_Lut = m_registry.loadTexture(L"res/textures/pbr/brdfLUT.png"); // builtin BRDF LUT (the shader does not work and i dont care about it)
         ComputedCubemapCollection OutputCubemaps;
-        std::filesystem::path DefaultHDRMap = L"res/textures/pbr/fireplace_4k.hdr";
+        std::filesystem::path DefaultHDRMap = L"res/textures/pbr/rotes_rathaus_4k.hdr";
 
 
         CubemapBuilderScene()

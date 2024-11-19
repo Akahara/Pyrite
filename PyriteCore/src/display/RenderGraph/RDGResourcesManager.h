@@ -12,7 +12,7 @@ namespace pyr
 
 	class RenderGraphResourceManager
 	{
-
+	public:
 		struct PassResources
 		{
 			std::unordered_map<std::string, NamedInput> incomingResources;
@@ -21,6 +21,7 @@ namespace pyr
 			std::set<std::string> requiredResources; // if a res is present here and not in the inputs, will throw error
 		};
 
+	private:
 		std::unordered_map<RenderPass*, PassResources> m_passResources;
 
 	public:
@@ -28,10 +29,17 @@ namespace pyr
 		/// Add a named input to a render pass if the source renderpass produces said resource.
 		void linkResource(RenderPass* from, const char* resName, RenderPass* to);
 
+		// Will try to fetch the resource somewhere, not sure if above version is required
+		// This is mainly used when you don't know what passes are in the render graph but need something (like depth buffer)
+		// I do believe we should have types and constant for resource naming instead of strings
+		void linkResource(const char* resName, RenderPass* to);
+
 		void addProduced(RenderPass* pass, const char* resName);
 		void addRequirement(RenderPass* pass, const char* resName);
 
 		bool checkResourcesValidity();
+
+		const std::unordered_map<RenderPass*, PassResources>& GetAllResources() const { return m_passResources; }
 
 	private:
 

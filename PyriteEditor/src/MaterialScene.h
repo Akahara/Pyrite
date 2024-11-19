@@ -23,6 +23,7 @@
 
 #include "editor/Editor.h"
 #include "editor/EditorActor.h"
+#include "editor/views/EditorUI.h"
 #include "editor/views/widget.h"
 #include "editor/views/Lights/widget_lights.h"
 #include "editorPasses/WorldHUDPass.h"
@@ -64,7 +65,7 @@ namespace pye
         ImGui::FileBrowser fileDialog;
         CubemapBuilderScene cubemapScene = CubemapBuilderScene();
 
-        pye::WidgetsContainer HUD;
+        pye::widgets::WidgetsContainer HUD;
         pye::widgets::LightCollectionWidget LightCollectionWidget;
 
     public:
@@ -125,10 +126,6 @@ namespace pye
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
             m_RDG.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_picker);
             m_RDG.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
-            m_forwardPass.boundCamera = &m_camera;
-            m_billboardsPass.boundCamera = &m_camera;
-            m_editorHUD.boundCamera = &m_camera;
-            m_picker.boundCamera = &m_camera;
             bool bIsGraphValid = m_RDG.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
             auto& device = pyr::Engine::device();

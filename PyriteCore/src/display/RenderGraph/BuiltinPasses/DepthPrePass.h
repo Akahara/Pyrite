@@ -20,32 +20,42 @@ namespace pyr
 
             pyr::GraphicalResourceRegistry m_registry;
 
-            std::shared_ptr<ActorBuffer> pActorBuffer = std::make_shared<ActorBuffer>();
+            std::shared_ptr<ActorBuffer>        pActorBuffer = std::make_shared<ActorBuffer>();
+            std::shared_ptr<pyr::CameraBuffer>  pcameraBuffer = std::make_shared<pyr::CameraBuffer>();
             
             // goal output a depth texture 
-            FrameBuffer m_depthTarget{ Device::getWinWidth(), Device::getWinHeight(), FrameBuffer::DEPTH_STENCIL };
+            FrameBuffer m_depthTarget;
             Effect* m_depthOnlyEffect = nullptr;
 
         public:
 
-            DepthPrePass()
+            DepthPrePass(unsigned int width, unsigned int height)
+                : m_depthTarget{ width , height, FrameBuffer::DEPTH_STENCIL }
             {
                 displayName = "Depth pre-pass";
                 m_depthOnlyEffect = m_registry.loadEffect(
-                        L"res/shaders/depthOnly.fx", 
-                        InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
+                    L"res/shaders/depthOnly.fx",
+                    InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
                 );
 
                 producesResource("depthBuffer", m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL));
             }
 
+            DepthPrePass()
+                : DepthPrePass(pyr::Device::getWinWidth(), pyr::Device::getWinHeight())
+            {}
+
             virtual void apply() override
             {
                 if (!PYR_ENSURE(owner)) return;
+                if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
+                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(), .pos = owner->GetContext().contextCamera->getPosition() });
 
                 // Render all objects to a depth only texture
                 m_depthTarget.clearTargets();
                 m_depthTarget.bind();
+
+                m_depthOnlyEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
                 for (const StaticMesh* smesh : owner->GetContext().ActorsToRender.meshes)
                 {

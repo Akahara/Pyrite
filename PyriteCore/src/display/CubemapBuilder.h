@@ -62,7 +62,10 @@ namespace pyr
 			{
 				UINT subresource = D3D11CalcSubresource(mipLevel, faceID, mipCount);
 				size_t texID = mipLevel * 6 + faceID;
-				ID3D11Texture2D* faceTexture = static_cast<ID3D11Texture2D*>(textures[texID].getRawResource());
+				ID3D11Resource* faceTexture = textures[texID].getRawResource();
+				// ERROR : Sometimes, this call will assert and break during IBL. You can continue, but note that the
+				//		   the produced map will be missing mips and stuff... i have not found anything that could be causing an issue yet.
+				//		    It's quite hard to debug...
 				Engine::d3dcontext().CopySubresourceRegion(cubeTexture, subresource, 0, 0, 0, faceTexture, 0, nullptr);
 			}
 		}

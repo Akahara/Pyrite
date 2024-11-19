@@ -7,6 +7,7 @@
 #include "editor/bridges/Lights/pf_Light.h"
 #include "editor/views/widget.h"
 #include "editor/Editor.h"
+#include "editor/EditorEvents.h"
 
 
 /// <summary>
@@ -67,6 +68,7 @@ namespace pye
 							LightsCollectionView.selectedLight = &ref;
 
 							// TODO send info to PickerPass
+							pye::EditorEvents::OnActorSelectedEvent.NotifyAll(&ref);
 						}
 						ImGui::PopID();
 
@@ -78,24 +80,30 @@ namespace pye
 					// -- Behaviour of the "+" button, open a small menu popup with 3 choices
 					if (ImGui::BeginPopupContextItem("AddLightPopup"))
 					{
+						pyr::BaseLight* bAdded = nullptr;
 						if (ImGui::Selectable("Point light"))
 						{
 							LightsCollectionView.sourceCollection->Points.push_back({});
 							LightsCollectionView.bIsWidgetDirty = true;
 							LightsCollectionView.selectedLight = nullptr;
+							bAdded = &LightsCollectionView.sourceCollection->Points.back();
 						}
 						if (ImGui::Selectable("Spot light")) 
 						{
 							LightsCollectionView.sourceCollection->Spots.push_back({}); 
 							LightsCollectionView.bIsWidgetDirty = true;
 							LightsCollectionView.selectedLight = nullptr;
+							bAdded = &LightsCollectionView.sourceCollection->Spots.back();
 						}
 						if (ImGui::Selectable("Directional light"))
 						{
 							LightsCollectionView.sourceCollection->Directionals.push_back({});
 							LightsCollectionView.bIsWidgetDirty = true;
 							LightsCollectionView.selectedLight = nullptr;
+							bAdded = &LightsCollectionView.sourceCollection->Directionals.back();
 						}
+						if (bAdded) pye::EditorEvents::OnActorAddedEvent.NotifyAll();
+						//if (bAdded) pye::EditorEvents::OnActorAddedEvent.NotifyAll(bAdded);
 						ImGui::SetNextItemWidth(-FLT_MIN);
 						ImGui::EndPopup();
 					}
@@ -114,6 +122,8 @@ namespace pye
 							{
 								PYR_LOG(LogWidgets, INFO, "Removing light.");
 								LightsCollectionView.sourceCollection->RemoveLight(LightsCollectionView.selectedLight->sourceLight);
+								//pye::EditorEvents::OnActorRemovedEvent.NotifyAll(LightsCollectionView.selectedLight->sourceLight);
+								pye::EditorEvents::OnActorRemovedEvent.NotifyAll();
 								LightsCollectionView.removeLight(*LightsCollectionView.selectedLight);
 
 								// Try to select automatically next light
@@ -212,7 +222,7 @@ namespace pye
 					if (ImGui::DragFloat("Hard light angle", &sourceLight->insideAngle, 0.05f, 0.f, XM_PI) +
 						ImGui::DragFloat("Fall-off angle", &sourceLight->outsideAngle, 0.05f, 0.0f, XM_PI))
 					{
-						sourceLight->shadow_projection.fovy = std::clamp<float>((sourceLight->insideAngle + sourceLight->outsideAngle) * 2.F, 0.01, XM_PI);
+						sourceLight->shadow_projection.fovy = std::clamp<float>((sourceLight->insideAngle + sourceLight->outsideAngle) * 2.F, 0.01f, XM_PI);
 					}
 					ImGui::DragFloat("SpecularFactor", &sourceLight->specularFactor, 1.0f, 0.F);
 					break;

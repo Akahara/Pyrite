@@ -167,8 +167,9 @@ void Effect::bind() const
 void Effect::unbindResources()
 {
   auto &context = Engine::d3dcontext();
-  constexpr ID3D11ShaderResourceView *emptyResources[10]{};
+  constexpr ID3D11ShaderResourceView *emptyResources[128]{nullptr};
   context.PSSetShaderResources(0, static_cast<UINT>(std::size(emptyResources)), emptyResources);
+  context.VSSetShaderResources(0, static_cast<UINT>(std::size(emptyResources)), emptyResources);
 }
 
 void Effect::bindTexture(const Texture &texture, const std::string &name) const

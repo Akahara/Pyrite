@@ -33,6 +33,9 @@ namespace pyr
         void setEnable(bool bEnabled) { m_bIsEnabled = bEnabled; }
         bool isEnabled()  const noexcept { return m_bIsEnabled; }
 
+        virtual void OpenDebugWindow() { }
+        virtual bool HasDebugWindow() { return false;  }
+
 
         virtual void apply() = 0;
         virtual void update(float dt) {}; // should be useless, idk yet

@@ -22,8 +22,8 @@ namespace pyr
         vec4 Ka = vec4{1.f,.0f,1.f,1.F}; // color
         vec4 Ks = vec4{ 1.f,1.f,1.f,1.F }; // specular
         vec4 Ke; // emissive
-        float Roughness = 0.3f; // specular exponent
-        float Metallic = 1.F; // specular exponent
+        float Roughness = 0.4f; // specular exponent
+        float Metallic = 0.2F; // specular exponent
         float Ni = 0.04f; // optical density 
         float d = 0.f; // transparency
     };
@@ -180,7 +180,6 @@ public:
         return globalMaterialId;
     }
 
-
     static const Effect* RegisterOrGetCachedShader(const std::filesystem::path& renderShaderPath);
 
     static const Effect* GetDefaultGGXShader()
@@ -188,6 +187,12 @@ public:
         auto& bank = Get();
         static auto defaultGGXShader = bank.m_grr.loadEffect(L"res/shaders/ggx.fx", InputLayout::MakeLayoutFromVertex<RawMeshData::mesh_vertex_t>());
         return defaultGGXShader;
+    }
+
+    static const std::unordered_map<mat_id_t, std::shared_ptr<Material>>& GetAllMaterials()
+    {
+        auto& bank = Get();
+        return bank.elements;
     }
 
 private:

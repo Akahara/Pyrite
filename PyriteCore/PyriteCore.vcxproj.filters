@@ -45,6 +45,8 @@
     <ClCompile Include="src\display\RenderGraph\RenderGraph.cpp" />
     <ClCompile Include="src\world\Billboards\Billboard.cpp" />
     <ClCompile Include="src\world\Shadows\Lightmap.cpp" />
+    <ClCompile Include="src\utils\Delegate.cpp" />
+    <ClCompile Include="vendor\imNodesFlow\imnodes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -121,6 +123,9 @@
     <ClInclude Include="src\world\Shadows\Lightmap.h" />
     <ClInclude Include="src\world\Tools\SceneRenderTools.h" />
     <ClInclude Include="src\world\Tools\CommonConstantBuffers.h" />
+    <ClInclude Include="src\utils\Delegate.h" />
+    <ClInclude Include="vendor\imNodesFlow\imnodes.h" />
+    <ClInclude Include="vendor\imNodesFlow\imnodes_internal.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

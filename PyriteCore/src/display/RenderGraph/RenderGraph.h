@@ -12,6 +12,7 @@ namespace pyr
     {
         RegisteredRenderableActorCollection ActorsToRender; // make this a ref
         std::string debugName = "Main scene render graph"; 
+        pyr::Camera* contextCamera = nullptr; 
     };
 
     class RenderGraph
@@ -27,6 +28,7 @@ namespace pyr
     public:
 
         RenderGraphResourceManager& getResourcesManager() noexcept { return m_manager; }
+        const RenderGraphResourceManager& getResourcesManager() const noexcept { return m_manager; }
         const RenderContext& GetContext() const { return m_renderContext; }
         RenderContext& GetContext() { return m_renderContext; }
     public:
