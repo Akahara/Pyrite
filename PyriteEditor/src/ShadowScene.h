@@ -47,7 +47,6 @@ namespace pye
         {
 
 #pragma region RDG
-
             SceneRenderGraph.addPass(&m_depthPrePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
             SceneRenderGraph.addPass(&m_forwardPass);
