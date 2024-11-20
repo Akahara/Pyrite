@@ -180,8 +180,28 @@ namespace pye
 
 				ImGui::Checkbox("IsOn", &light.sourceLight->isOn);
 				ImGui::Separator();
-				ImGui::Checkbox("Cast dynamic shadows", (bool*)&light.sourceLight->shadowMode);
-				if (light.sourceLight->shadowMode == pyr::DynamicShadow && light.sourceLight->getType() != pyr::LightTypeID::Point)
+
+				const char* items[] = { "No shadows", "Dynamic Shadows", "RSM"};
+				int item_selected_idx = static_cast<int>(light.sourceLight->shadowMode); // Here we store our selected data as an index.
+				if (ImGui::BeginListBox("Shadow casting type"))
+				{
+					for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+					{
+						const bool is_selected = (item_selected_idx == n);
+						if (ImGui::Selectable(items[n], is_selected))
+						{
+							item_selected_idx = n;
+							light.sourceLight->shadowMode = static_cast<pyr::ShadowMode>(item_selected_idx);
+						}
+
+						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndListBox();
+				}
+
+				if (light.sourceLight->shadowMode <= pyr::DynamicShadow && light.sourceLight->getType() != pyr::LightTypeID::Point)
 				{
 					ImGui::Text("Projection Parameters");
 					if (pyr::DirectionalLight* asDirectional = static_cast<pyr::DirectionalLight*>(light.sourceLight))
@@ -191,7 +211,7 @@ namespace pye
 						ImGui::SliderFloat("zNear", &asDirectional->shadow_projection.zNear, 0.01F, 1.F);
 						ImGui::SliderFloat("zFar", &asDirectional->shadow_projection.zFar,  1.F, 100.F);
 					}
-					if (pyr::SpotLight* asSpotlight = static_cast<pyr::SpotLight*>(light.sourceLight))
+					else if (pyr::SpotLight* asSpotlight = static_cast<pyr::SpotLight*>(light.sourceLight))
 					{
 						ImGui::SliderFloat("Fov", &asSpotlight->shadow_projection.fovy, 0.01f, XM_PI);
 						ImGui::SliderFloat("zNear", &asSpotlight->shadow_projection.zNear, 0.01F, 1.F);

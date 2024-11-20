@@ -22,6 +22,31 @@ struct Light
     float pading;
 };
 
+//==================================================================================================================================================================//
+// -- Flux computation for a light
+
+float Flux(Light sourceLight)
+{
+    return 0;
+}
+
+float Flux_Spotlight(Light sourceLight)
+{
+    return 0;
+}
+
+float Flux_Pointlight(Light sourceLight)
+{
+    return 0;
+}
+
+float Flux_Directionalight(Light sourceLight)
+{
+    return 0;
+}
+
+//==================================================================================================================================================================//
+
 // -- Thank you mister gpt
 float4x4 CreateViewProjectionMatrixForLight_Ortho(Light light)
 {

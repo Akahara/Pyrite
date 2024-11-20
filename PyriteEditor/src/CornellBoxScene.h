@@ -8,6 +8,7 @@
 #include "display/VertexBuffer.h"
 #include "display/RenderGraph/RenderGraph.h"
 #include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
+#include "display/RenderGraph/BuiltinPasses/RSMComputePass.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
 #include "CubemapBuilderScene.h"
@@ -43,6 +44,7 @@ namespace pye
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
         pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
+        pyr::BuiltinPasses::ReflectiveShadowMapComputePass  rsmPass;
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
@@ -68,6 +70,7 @@ namespace pye
             SceneRenderGraph.addPass(&m_depthPrePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
             SceneRenderGraph.addPass(&m_forwardPass);
+            SceneRenderGraph.addPass(&rsmPass);
             SceneRenderGraph.addPass(&m_billboardsPass);
             SceneRenderGraph.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             SceneRenderGraph.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");

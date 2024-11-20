@@ -55,8 +55,8 @@ public:
 
         pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
 
-        // -- Get all the lights in the context, and bind them
-        const pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
+        // -- Get all the lights in the context and create shadow map for those who want lol
+        pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
         auto castsShadows = [](pyr::BaseLight* light) -> bool { return light->isOn && light->shadowMode == pyr::DynamicShadow; };
         int shadow_map_index = 0;
 
@@ -77,7 +77,7 @@ public:
         static TextureArray empty_Array2D{ 1,1, 1, TextureArray::Texture2D, false };
         static TextureArray empty_Array3D{ 1,1, 1, TextureArray::TextureCube, false };
 
-        if (!owner->GetContext().ActorsToRender.lights.Spots.empty() || !owner->GetContext().ActorsToRender.lights.Directionals.empty())
+        if (!lights.Spots.empty() || !lights.Directionals.empty())
         {
             for (int i = 0; i < 16; i++)
             {
@@ -85,7 +85,7 @@ public:
             }
         }
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Points, [&](pyr::PointLight& light) {
+        std::ranges::for_each(lights.Points, [&](pyr::PointLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Cubemap lightmap = pyr::SceneRenderTools::MakeSceneDepthCubemapFromPoint(owner->GetContext().ActorsToRender, light.GetTransform().position, lightmaps_3D_fbos[lightmaps_3D.size()]);
@@ -94,7 +94,7 @@ public:
             }
         });
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Spots, [&](pyr::SpotLight& light) {
+        std::ranges::for_each(lights.Spots, [&](pyr::SpotLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Camera camera{};
@@ -108,7 +108,7 @@ public:
             }
             });
 
-        std::ranges::for_each(owner->GetContext().ActorsToRender.lights.Directionals, [&](pyr::DirectionalLight& light) {
+        std::ranges::for_each(lights.Directionals, [&](pyr::DirectionalLight& light) {
             if (castsShadows(&light))
             {
                 pyr::Camera camera{};
@@ -128,8 +128,10 @@ public:
         if (!lightmaps_3D.empty())
             TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
 
+        // -- Create raw light buuffer
+
         LightsBuffer::data_t light_data{};
-        std::copy_n(owner->GetContext().ActorsToRender.lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
+        std::copy_n(lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
 
         pLightBuffer->setData(light_data);
 

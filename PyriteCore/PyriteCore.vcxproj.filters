@@ -126,6 +126,9 @@
     <ClInclude Include="src\utils\Delegate.h" />
     <ClInclude Include="vendor\imNodesFlow\imnodes.h" />
     <ClInclude Include="vendor\imNodesFlow\imnodes_internal.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ShadowComputePass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMComputePass.h" />
+    <ClInclude Include="src\world\Shadows\ReflectiveShadowMap.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

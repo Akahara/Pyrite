@@ -14,9 +14,13 @@ public:
   using target_t = uint8_t;
   enum Target : target_t {
     COLOR_0       = 1 << 0,
-    DEPTH_STENCIL = 1 << 1,
-    __COUNT       = 2,
-    MULTISAMPLED  = 1 << 2,
+    COLOR_1       = 1 << 1,
+    COLOR_2       = 1 << 2,
+    COLOR_3       = 1 << 3,
+    DEPTH_STENCIL = 1 << 4,
+    __COUNT_COLOR = 4,
+    __COUNT       = 5,
+    MULTISAMPLED  = 1 << 5,
   };
 
   FrameBuffer() : m_width(0), m_height(0) {}
@@ -45,19 +49,23 @@ public:
   void clearTargets() const;
   void setDepthOverride(ID3D11DepthStencilView* depth);
   Texture getTargetAsTexture(Target target) const;
+  unsigned int GetColoredTargetCount() const;
 
   static size_t targetTypeToIndex(Target target);
 private:
 
   static std::vector<FrameBuffer *> s_frameBuffersStack;
+  void CreateColorTarget(Target colorTarget, bool bIsMultisampled = false);
 
   unsigned int m_width, m_height;
   bool m_keepTextures = false;
   std::vector<ID3D11Texture2D*> m_textures;
   std::array<Texture, Target::__COUNT> m_targetsAsTextures;
-  ID3D11RenderTargetView *m_renderTargetView = nullptr;
+  //ID3D11RenderTargetView *m_renderTargetView = nullptr;
   ID3D11DepthStencilView *m_depthStencilView = nullptr;
   ID3D11DepthStencilView *m_overridenDepth = nullptr;
+
+  std::array<ID3D11RenderTargetView*, Target::__COUNT_COLOR> m_renderTargetViews;
 };
 
 class FrameBufferPipeline {

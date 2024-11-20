@@ -29,7 +29,7 @@ enum ShadowMode : uint32_t
 {
 	NoShadow = 0,
 	DynamicShadow = 1,
-	StaticShadow = 2, // < will never implement this
+	DynamicShadow_RSM = 2, // < will never implement this
 };
 
 enum ShadowMapSlot : int
