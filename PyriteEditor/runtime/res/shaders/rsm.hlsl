@@ -69,7 +69,7 @@ PS_OUT RSMGenerationFS(VS_OUT psIn)
                     normalize(sourceLight.direction.xyz)
             ));
     float t = smoothstep(0, 1, (pixelToSpotAngle - cos(largeAngle)) / (cos(smallAngle) - cos(largeAngle)));
-    //t *= sourceLight.strength;
+    t *= (sourceLight.strength / 4.F);
     
     ps_out.Flux = float4(albedo * t, 1);
     

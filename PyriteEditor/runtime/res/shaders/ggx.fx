@@ -111,7 +111,7 @@ float3 sampleFromTexture(Texture2D source, float2 uv)
 
 //======================================================================================================================//
 
-
+Texture2D GI_CompositeTexture;
 Texture2D mat_albedo;
 Texture2D mat_normal ;
 Texture2D mat_ao ;
@@ -279,6 +279,14 @@ float4 GGXPixelShader(VertexOut vsIn, float4 vpos : SV_Position) : SV_Target
     int w, h;
     ssaoTexture.GetDimensions(w, h);
     occlusion *= ssaoTexture.Load(float3(vpos.x % w, vpos.y % h, vpos.z));
+    
+    
+    int gi_w, gi_h;
+    GI_CompositeTexture.GetDimensions(gi_w, gi_h);
+    //float3 GI = GI_CompositeTexture.Sample(MeshTextureSampler, vsIn.uv).rgb;
+    float3 GI = GI_CompositeTexture.Load(float3((vpos.x / w) * gi_w, (vpos.y / h) * gi_h, vpos.z));
+    return float4(GI, 1);
+    
     float3 ambient = (kD * diffuse + specular) * occlusion;
     
     // -- Tonemapping -- //

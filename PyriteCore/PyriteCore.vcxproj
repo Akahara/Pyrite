@@ -149,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMComputePass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMGIPass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ShadowComputePass.h" />
     <ClInclude Include="src\utils\Delegate.h" />
     <ClInclude Include="src\world\Shadows\Lightmap.h" />

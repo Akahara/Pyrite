@@ -210,7 +210,9 @@ namespace pye
 
                 m_requestedMousePosition = pyr::UserInputs::getMousePosition();
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
-                m_idTarget.setDepthOverride(m_inputs["depthBuffer"].res.toDepthStencilView());
+
+                pyr::Texture depthPrePassBuffer = std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
+                m_idTarget.setDepthOverride(depthPrePassBuffer.toDepthStencilView());
 
                 auto renderDoc = pyr::RenderDoc::Get();
 #if DEBUG_PICKER
@@ -222,20 +224,6 @@ namespace pye
                 pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = boundCamera->getViewProjectionMatrix(), .pos = boundCamera->getPosition() });
                 for (const pyr::StaticMesh* smesh : owner->GetContext().ActorsToRender.meshes)
                 {
-                    // Do not render already selected actors ?
-                    // TODO : this could go into an editor setting thing
-                    //
-
-                    // TODO : To get this to work properly, we need another depth pass, which would also be correct as the editor pass would come as a standalone injection to a rendergraph
-                    //if (std::find_if(selectedActors.begin(), selectedActors.end(), [smesh](pye::EditorActor* selectedActor)
-                    //{
-                    //        auto mesh = dynamic_cast<pye::pf_StaticMesh*>(selectedActor);
-                    //        return mesh && mesh->sourceMesh == smesh;
-                    //}) != selectedActors.end())
-                    //{
-	                //    continue;
-                    //}
-
 
                     smesh->bindModel();
                     pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = smesh->GetTransform().getWorldMatrix() });
@@ -435,6 +423,7 @@ namespace pye
             /// Could use some improvements.
             void RenderSelectedActors()
             {
+
                 // -- 0 . Clear and update buffers
                 m_target.clearTargets();
                 m_target.bind();
@@ -442,8 +431,9 @@ namespace pye
 
                 // -- 1 . Depth grid effect and selected meshes depth buffer. We store billboards separatly and don't render the grid (they are always on top for now)
                 pyr::RenderProfiles::pushBlendProfile(pyr::BlendProfile::BLEND);
+                pyr::Texture depthPrePassBuffer = std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
 
-                m_gridDepthEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
+                m_gridDepthEffect->bindTexture(depthPrePassBuffer, "depthBuffer");
                 m_gridDepthEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
                 std::vector<const pyr::Billboard*> selectedBillboards; // < dirty thing
@@ -493,12 +483,13 @@ namespace pye
                 }
 
                 // -- 2 . Compute outline
+
                 m_target.unbind();
                 pyr::Texture selectedMeshesDepth = m_target.getTargetAsTexture(pyr::FrameBuffer::DEPTH_STENCIL);
                 m_targetNoDepth.clearTargets();
                 m_targetNoDepth.bind();
                 m_outlineEffect->bindTexture(selectedMeshesDepth, "selectedMeshesDepth");
-                m_outlineEffect->bindTexture(m_inputs["depthBuffer"].res, "sceneDepth");
+                m_outlineEffect->bindTexture(depthPrePassBuffer, "sceneDepth");
                 m_outlineEffect->bind();
                 pyr::Engine::d3dcontext().Draw(3, 0);
                 m_outlineEffect->unbindResources();

@@ -9,6 +9,8 @@
 #include "display/FrameBuffer.h"
 #include "display/RenderProfiles.h"
 
+#include "world/Lights/Light.h"
+
 #include "world/Shadows/ReflectiveShadowMap.h"
 
 #include <ranges>
@@ -33,11 +35,35 @@ namespace pyr
 
             pyr::Effect* RSMComputeEffect = m_registry.loadEffect(L"res/shaders/rsm.hlsl", InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
 
+            static constexpr int MAX_RSM_COUNT = 8;
+            static constexpr unsigned int RESOLUTION = 128;
+            static constexpr unsigned int LOW_RESOLUTION = 32;
+
+            TextureArray RSM_WorldPos_TextureArray      { RESOLUTION,RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_Normals_TextureArray       { RESOLUTION,RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_Flux_TextureArray          { RESOLUTION,RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_DepthBuffers_TextureArray  { RESOLUTION,RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D, true };
+
+            TextureArray RSM_LowRes_WorldPos_TextureArray{ LOW_RESOLUTION,LOW_RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_LowRes_Normals_TextureArray{ LOW_RESOLUTION,LOW_RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_LowRes_Flux_TextureArray{ LOW_RESOLUTION,LOW_RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D };
+            TextureArray RSM_LowRes_DepthBuffers_TextureArray{ LOW_RESOLUTION,LOW_RESOLUTION, MAX_RSM_COUNT, TextureArray::Texture2D, true };
+
         public:
 
             ReflectiveShadowMapComputePass(unsigned int width, unsigned int height) 
             {
                 displayName = "RSM Compute";
+
+                producesResource("RSM_WorldPos_TextureArray", RSM_WorldPos_TextureArray);
+                producesResource("RSM_Normals_TextureArray", RSM_Normals_TextureArray);
+                producesResource("RSM_Flux_TextureArray", RSM_Flux_TextureArray);
+                producesResource("RSM_DepthBuffers_TextureArray", RSM_DepthBuffers_TextureArray);
+
+                producesResource("RSM_LowRes_WorldPos_TextureArray",        RSM_LowRes_WorldPos_TextureArray);
+                producesResource("RSM_LowRes_Normals_TextureArray",         RSM_LowRes_Normals_TextureArray);
+                producesResource("RSM_LowRes_Flux_TextureArray",            RSM_LowRes_Flux_TextureArray);
+                producesResource("RSM_LowRes_DepthBuffers_TextureArray",    RSM_LowRes_DepthBuffers_TextureArray);
             }
 
 
@@ -48,7 +74,7 @@ namespace pyr
             {
                 if (!PYR_ENSURE(owner)) return;
                 if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
-                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(), .pos = owner->GetContext().contextCamera->getPosition() });
+
 
                 // -- Fetch the lights that want to cast create RSM (which would be the one with shadowMode == DynamicShadow_RSM)
 
@@ -58,16 +84,53 @@ namespace pyr
                 auto filtered = lights.Spots | std::ranges::views::filter([&castsShadows](const pyr::SpotLight& spotlight) { return castsShadows(&spotlight); });
                 if (filtered.empty()) return;
 
-                pLightBuffer->setData(SingleLightBuffer::data_t{ .light = convertLightTo_HLSL( lights.Spots[0]) });
 
-                static ReflectiveShadowMap rsm { 512,512, lights.Spots.data() };
-                rsm.GetFramebuffer().clearTargets();
+                pyr::Camera camera{};
+                pyr::SpotLight& light = lights.Spots[0];
+                camera.setProjection(light.shadow_projection);
+                camera.setPosition(light.GetTransform().position);
+                vec3 fuck = { light.GetTransform().rotation.x, light.GetTransform().rotation.y, light.GetTransform().rotation.z };
+                camera.lookAt(light.GetTransform().position + fuck);
+
+                pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = camera.getViewProjectionMatrix(), .pos = camera.getPosition() });
+                pLightBuffer->setData(SingleLightBuffer::data_t{ .light = convertLightTo_HLSL(light) });
+
+                static ReflectiveShadowMap rsm { RESOLUTION,RESOLUTION, lights.Spots.data() };
+                static ReflectiveShadowMap rsm_low { LOW_RESOLUTION,LOW_RESOLUTION, lights.Spots.data() };
+
 
                 Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
-                rsm.GetFramebuffer().bind();
 
+                rsm_low.GetFramebuffer().clearTargets();
+                rsm_low.GetFramebuffer().bind();
+                RenderFn();
+                rsm_low.GetFramebuffer().unbind();
+
+                rsm.GetFramebuffer().clearTargets();
+                rsm.GetFramebuffer().bind();
+                RenderFn();
+                rsm.GetFramebuffer().unbind();
+
+                TextureArray::CopyToTextureArray({ rsm.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::WorldPos) }, RSM_WorldPos_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Normal) }, RSM_Normals_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Flux) }, RSM_Flux_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Depth) }, RSM_DepthBuffers_TextureArray);
+
+
+                TextureArray::CopyToTextureArray({ rsm_low.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::WorldPos) },   RSM_LowRes_WorldPos_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm_low.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Normal) },     RSM_LowRes_Normals_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm_low.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Flux) },       RSM_LowRes_Flux_TextureArray);
+                TextureArray::CopyToTextureArray({ rsm_low.GetFramebuffer().getTargetAsTexture(ReflectiveShadowMap::Targets::Depth) },      RSM_LowRes_DepthBuffers_TextureArray);
+
+                pyr::RenderProfiles::popDepthProfile();
+
+
+            }
+
+            void RenderFn()
+            {
                 // -- Render all objects 
                 for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
                 {
@@ -95,15 +158,7 @@ namespace pyr
                         RSMComputeEffect->unbindResources();
                     }
                 }
-
-                rsm.GetFramebuffer().unbind();
-
-                pyr::RenderProfiles::popDepthProfile();
-
-
             }
-
-
         };
     }
 }

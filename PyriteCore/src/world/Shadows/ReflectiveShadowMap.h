@@ -17,17 +17,17 @@ namespace pyr
 	class ReflectiveShadowMap
 	{
 
-	private:
-
-		enum Targets
+	public:
+		enum Targets : uint8_t
 		{
 			Depth		= pyr::FrameBuffer::DEPTH_STENCIL,
 			WorldPos	= pyr::FrameBuffer::COLOR_0,
 			Normal		= pyr::FrameBuffer::COLOR_1,
 			Flux		= pyr::FrameBuffer::COLOR_2,
-
+			__COUNT		= 4
 		};
 
+	private:
 		// No support for point light currently as cubemap framebuffers dont have multiple targets
 		pyr::BaseLight* m_sourceLight;
 		pyr::FrameBuffer m_framebuffer;

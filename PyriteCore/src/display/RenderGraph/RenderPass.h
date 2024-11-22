@@ -14,12 +14,8 @@ namespace pyr
     class RenderPass
     {
     protected:
-
-
-        // this is temp. Maybe we should have a resource manager for the whole graph or somtuhing. idk
-        std::unordered_map<std::string, NamedInput> m_inputs; // this is what the pass has as inputs
+        
         std::unordered_map<std::string, ResourceGetter> m_outputs;
-
         std::set<std::string> m_requirements;
 
     public:
@@ -40,12 +36,24 @@ namespace pyr
         virtual void apply() = 0;
         virtual void update(float dt) {}; // should be useless, idk yet
 
+    public:
 
-        void producesResource(const char* resName, Texture textureHandle) {
+        // -- Resources handling
+
+        void producesResource(const char* resName, Texture textureHandle) 
+        {
             m_outputs[resName] = [textureHandle]() -> Texture { return textureHandle; };
         }
 
-        void addNamedInput(const NamedInput& input) { m_inputs[input.label] = input; }
+        void producesResource(const char* resName, Cubemap cubemapHandle)
+        {
+            m_outputs[resName] = [cubemapHandle]() -> Cubemap { return cubemapHandle; };
+        }
+
+        void producesResource(const char* resName, const TextureArray& textureArray)
+        {
+            m_outputs[resName] = [&textureArray]() -> const TextureArray& { return textureArray; };
+        }
 
         // This is bad
         std::optional<NamedOutput> getOutputResource(const char* resName) noexcept
@@ -59,17 +67,16 @@ namespace pyr
 
             return std::nullopt;
         }
-        std::optional<NamedInput> getInputResource(std::string_view resName) const noexcept
-        {
-            if (m_inputs.contains(std::string(resName)))
-            {
-                const NamedInput& namedInput = m_inputs.at(std::string(resName));
-                if (!namedInput.origin->m_bIsEnabled) return std::nullopt;
-                return namedInput;
-            }
-
-            return std::nullopt;
-        }
+        //std::optional<NamedInput> getInputResource(std::string_view resName) const noexcept
+        //{
+        //    if (m_inputs.contains(std::string(resName)))
+        //    {
+        //        const NamedInput& namedInput = m_inputs.at(std::string(resName));
+        //        if (!namedInput.origin->m_bIsEnabled) return std::nullopt;
+        //        return namedInput;
+        //    }
+        //    return std::nullopt;
+        //}
 
     };
 

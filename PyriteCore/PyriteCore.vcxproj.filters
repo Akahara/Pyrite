@@ -129,6 +129,7 @@
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ShadowComputePass.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMComputePass.h" />
     <ClInclude Include="src\world\Shadows\ReflectiveShadowMap.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMGIPass.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />

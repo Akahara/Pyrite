@@ -53,7 +53,8 @@ public:
         Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTONLY_DEPTH);
 
-        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(m_inputs.at("depthBuffer").res.toDepthStencilView()); // < make sure this input is linked in the scene rdg
+        Texture depthPrePassBuffer = std::get<Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
+        pyr::FrameBuffer::getActiveFrameBuffer().setDepthOverride(depthPrePassBuffer.toDepthStencilView()); // < make sure this input is linked in the scene rdg
 
         // -- Get all the lights in the context and create shadow map for those who want lol
         pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
@@ -128,12 +129,14 @@ public:
         if (!lightmaps_3D.empty())
             TextureArray::CopyToTextureArray(lightmaps_3D, lightmaps_3DArray);
 
-        // -- Create raw light buuffer
+        // -- Create raw light buffer
 
         LightsBuffer::data_t light_data{};
         std::copy_n(lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
-
         pLightBuffer->setData(light_data);
+
+        std::optional<NamedResource::resource_t> GI_CompositeTexture = owner->getResourcesManager().fetchOptionalResource("GI_CompositeIndirectIllumination");
+
 
         // -- Render all objects 
         for (const StaticMesh* mesh : owner->GetContext().ActorsToRender.meshes)
@@ -141,7 +144,10 @@ public:
             mesh->bindModel();
             pActorBuffer->setData(ActorBuffer::data_t{ .modelMatrix = mesh->GetTransform().getWorldMatrix() });
             std::span<const SubMesh> submeshes = mesh->getModel()->getRawMeshData()->getSubmeshes();
-            std::optional<NamedInput> ssaoTexture = getInputResource("ssaoTexture_blurred");
+
+            pyr::Texture depthPrePassBuffer = std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
+
+            std::optional<NamedResource::resource_t> ssaoTexture = owner->getResourcesManager().fetchOptionalResource("ssaoTexture_blurred");
             
             for (auto& submesh : submeshes)
             {
@@ -162,8 +168,12 @@ public:
                     effect->bindTexture(lightmaps_3DArray, "lightmaps_3D");
 
 
-                if (ssaoTexture) effect->bindTexture(ssaoTexture.value().res, "ssaoTexture");
+                if (ssaoTexture) effect->bindTexture(std::get<Texture>(ssaoTexture.value()), "ssaoTexture");
                 else effect->bindTexture(pyr::Texture::getDefaultTextureSet().WhitePixel , "ssaoTexture");
+
+                if (GI_CompositeTexture) effect->bindTexture(std::get<Texture>(GI_CompositeTexture.value()), "GI_CompositeTexture");
+                else effect->bindTexture(pyr::Texture::getDefaultTextureSet().BlackPixel, "GI_CompositeTexture");
+
                 if (submeshMaterial)
                 {
                     if (auto tex = submeshMaterial->getTexture(TextureType::ALBEDO); tex)    effect->bindTexture(*tex, "mat_albedo");

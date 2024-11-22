@@ -28,6 +28,8 @@ public:
 
   // standard constructor
   FrameBuffer(unsigned int width, unsigned int height, target_t targets);
+  FrameBuffer(target_t targets) : FrameBuffer(pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), targets)
+  {}
   // primary target constructor
   FrameBuffer(IDXGISwapChain *swapChain, ID3D11Device *device, unsigned int screenWidth, unsigned int screenHeight);
 
@@ -49,6 +51,8 @@ public:
   void clearTargets() const;
   void setDepthOverride(ID3D11DepthStencilView* depth);
   Texture getTargetAsTexture(Target target) const;
+  // Helper for classes that define another enum for clarity
+  Texture getTargetAsTexture(uint8_t target) const { return getTargetAsTexture(static_cast<Target>(target)); }
   unsigned int GetColoredTargetCount() const;
 
   static size_t targetTypeToIndex(Target target);

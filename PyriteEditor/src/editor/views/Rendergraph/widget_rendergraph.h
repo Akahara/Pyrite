@@ -10,6 +10,7 @@
 #include "display/RenderGraph/BuiltinPasses/ForwardPass.h"	
 #include "display/RenderGraph/RenderPass.h"	
 #include "display/RenderGraph/RenderGraph.h"	
+#include "display/RenderGraph/RDGResourcesManager.h"	
 
 #include "world/Mesh/StaticMesh.h"
 #include "world/Mesh/Model.h"
@@ -41,7 +42,7 @@ namespace pye
 			int id = 0;
 			std::unordered_map<std::string, int> resourceToInputMap;
 			std::unordered_map<int, std::vector<int>> inputToOutputsId;
-			std::unordered_map<int, pyr::RenderGraphResourceManager::PassResources> nodeIDToResources;
+			std::unordered_map<int, const pyr::RenderGraphResourceManager::PassResources*> nodeIDToResources;
 			std::unordered_map<pyr::RenderPass*, bool> bIsDebugWindowOpened;
 
 		public:
@@ -75,7 +76,17 @@ namespace pye
 							{
 								if (res.producedResources.contains(name))
 								{
-									ImGui::Image((void*)res.producedResources.at(name).res.getRawTexture(), ImVec2{ 128,128 });
+									pyr::NamedResource::resource_t resource = res.producedResources.at(name).res;
+
+									if (std::holds_alternative<pyr::Texture>(resource))
+									{
+										ImGui::Image((void*)std::get<pyr::Texture>(res.producedResources.at(name).res).getRawTexture(), ImVec2{ 128,128 });
+									}
+									else
+									{
+										// TODO implement display here
+									}
+
 									break;
 								}
 							}
@@ -90,7 +101,7 @@ namespace pye
 			{
 				int node_id = id++;
 				ImNodes::BeginNode(node_id);
-				nodeIDToResources[node_id] = resources;
+				nodeIDToResources[node_id] = &resources;
 
 
 				ImNodes::BeginNodeTitleBar();
@@ -177,10 +188,10 @@ namespace pye
 				{
 					height = 0;
 					// -- First check 
-					for (auto& [node_id, resources] : nodeIDToResources)
+					for (auto& [node_id, resources_ptr] : nodeIDToResources)
 					{
 						if (nodeIdToDepth.contains(node_id)) continue;
-						auto filtered = resources.incomingResources 
+						auto filtered = resources_ptr->incomingResources 
 										| std::ranges::views::keys
 										| std::ranges::views::filter([&](const std::string& name) { return !producedFounds.contains(name); });
 
@@ -190,11 +201,11 @@ namespace pye
 						}
 					}
 					// -- Then add produced outputs of everyone
-					for (auto& [node_id, resources] : nodeIDToResources)
+					for (auto& [node_id, resources_ptr] : nodeIDToResources)
 					{
 						// if the node has been solved the say that its produced resources are recorded
 						if (nodeIdToDepth.contains(node_id) && nodeIdToDepth.at(node_id).first == depth)
-							std::ranges::for_each(resources.producedResources | std::ranges::views::keys, [&](const std::string& name) { producedFounds.insert(name); });
+							std::ranges::for_each(resources_ptr->producedResources | std::ranges::views::keys, [&](const std::string& name) { producedFounds.insert(name); });
 					}
 
 					depth++;

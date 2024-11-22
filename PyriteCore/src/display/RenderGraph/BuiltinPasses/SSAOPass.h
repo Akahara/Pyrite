@@ -81,7 +81,7 @@ namespace pyr
                 m_ssaoEffect->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
                 m_ssaoEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
-                m_ssaoEffect->bindTexture(m_inputs["depthBuffer"].res, "depthBuffer");
+                m_ssaoEffect->bindTexture(std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer")), "depthBuffer");
                 m_ssaoEffect->bindTexture(m_randomTexture, "blueNoise");
                 m_ssaoEffect->setUniform<std::vector<vec4>>("u_kernel", m_kernel);
                 m_ssaoEffect->bind();
@@ -106,7 +106,9 @@ namespace pyr
 
                 ImGui::Begin("SSAO Pass Debug");
 
-                ImGui::Image((void*)m_inputs["depthBuffer"].res.getRawTexture(), ImVec2{ 256,256 });
+                pyr::Texture depthPrePassBuffer = std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
+
+                ImGui::Image((void*)depthPrePassBuffer.getRawTexture(), ImVec2{ 256,256 });
                 ImGui::Image((void*)m_ssaoTextureTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{ 256,256 });
                 ImGui::Image((void*)m_blurredSSAOTarget.getTargetAsTexture(FrameBuffer::COLOR_0).getRawTexture(), ImVec2{ 256,256 });
 

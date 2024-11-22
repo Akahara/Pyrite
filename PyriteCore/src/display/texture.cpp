@@ -265,8 +265,8 @@ TextureArray::TextureArray(size_t width, size_t height, size_t count, TextureTyp
 
 TextureArray::~TextureArray()
 {
-	DXRelease(m_textureArray);
-	DXRelease(m_resource);
+	//DXRelease(m_textureArray);
+	//DXRelease(m_resource);
 }
 
 void TextureArray::CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray)
@@ -278,17 +278,22 @@ void TextureArray::CopyToTextureArray(const std::vector<Texture>& textures, Text
 	if (!PYR_ENSURE(textures[0].getHeight() == outArray.getHeight())) return;
 
 	ID3D11Texture2D* resource = static_cast<ID3D11Texture2D*>(outArray.getRawResource());
+	ID3D11Texture2D* source_resource = static_cast<ID3D11Texture2D*>(textures[0].getRawResource());
+	D3D11_TEXTURE2D_DESC inDesc{}, outDesc{};
+	resource->GetDesc(&outDesc);
+	source_resource->GetDesc(&inDesc);
+	// todo ensure convertible
 
 	for (UINT i = 0; i < outArray.getTextureOrCubeCount() && i < textures.size(); ++i)
 	{
-		// Copy the texture to the corresponding slice in the array
+
 		pyr::Engine::d3dcontext().CopySubresourceRegion(
 			resource,
-			D3D11CalcSubresource(0, i, 1),		// MipSlice = 0, ArraySlice = i
-			0, 0, 0,                            // Destination X, Y, Z
-			textures[i].getRawResource(), 
-			0,                                  // Source subresource index
-			nullptr);                           // No source box, copy entire resource
+			D3D11CalcSubresource(0, i, 1),		 // MipSlice = 0, ArraySlice = i
+			0, 0, 0,                             // Destination X, Y, Z
+			textures[i].getRawResource(), 		 
+			0,                                   // Source subresource index
+			nullptr);                            // No source box, copy entire resource
 	}
 }
 

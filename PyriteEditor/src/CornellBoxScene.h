@@ -8,6 +8,7 @@
 #include "display/VertexBuffer.h"
 #include "display/RenderGraph/RenderGraph.h"
 #include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
+#include "display/RenderGraph/BuiltinPasses/RSMGIPass.h"
 #include "display/RenderGraph/BuiltinPasses/RSMComputePass.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
@@ -44,7 +45,8 @@ namespace pye
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
         pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
-        pyr::BuiltinPasses::ReflectiveShadowMapComputePass  rsmPass;
+        pyr::BuiltinPasses::ReflectiveShadowMapComputePass  RSMComputePass;
+        pyr::BuiltinPasses::ReflectiveShadowMap_GlobalIlluminationPass  RSMGIPass;
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
@@ -69,17 +71,41 @@ namespace pye
             m_camController.setCamera(&m_camera);
             SceneRenderGraph.addPass(&m_depthPrePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
+            SceneRenderGraph.addPass(&RSMComputePass);
+            SceneRenderGraph.addPass(&RSMGIPass);
             SceneRenderGraph.addPass(&m_forwardPass);
-            SceneRenderGraph.addPass(&rsmPass);
             SceneRenderGraph.addPass(&m_billboardsPass);
+
             SceneRenderGraph.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
             SceneRenderGraph.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture_blurred");
             SceneRenderGraph.getResourcesManager().addProduced(&m_SSAOPass, "ssaoTexture");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_WorldPos_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_Normals_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_Flux_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_DepthBuffers_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_WorldPos_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_Normals_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_Flux_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_DepthBuffers_TextureArray");
+            SceneRenderGraph.getResourcesManager().addProduced(&RSMGIPass, "GI_CompositeIndirectIllumination");
+
             SceneRenderGraph.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
 
             SceneRenderGraph.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
             SceneRenderGraph.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
             SceneRenderGraph.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMGIPass, "GI_CompositeIndirectIllumination", &m_forwardPass);
+
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_WorldPos_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_Normals_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_Flux_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_DepthBuffers_TextureArray", &RSMGIPass);
+
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_WorldPos_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_Normals_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_Flux_TextureArray", &RSMGIPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_DepthBuffers_TextureArray", &RSMGIPass);
+
             bool bIsGraphValid = SceneRenderGraph.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
 
@@ -90,13 +116,11 @@ namespace pye
                 sceneMeshes.back().GetTransform().scale = { 10,10,10 };
             }
 
-            SceneActors.lights.Points.push_back({});
             SceneActors.lights.Spots.push_back({});
-            SceneActors.lights.Points.back().GetTransform().position = { 0,-5.F,0 };
             SceneActors.lights.Spots.back().GetTransform().position = { 0,14.F,28 };
             SceneActors.lights.Spots.back().GetTransform().rotation = { 0,0, -1.0f };
             SceneActors.lights.Spots.back().strength = 26.f;
-            SceneActors.lights.Spots.back().shadowMode = pyr::DynamicShadow;
+            SceneActors.lights.Spots.back().shadowMode = pyr::DynamicShadow_RSM;
 
             for (const auto& m : sceneMeshes)
             {

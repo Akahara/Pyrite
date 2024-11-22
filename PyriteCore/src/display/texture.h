@@ -96,7 +96,12 @@ private:
 public:
                                                                                 // v v v todo : pyr_pixelFormat ?
     TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly = false);
+
+
+
     ~TextureArray();
+
+    // -- GPU Copying
     static void CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray);
     static void CopyToTextureArray(const std::vector<Cubemap>& cubes, TextureArray& outArray);
     
