@@ -78,7 +78,7 @@ namespace pye
             specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
             m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
             m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-            m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+            //m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
             brdfLUT = cubemapScene.BRDF_Lut;
 
             m_ggxShader = m_registry.loadEffect(L"res/shaders/ggx.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
@@ -167,7 +167,7 @@ namespace pye
             m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
             m_SSAOPass.getSSAOEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-            m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+            //m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
             
             m_RDG.execute(pyr::RenderContext{ SceneActors });
 
@@ -188,7 +188,7 @@ namespace pye
                 specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
                 m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
                 m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+                //m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
                 m_ggxShader->bindCubemap(*m_irradianceMap, "irrandiance_map");
                 m_ggxShader->bindCubemap(*specularCubemap, "prefilterMap");
             }

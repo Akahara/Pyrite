@@ -1,3 +1,6 @@
+#ifndef CBUFFERS_HEADER_GUARD
+#define CBUFFERS_HEADER_GUARD 
+
 cbuffer InverseCameraBuffer
 {
 	float4x4 InverseViewProj;
@@ -16,4 +19,4 @@ cbuffer ActorBuffer
 	float4x4 ModelMatrix;	
 }
 
-
+#endif // CBUFFERS_HEADER_GUARD 

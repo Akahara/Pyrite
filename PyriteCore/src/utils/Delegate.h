@@ -23,9 +23,18 @@ class Delegate
 
 public:
 
+	Delegate() = default;
+	~Delegate() { RemoveAll(); }
+
+	Delegate(Delegate<FwdArgs...>&& moved)
+		: callbacks{ std::exchange(moved.callbacks, {}) }
+		, debugName{ std::exchange(moved.debugName, {}) }
+	{}
+
+
 	std::string debugName;
 
-	void NotifyAll(FwdArgs... args)
+	void NotifyAll(FwdArgs... args) const
 	{
 		for (auto& [handle, callback] : callbacks)
 			callback->invoke(args...);
@@ -70,7 +79,6 @@ public:
 		callbacks.clear();
 	}
 
-	~Delegate() { RemoveAll(); }
 
 private:
 

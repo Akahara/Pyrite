@@ -17,10 +17,12 @@ public:
     COLOR_1       = 1 << 1,
     COLOR_2       = 1 << 2,
     COLOR_3       = 1 << 3,
-    DEPTH_STENCIL = 1 << 4,
-    __COUNT_COLOR = 4,
-    __COUNT       = 5,
-    MULTISAMPLED  = 1 << 5,
+    COLOR_4       = 1 << 4,
+    COLOR_5       = 1 << 5,
+    __COUNT_COLOR = 6,
+    DEPTH_STENCIL = 1 << 6,
+    __COUNT       = 7,
+    MULTISAMPLED  = 1 << 7,
   };
 
   FrameBuffer() : m_width(0), m_height(0) {}
@@ -54,6 +56,7 @@ public:
   // Helper for classes that define another enum for clarity
   Texture getTargetAsTexture(uint8_t target) const { return getTargetAsTexture(static_cast<Target>(target)); }
   unsigned int GetColoredTargetCount() const;
+  vec2 GetDimensions() const { return { (float)m_width, (float)m_height }; }
 
   static size_t targetTypeToIndex(Target target);
 private:

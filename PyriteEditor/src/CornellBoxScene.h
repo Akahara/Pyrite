@@ -10,6 +10,10 @@
 #include "display/RenderGraph/BuiltinPasses/BuiltinPasses.h"
 #include "display/RenderGraph/BuiltinPasses/RSMGIPass.h"
 #include "display/RenderGraph/BuiltinPasses/RSMComputePass.h"
+#include "display/RenderGraph/BuiltinPasses/Deferred_LightPass.h"
+#include "display/RenderGraph/BuiltinPasses/Deferred_GeometryPass.h"
+#include "display/RenderGraph/BuiltinPasses/SkyboxPass.h"
+#include "display/RenderGraph/BuiltinPasses/ShadowComputePass.h"
 #include "engine/Engine.h"
 #include "scene/Scene.h"
 #include "CubemapBuilderScene.h"
@@ -41,12 +45,17 @@ namespace pye
         std::vector<std::shared_ptr<pyr::Model>> m_cornellBoxModels = pyr::MeshImporter::ImportMeshesFromFile(L"res/meshes/CornellBox/scene.gltf");
         std::vector<pyr::StaticMesh> sceneMeshes;
 
+        pyr::BuiltinPasses::Deferred_GeometryPass m_gPass;
+        pyr::BuiltinPasses::Deferred_LightPass m_lightPass;
+
         pyr::BuiltinPasses::ForwardPass     m_forwardPass;
         pyr::BuiltinPasses::SSAOPass        m_SSAOPass;
         pyr::BuiltinPasses::DepthPrePass    m_depthPrePass;
         pyr::BuiltinPasses::BillboardsPass  m_billboardsPass;
         pyr::BuiltinPasses::ReflectiveShadowMapComputePass  RSMComputePass;
         pyr::BuiltinPasses::ReflectiveShadowMap_GlobalIlluminationPass  RSMGIPass;
+        pyr::BuiltinPasses::ShadowComputePass  m_shadowComputePass;
+        pyr::BuiltinPasses::SkyboxPass          m_skyboxPass;
 
         pyr::Camera m_camera;
         pyr::FreecamController m_camController;
@@ -70,10 +79,16 @@ namespace pye
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
             SceneRenderGraph.addPass(&m_depthPrePass);
+            SceneRenderGraph.addPass(&m_shadowComputePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
             SceneRenderGraph.addPass(&RSMComputePass);
             SceneRenderGraph.addPass(&RSMGIPass);
             SceneRenderGraph.addPass(&m_forwardPass);
+            SceneRenderGraph.addPass(&m_gPass);
+            SceneRenderGraph.addPass(&m_lightPass);
+            
+            SceneRenderGraph.addPass(&m_skyboxPass);
+            
             SceneRenderGraph.addPass(&m_billboardsPass);
 
             SceneRenderGraph.getResourcesManager().addProduced(&m_depthPrePass, "depthBuffer");
@@ -88,13 +103,24 @@ namespace pye
             SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_Flux_TextureArray");
             SceneRenderGraph.getResourcesManager().addProduced(&RSMComputePass, "RSM_LowRes_DepthBuffers_TextureArray");
             SceneRenderGraph.getResourcesManager().addProduced(&RSMGIPass, "GI_CompositeIndirectIllumination");
+            SceneRenderGraph.getResourcesManager().addProduced(&m_gPass, "G_Buffer");
+            SceneRenderGraph.getResourcesManager().addProduced(&m_lightPass, "Deferred_Lightpass");
+
+            SceneRenderGraph.getResourcesManager().addProduced(&m_shadowComputePass, "Lightmaps_2D");
+            SceneRenderGraph.getResourcesManager().addProduced(&m_shadowComputePass, "Lightmaps_3D");
 
             SceneRenderGraph.getResourcesManager().addRequirement(&m_SSAOPass, "depthBuffer");
+            SceneRenderGraph.getResourcesManager().addRequirement(&m_skyboxPass, "depthBuffer");
+            
+            
 
             SceneRenderGraph.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_SSAOPass);
             SceneRenderGraph.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_forwardPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&m_depthPrePass, "depthBuffer", &m_skyboxPass);
             SceneRenderGraph.getResourcesManager().linkResource(&m_SSAOPass, "ssaoTexture_blurred", &m_forwardPass);
             SceneRenderGraph.getResourcesManager().linkResource(&RSMGIPass, "GI_CompositeIndirectIllumination", &m_forwardPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&m_shadowComputePass, "Lightmaps_3D", &m_forwardPass);
+            SceneRenderGraph.getResourcesManager().linkResource(&m_shadowComputePass, "Lightmaps_2D", &m_forwardPass);
 
             SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_WorldPos_TextureArray", &RSMGIPass);
             SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_Normals_TextureArray", &RSMGIPass);
@@ -105,6 +131,9 @@ namespace pye
             SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_Normals_TextureArray", &RSMGIPass);
             SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_Flux_TextureArray", &RSMGIPass);
             SceneRenderGraph.getResourcesManager().linkResource(&RSMComputePass, "RSM_LowRes_DepthBuffers_TextureArray", &RSMGIPass);
+
+
+            SceneRenderGraph.getResourcesManager().linkResource(&m_gPass, "G_Buffer", &m_lightPass);
 
             bool bIsGraphValid = SceneRenderGraph.getResourcesManager().checkResourcesValidity();
 #pragma endregion RDG
@@ -159,7 +188,7 @@ namespace pye
                 specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
                 m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
                 m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+                //m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
                 brdfLUT = cubemapScene.BRDF_Lut;
 
                 const pyr::Effect* ggxShader = pyr::MaterialBank::GetDefaultGGXShader();

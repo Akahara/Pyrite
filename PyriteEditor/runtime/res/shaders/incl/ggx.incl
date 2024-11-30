@@ -1,0 +1,95 @@
+#ifndef GGX_HEADER_GUARD
+#define GGX_HEADER_GUARD
+
+// Explanation and goal of this file : build the Render equation using GGX BRDF.
+// GGX Brdf is a brdf defined as
+//
+//      BRDF(x,w_i,w_o) = Kd * BRDF_lambert + Ks * BRDF_cook_torrance
+//  
+//      where Kd is the amount of light absorbed and ks reflected (kd + ks = 1 for energy conservation)
+//
+//
+// Lambertian bdrf is straightforward c/pi 
+// But what is BRDF_cook_torrance ?
+//
+//      BRDF_ct = (D * F * G) / (4*(w_o.dot(n))*(w_i.dot(n)))   
+//      
+//      where D, F and G are functions
+//
+//
+//  D is Normal Distribution , which basically relates to how smooth a surface is. D has multiple implementation possible.
+//  F is Fresnel, probably using schlick approximation
+//  G is the geometry , which is the self shadowing term. Basically ao
+//
+// Finally, we do an approximation of the rendering equation using a riemann sum, and i think thats it for GGX pbs
+
+//======================================================================================================================//
+
+#define PI 3.14159
+
+// -- Normal distribution function 
+float DistributionGGX(float3 normal, float3 halfway, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = dot(normal, halfway);
+    float NdotH2 = NdotH * NdotH;
+    
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.14159265 * denom * denom;
+
+    return a2 / denom;
+}
+
+// -- Geometry function
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+  
+float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+float3 fresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(saturate(1.0 - cosTheta), 5.0);
+}
+
+float3 fresnelSchlick(float3 H, float3 V, float3 F0)
+{
+    float cosTheta = dot(H, V);
+    return fresnelSchlick(cosTheta, F0);
+}
+
+float3 BRDF_CookTorrance(float3 radiance, float3 albedo, float3 L, float3 V, float3 pixelNormal, float roughness, float metallic, float3 F0)
+{
+    float3 H = normalize(L + V);
+    float NDF = DistributionGGX(pixelNormal, H, roughness);
+    float G = GeometrySmith(pixelNormal, V, L, roughness);
+    float3 F = fresnelSchlick(H, V, F0);
+    float3 kS = F;
+    float3 kD = float3(1, 1, 1) - kS;
+    kD *= 1.f - metallic;
+    float NDotL = saturate(dot(pixelNormal, L));
+    float3 numerator = NDF * G * F;
+    float denominator = 4.0 * saturate(dot(V, pixelNormal)) * NDotL;
+    float3 specular = numerator / (denominator + 0.0001);
+        
+    return ((kD * albedo / PI) + specular) * radiance * NDotL;
+}
+
+#endif // GGX_HEADER_GUARD

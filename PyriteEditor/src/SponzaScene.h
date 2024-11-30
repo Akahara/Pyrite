@@ -97,7 +97,7 @@ namespace pye
                 specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
                 m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
                 m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+                //m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
                 brdfLUT = cubemapScene.BRDF_Lut;
 
                 const pyr::Effect* ggxShader = pyr::MaterialBank::GetDefaultGGXShader();

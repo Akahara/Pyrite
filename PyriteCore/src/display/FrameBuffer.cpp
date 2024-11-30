@@ -31,10 +31,13 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 
   m_renderTargetViews = {};
 
+  // lol
   if (targets & Target::COLOR_0) {  CreateColorTarget(Target::COLOR_0, isMultisampled);  }
   if (targets & Target::COLOR_1) {  CreateColorTarget(Target::COLOR_1, isMultisampled);  }
   if (targets & Target::COLOR_2) {  CreateColorTarget(Target::COLOR_2, isMultisampled);  }
   if (targets & Target::COLOR_3) {  CreateColorTarget(Target::COLOR_3, isMultisampled);  }
+  if (targets & Target::COLOR_4) {  CreateColorTarget(Target::COLOR_4, isMultisampled);  }
+  if (targets & Target::COLOR_5) {  CreateColorTarget(Target::COLOR_5, isMultisampled);  }
 
   if (targets & Target::DEPTH_STENCIL) {
 	D3D11_TEXTURE2D_DESC depthTextureDesc;

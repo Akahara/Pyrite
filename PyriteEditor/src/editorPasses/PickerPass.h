@@ -1,6 +1,5 @@
 #pragma once
 
-#include <d3d11.h>
 #include <ranges>
 #include <span>
 #include <memory>
@@ -19,6 +18,7 @@
 #include "editor/bridges/Lights/pf_Light.h"
 #include "editor/Editor.h"
 #include "editor/EditorEvents.h"
+
 
 #include "imguizmo/ImGuizmo.h"
 

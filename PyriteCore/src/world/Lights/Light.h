@@ -228,7 +228,7 @@ struct LightsCollections {
 	template<size_t N = 16>
 	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL() const
 	{
-		if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
+		//if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
 
 		std::array<hlsl_GenericLight, N> res;
 

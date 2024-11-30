@@ -1,6 +1,13 @@
+#ifndef LIGHT_UTILS_HEADER_GUARD 
+#define LIGHT_UTILS_HEADER_GUARD 
+
 #define DIRECTIONAL_LIGHT_TYPE 1
 #define POINT_LIGHT_TYPE 2
 #define SPOT_LIGHT_TYPE 3
+
+#define LIGHT_COUNT 16
+
+//==================================================================================================================================================================//
 
 struct Light
 {
@@ -23,26 +30,65 @@ struct Light
 };
 
 //==================================================================================================================================================================//
+// -- Useful stuff
+
+float3 GetLightVector(Light sourceLight, float3 pixelWorldPos)
+{
+    float3 L = normalize(sourceLight.position.xyz - pixelWorldPos);
+    if (sourceLight.type == DIRECTIONAL_LIGHT_TYPE)
+    {
+        L = normalize(-sourceLight.direction.xyz);
+    }
+    return L;
+}
+
+//==================================================================================================================================================================//
 // -- Flux computation for a light
 
-float Flux(Light sourceLight)
+
+float3 Flux_Spotlight(Light sourceLight, float3 worldPos)
 {
-    return 0;
+    float smallAngle = sourceLight.range.x;
+    float largeAngle = smallAngle + sourceLight.fallOff;
+            
+    float pixelToSpotAngle = saturate(dot(
+                    normalize(-sourceLight.position.xyz + worldPos),
+                    normalize(sourceLight.direction.xyz)
+            ));
+    float t = smoothstep(0, 1, (pixelToSpotAngle - cos(largeAngle)) / (cos(smallAngle) - cos(largeAngle)));
+    return sourceLight.diffuse.rgb * sourceLight.strength * t;
 }
 
-float Flux_Spotlight(Light sourceLight)
+float3 Flux_Pointlight(Light sourceLight, float3 worldPos)
 {
-    return 0;
+    float LightToPixel = sourceLight.position.xyz - worldPos;
+    float dist = length(LightToPixel);
+    float attenuation = 1.0 / (sourceLight.range.y + sourceLight.range.z * dist + sourceLight.range.w * (dist * dist));
+    
+    return sourceLight.diffuse.rgb * attenuation * sourceLight.specularFactor;
 }
 
-float Flux_Pointlight(Light sourceLight)
+float3 Flux_Directionalight(Light sourceLight)
 {
-    return 0;
+    return sourceLight.diffuse.xyz * sourceLight.strength;
 }
 
-float Flux_Directionalight(Light sourceLight)
+// -- Version that guesses the light type
+float3 Flux(Light sourceLight, float3 worldPos)
 {
-    return 0;
+    if (sourceLight.type == DIRECTIONAL_LIGHT_TYPE)
+    {
+        return Flux_Directionalight(sourceLight);
+    }
+    if (sourceLight.type == POINT_LIGHT_TYPE)
+    {
+        return Flux_Pointlight(sourceLight, worldPos);
+    }
+    if (sourceLight.type == SPOT_LIGHT_TYPE)
+    {
+        return Flux_Spotlight(sourceLight, worldPos);
+    }
+    return float3(0,0,0);
 }
 
 //==================================================================================================================================================================//
@@ -128,3 +174,5 @@ float4x4 CreateViewProjectionMatrixForLight_Perspective(Light light)
     // Return the combined view-projection matrix
     return mul(viewMatrix, projectionMatrix);
 }
+
+#endif // LIGHT_UTILS_HEADER_GUARD

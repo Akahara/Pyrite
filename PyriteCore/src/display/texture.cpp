@@ -109,6 +109,14 @@ ID3D11DepthStencilView* Texture::toDepthStencilView()
 	return m_asDepthView;
 }
 
+void Texture::SetDebugName(const std::string& name)
+{
+	if (getRawResource())
+	{
+		getRawResource()->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+	}
+}
+
 void Texture::releaseRawTexture()
 {
   DXRelease(m_resource);

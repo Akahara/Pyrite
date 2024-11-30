@@ -24,9 +24,11 @@ namespace pyr
         private:
 
             pyr::GraphicalResourceRegistry m_registry;
-            pyr::FrameBuffer m_indirectLighting{128,128, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
-            pyr::FrameBuffer m_lowResPass{32,32, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_indirectLighting{512,512, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_lowResPass{64, 64, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_blurTarget{pyr::FrameBuffer::COLOR_0};
             pyr::Effect* computeIndirectLightingEffect;
+            pyr::Effect* m_blurEffect;
 
             std::shared_ptr<CameraBuffer>    pcameraBuffer  = std::make_shared<CameraBuffer>()  ;
             std::shared_ptr<ActorBuffer>     pActorBuffer   = std::make_shared<ActorBuffer>()   ;
@@ -36,7 +38,8 @@ namespace pyr
             std::shared_ptr<SingleLightBuffer>    pLightBuffer = std::make_shared<SingleLightBuffer>();
 
             float u_DistanceThreshold = 0.05f;
-            float u_NormalThreshold = 0.05f;
+            float u_NormalThreshold = 0.95f;
+            float u_Rmax = 0.3f;
         
         public:
 
@@ -46,6 +49,8 @@ namespace pyr
 
                 displayName = "RSM GI Pass";
                 computeIndirectLightingEffect = m_registry.loadEffect(L"res/shaders/rsm_evaluate.hlsl", InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
+                m_blurEffect = m_registry.loadEffect(L"res/shaders/gaussianBlur.fx", InputLayout::MakeLayoutFromVertex<EmptyVertex>());
+
                 producesResource("GI_CompositeIndirectIllumination", m_indirectLighting.getTargetAsTexture(pyr::FrameBuffer::COLOR_0));
 
             }
@@ -71,28 +76,39 @@ namespace pyr
                 Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
-                //Texture depthPrePassBuffer = std::get<Texture>(owner->getResourcesManager().fetchResource("depthBuffer"));
-                //m_indirectLighting.setDepthOverride(depthPrePassBuffer.toDepthStencilView()); 
+                ///////// ---------------- ///////// 
 
+                computeIndirectLightingEffect->setUniform<float>("u_DistanceComparisonThreshold", u_DistanceThreshold);
+                computeIndirectLightingEffect->setUniform<float>("u_NormalComparisonThreshold", u_NormalThreshold);
+                computeIndirectLightingEffect->setUniform<float>("u_Rmax", u_Rmax);
+
+                // 1. low res pass
                 m_lowResPass.clearTargets();
                 m_lowResPass.bind();
-
-                computeIndirectLightingEffect->setUniform<bool>("bFullTexture", false);
+                computeIndirectLightingEffect->bindTexture(pyr::Texture::getDefaultTextureSet().BlackPixel, "LowResTexture");
+                computeIndirectLightingEffect->setUniform<int>("u_CurrentPassID", 0);
                 RenderFn();
-
                 m_lowResPass.unbind();
 
 
+                // 1. 3 high quality passes using interpolation
                 m_indirectLighting.clearTargets();
                 m_indirectLighting.bind();
-
-                computeIndirectLightingEffect->setUniform<vec2>("u_FullTextureDimensions", { 128,128 });
-                //computeIndirectLightingEffect->bindTexture(m_lowResPass.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "LowResTexture");
-                computeIndirectLightingEffect->setUniform<bool>("bFullTexture", true);
-                RenderFn();
+                computeIndirectLightingEffect->setUniform<vec2>("u_FullTextureDimensions", m_indirectLighting.GetDimensions());
+                computeIndirectLightingEffect->bindTexture(m_lowResPass.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "LowResTexture");
+                for (int i = 0; i < 3; i++)
+                {
+                    computeIndirectLightingEffect->setUniform<int>("u_CurrentPassID", i + 1);
+                    RenderFn();
+                }
                 m_indirectLighting.unbind();
-                computeIndirectLightingEffect->unbindResources();
+                
+                
+                
+                ///////// ---------------- ///////// 
+                
                 pyr::RenderProfiles::popDepthProfile();
+
 
             }
 
@@ -134,10 +150,13 @@ namespace pyr
                 ImGui::Begin("RSM Gi Debug window");
 
                 if (ImGui::SliderFloat("Distance comparison threshold", &u_DistanceThreshold, 0, 10.F) +
-                    ImGui::SliderFloat("Normal comparison threshold", &u_NormalThreshold, 0, 1.F))
+                    ImGui::SliderFloat("Normal comparison threshold", &u_NormalThreshold, 0, 1.F) +
+                    ImGui::SliderFloat("Sampling disk max radius", &u_Rmax, 0, 1.F)
+                    )
                 {
                     computeIndirectLightingEffect->setUniform<float>("u_DistanceComparisonThreshold", u_DistanceThreshold);
                     computeIndirectLightingEffect->setUniform<float>("u_NormalComparisonThreshold", u_NormalThreshold);
+                    computeIndirectLightingEffect->setUniform<float>("u_Rmax", u_Rmax);
                 }
 
                 ImGui::End();

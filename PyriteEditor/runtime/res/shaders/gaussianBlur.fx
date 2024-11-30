@@ -32,7 +32,7 @@ float4 blur(Texture2D tex, float2 uv, float scale)
     for (int i = 0; i < sampleCount * sampleCount; i++)
     {
         float2 offset = float2(i % sampleCount, i / sampleCount) - sampleCount / 2.f;
-        offset /= float2(1540, 845);
+        offset /= float2(1540, 845); // lol
         //O += gaussian(d) * sp.Load(int3(U + scale * d, 0));
         outBlur += gaussian(offset) * float4(tex.Sample(blitSamplerState, uv + offset * scale).rgb, 1.0f);
     }
@@ -60,7 +60,6 @@ VSOut GaussianBlurVS(uint vertexId : SV_VertexID)
 
 float4 GaussianBlurPS(VSOut vs) : SV_Target
 {
-    //return sourceTexture.Sample(blitSamplerState, vs.texCoord);
     return blur(sourceTexture, vs.texCoord, u_blurStrength);
 }
 

@@ -38,7 +38,7 @@ namespace pyr
 			: m_framebuffer{width, height, Depth | WorldPos | Normal | Flux }
 			, m_sourceLight(light)
 		{
-			PYR_ASSERT(dynamic_cast<pyr::PointLight*>(light) == nullptr, "Cubemaps multi-target framebuffers are not implemented yet.");
+			PYR_ASSERT(dynamic_cast<pyr::PointLight*>(light) == nullptr, "Cubemaps multi-target framebuffers are not implemented yet. Too bad !");
 		}
 
 		pyr::FrameBuffer& GetFramebuffer() { return m_framebuffer; }

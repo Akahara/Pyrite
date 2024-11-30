@@ -41,17 +41,18 @@ namespace pye
 
 		public:
 
-			struct ImGuiItem
+			struct ImGui_MainBar_MenuEntry
 			{
 				std::string item_name;
-				std::string shortcut;
+				std::string shortcut = "_";
 				pye::Widget* UnderlyingWidget = nullptr;
+				Delegate<> OnItemClicked;
 
-				ImGuiItem* parent = nullptr;
-				std::vector<ImGuiItem*> children;
+				ImGui_MainBar_MenuEntry* parent = nullptr;
+				std::vector<ImGui_MainBar_MenuEntry> children;
 			};
 
-			using imgui_menu_t = std::vector<ImGuiItem>;
+			using imgui_menu_t = std::vector<ImGui_MainBar_MenuEntry>;
 
 			std::unordered_map<std::string, imgui_menu_t> menus;
 
@@ -80,22 +81,26 @@ public:
 
 			virtual void display() override
 			{
-				std::function<void(ImGuiItem& item)> display_item;
-				display_item = [&display_item](ImGuiItem& item)
+				std::function<void(const ImGui_MainBar_MenuEntry& item)> display_item;
+				display_item = [&display_item](const ImGui_MainBar_MenuEntry& item)
 				{
 					if (item.children.empty())
 					{
-						static bool a, b, c;
-						//if (!PYR_ENSURE(item.UnderlyingWidget), "The action has no associated widget !") return;
-						ImGui::MenuItem(item.item_name.c_str(), item.shortcut.c_str(), &item.UnderlyingWidget->bDisplayWidget, true);
+						static bool a = false;
+						if (ImGui::MenuItem(item.item_name.c_str(), item.shortcut.c_str(), item.UnderlyingWidget  ? &item.UnderlyingWidget->bDisplayWidget : &a ))
+						{
+							item.OnItemClicked.NotifyAll();
+						}
 						
 					}
 					else {
-						for (ImGuiItem* child : item.children)
+						for (const ImGui_MainBar_MenuEntry& child : item.children)
 						{
-							ImGui::BeginMenu(item.item_name.c_str());
-							display_item(*child);
-							ImGui::EndMenu();
+							if (ImGui::BeginMenu(item.item_name.c_str()))
+							{
+								display_item(child);
+								ImGui::EndMenu();
+							}
 						}
 					}
 				};
@@ -107,7 +112,7 @@ public:
 					{
 						if (ImGui::BeginMenu(name.c_str()))
 						{
-							for (ImGuiItem& item : items)
+							for (ImGui_MainBar_MenuEntry& item : items)
 							{
 								display_item(item);
 							}

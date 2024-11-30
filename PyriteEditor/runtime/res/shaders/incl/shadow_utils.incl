@@ -1,7 +1,16 @@
-#include "samplers.incl"
+#ifndef SHADOW_UTILS_HEADER_GUARD
+#define SHADOW_UTILS_HEADER_GUARD
+
+#include "incl/samplers.incl"
 
 #define PCF_SAMPLE_COUNT 4
 #define PCF_SAMPLE_COUNT_CUBEMAP 3
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+#define NO_SHADOW 0
+#define DYNAMIC_SHADOW 1
+#define RSM 2
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
@@ -67,8 +76,7 @@ float getShadowFactor_2D_Perspective(
     float3 fragmentWorldPosition,
     float3 fragmentNormal, /* used for bias*/
     int lightmapIndex,
-    float4x4 ViewProjection,
-    float3 sourcePosition)
+    float4x4 ViewProjection)
 {
     float shadow = 0.0;
     
@@ -108,7 +116,6 @@ float getShadowFactor_2D_Perspective(
     
     return shadow;
 }
-
 
 //--------------------------------------------------------------------------------------------------------------------------//
 
@@ -151,5 +158,35 @@ float getShadowFactor_3D(
     
     shadow /= totalSamples; // Average the shadow factor from all PCF samples
     return shadow;
- 
 }
+
+//--------------------------------------------------------------------------------------------------------------------------//
+
+// -- Version that guesses the shadow using the stored type
+
+#include <incl/light_utils.incl>
+#include "light_utils.incl"
+
+float ShadowFactor(Light sourceLight, float3 worldPos, float3 normal)
+{
+    bool bShouldCastShadows = sourceLight.shadowType == DYNAMIC_SHADOW;
+    if (!bShouldCastShadows) return 0.0F;
+    
+    if (sourceLight.type == DIRECTIONAL_LIGHT_TYPE)
+    {
+        return getShadowFactor_2D_Ortho(worldPos, normal, sourceLight.lightmap_index, CreateViewProjectionMatrixForLight_Ortho(sourceLight));
+    }
+    if (sourceLight.type == POINT_LIGHT_TYPE)
+    {
+        return getShadowFactor_3D(worldPos, normal, sourceLight.lightmap_index - 16, sourceLight.position.xyz);
+    }
+             
+    if (sourceLight.type == SPOT_LIGHT_TYPE)
+    {
+        return getShadowFactor_2D_Perspective(worldPos, normal, sourceLight.lightmap_index, CreateViewProjectionMatrixForLight_Perspective(sourceLight));
+    }
+    
+    return 0.0F;
+}
+
+#endif // SHADOW_UTILS_HEADER_GUARD

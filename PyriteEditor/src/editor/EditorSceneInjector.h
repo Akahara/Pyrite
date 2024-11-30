@@ -1,12 +1,14 @@
 #pragma once
 
 #include "scene/Scene.h"
+
 #include "views/Materials/widget_material.h"
 #include "views/Lights/widget_lights.h"
 #include "views/EditorUI.h"
 
 #include "../editorPasses/PickerPass.h"
 #include "../editorPasses/WorldHUDPass.h"
+#include "../editorPasses/BufferVisualisationPass.h"
 
 #include "views/Rendergraph/widget_rendergraph.h"
 
@@ -28,6 +30,7 @@ namespace pye
 			auto& ref = Get();
 			scene.SceneRenderGraph.addPass(&ref.m_editorHUD);
 			scene.SceneRenderGraph.addPass(&ref.m_picker);
+			scene.SceneRenderGraph.addPass(&ref.m_bufferVisualisation);
 			scene.SceneRenderGraph.getResourcesManager().linkResource("depthBuffer", &ref.m_picker);
 		}
 
@@ -41,23 +44,24 @@ namespace pye
 		pye::widgets::WidgetsContainer container;
 
 		// -- Passes
-		pye::EditorPasses::WorldHUDPass     m_editorHUD;
-		pye::EditorPasses::PickerPass       m_picker;
+		pye::EditorPasses::WorldHUDPass					m_editorHUD;
+		pye::EditorPasses::PickerPass					m_picker;
+		pye::EditorPasses::BufferVisualisationPass     m_bufferVisualisation;
 
 		EditorSceneInjector()
 		{
 			auto& tools_menu = pye::widgets::EditorUI::Get().GetMenu("Tools");
 
-			pye::widgets::EditorUI::ImGuiItem lightWidgetItem;
+			pye::widgets::EditorUI::ImGui_MainBar_MenuEntry lightWidgetItem;
 			lightWidgetItem.item_name = "Light outliner";
 			lightWidgetItem.UnderlyingWidget = &lightWidget;
 
-			pye::widgets::EditorUI::ImGuiItem materialWidgetItem;
+			pye::widgets::EditorUI::ImGui_MainBar_MenuEntry materialWidgetItem;
 			materialWidgetItem.item_name = "Material displayer";
 			materialWidgetItem.UnderlyingWidget = &materialWidget;
 
 
-			pye::widgets::EditorUI::ImGuiItem rdgWidgetItem;
+			pye::widgets::EditorUI::ImGui_MainBar_MenuEntry rdgWidgetItem;
 			rdgWidgetItem.item_name = "Render graph displayer";
 			rdgWidgetItem.UnderlyingWidget = &RenderGraphWidget;
 

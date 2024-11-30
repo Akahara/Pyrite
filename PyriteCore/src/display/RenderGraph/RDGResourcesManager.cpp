@@ -53,7 +53,7 @@ namespace pyr
 
 	void RenderGraphResourceManager::addProduced(RenderPass* pass, const char* resName)
 	{
-		ASSERT_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass);
 
 		std::optional<NamedOutput> resource = pass->getOutputResource(resName);
 		if (resource.has_value()) m_passResources[pass].producedResources[resName] = resource.value();
@@ -64,7 +64,7 @@ namespace pyr
 
 	void RenderGraphResourceManager::addRequirement(RenderPass* pass, const char* resName)
 	{
-		ASSERT_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass);
 
 		m_passResources[pass].requiredResources.insert(resName);
 	}

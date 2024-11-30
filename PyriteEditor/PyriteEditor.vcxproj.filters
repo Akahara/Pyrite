@@ -95,6 +95,7 @@
     <ClInclude Include="src\editor\views\Rendergraph\widget_rendergraph.h" />
     <ClInclude Include="src\editor\views\EditorUI.h" />
     <ClInclude Include="src\editor\EditorSceneInjector.h" />
+    <ClInclude Include="src\editorPasses\BufferVisualisationPass.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="vendor\efsw\src\efsw\Utf.inl" />

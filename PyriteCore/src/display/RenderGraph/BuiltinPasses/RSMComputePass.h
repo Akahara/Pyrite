@@ -76,6 +76,8 @@ namespace pyr
                 if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
 
 
+
+
                 // -- Fetch the lights that want to cast create RSM (which would be the one with shadowMode == DynamicShadow_RSM)
 
                 /// Only spot lights for now, easier for implementation
@@ -84,6 +86,10 @@ namespace pyr
                 auto filtered = lights.Spots | std::ranges::views::filter([&castsShadows](const pyr::SpotLight& spotlight) { return castsShadows(&spotlight); });
                 if (filtered.empty()) return;
 
+                static ReflectiveShadowMap rsm{ RESOLUTION,RESOLUTION, lights.Spots.data() };
+                static ReflectiveShadowMap rsm_low{ LOW_RESOLUTION,LOW_RESOLUTION, lights.Spots.data() };
+                rsm_low.GetFramebuffer().clearTargets();
+                rsm.GetFramebuffer().clearTargets();
 
                 pyr::Camera camera{};
                 pyr::SpotLight& light = lights.Spots[0];
@@ -95,20 +101,18 @@ namespace pyr
                 pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = camera.getViewProjectionMatrix(), .pos = camera.getPosition() });
                 pLightBuffer->setData(SingleLightBuffer::data_t{ .light = convertLightTo_HLSL(light) });
 
-                static ReflectiveShadowMap rsm { RESOLUTION,RESOLUTION, lights.Spots.data() };
-                static ReflectiveShadowMap rsm_low { LOW_RESOLUTION,LOW_RESOLUTION, lights.Spots.data() };
 
 
                 Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 pyr::RenderProfiles::pushDepthProfile(pyr::DepthProfile::TESTWRITE_DEPTH);
 
 
-                rsm_low.GetFramebuffer().clearTargets();
+
+
                 rsm_low.GetFramebuffer().bind();
                 RenderFn();
                 rsm_low.GetFramebuffer().unbind();
 
-                rsm.GetFramebuffer().clearTargets();
                 rsm.GetFramebuffer().bind();
                 RenderFn();
                 rsm.GetFramebuffer().unbind();

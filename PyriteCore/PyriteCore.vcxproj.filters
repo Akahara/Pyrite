@@ -47,6 +47,7 @@
     <ClCompile Include="src\world\Shadows\Lightmap.cpp" />
     <ClCompile Include="src\utils\Delegate.cpp" />
     <ClCompile Include="vendor\imNodesFlow\imnodes.cpp" />
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\SkyboxPass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\display\CoreUtils.h" />
@@ -130,6 +131,8 @@
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMComputePass.h" />
     <ClInclude Include="src\world\Shadows\ReflectiveShadowMap.h" />
     <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMGIPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\Deferred_GeometryPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\Deferred_LightPass.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PyriteProperties.props" />
