@@ -21,7 +21,7 @@ struct IncludeManager final : ID3DInclude
   STDMETHOD(Open)(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes) override
   {
     using namespace std::string_literals;
-    std::ifstream in{ "res/shaders/"s + pFileName};
+    std::ifstream in{ "res/shaders/"s + pFileName}; // annoying, meaning that any include needs to be from the source directory and not the relative one ! got bamboozled with incl/light_utils.incl and light_utils.incl in the shadows
     std::string contents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     auto buf = new char[contents.size()];
     std::ranges::copy(contents, buf);

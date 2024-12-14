@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <string>
+#include <variant>
 
 #include "display/texture.h"
 
@@ -11,16 +12,15 @@ namespace pyr
    
     struct NamedResource
     {
-        using label_t = std::string;
+        using resource_t = std::variant<Texture, Cubemap, TextureArray>;
         std::string label;
 
-        Texture res; // fuck this shit man
+        resource_t res; // fuck this shit man
         RenderPass* origin;
     };
 
     using NamedOutput = NamedResource;
     using NamedInput = NamedResource;
-
-    using ResourceGetter = std::function<Texture()>;
+    using ResourceGetter = std::function<NamedResource::resource_t()>;
 
 }

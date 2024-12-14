@@ -107,7 +107,6 @@ public:
 
     pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = m_camera.getViewProjectionMatrix(), .pos = m_camera.getPosition() });
     m_baseEffect->uploadAllBindings();
-    m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
     m_RDG.execute(pyr::RenderContext{ SceneActors });
 
     pyr::RenderProfiles::popDepthProfile();

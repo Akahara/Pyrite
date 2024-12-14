@@ -47,7 +47,6 @@ namespace pye
         {
 
 #pragma region RDG
-
             SceneRenderGraph.addPass(&m_depthPrePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
             SceneRenderGraph.addPass(&m_forwardPass);
@@ -128,7 +127,7 @@ namespace pye
                 specularCubemap = cubemapScene.OutputCubemaps.SpecularFiltered;
                 m_irradianceMap = cubemapScene.OutputCubemaps.Irradiance;
                 m_registry.keepHandleToCubemap(*cubemapScene.OutputCubemaps.Cubemap);
-                m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
+                //m_forwardPass.m_skybox = *cubemapScene.OutputCubemaps.Cubemap;
                 brdfLUT = cubemapScene.BRDF_Lut;
 
                 const pyr::Effect* ggxShader = pyr::MaterialBank::GetDefaultGGXShader();

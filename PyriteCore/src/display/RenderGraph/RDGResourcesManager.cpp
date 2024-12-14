@@ -28,7 +28,6 @@ namespace pyr
 		
 		std::optional<NamedOutput> resource = from->getOutputResource(resName);
 		if (resource.has_value()) {
-			to->addNamedInput(resource.value());
 			m_passResources[to].incomingResources[resName] = resource.value();
 		}
 
@@ -44,7 +43,6 @@ namespace pyr
 			if (passResources.producedResources.contains(resName))
 			{
 				NamedOutput& output = passResources.producedResources[resName];
-				to->addNamedInput(output);
 				m_passResources[to].incomingResources[resName] = output;
 				return;
 			}
@@ -55,7 +53,7 @@ namespace pyr
 
 	void RenderGraphResourceManager::addProduced(RenderPass* pass, const char* resName)
 	{
-		ASSERT_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass);
 
 		std::optional<NamedOutput> resource = pass->getOutputResource(resName);
 		if (resource.has_value()) m_passResources[pass].producedResources[resName] = resource.value();
@@ -66,9 +64,36 @@ namespace pyr
 
 	void RenderGraphResourceManager::addRequirement(RenderPass* pass, const char* resName)
 	{
-		ASSERT_IS_IN_GRAPH(pass)
+		ASSERT_IS_IN_GRAPH(pass);
 
 		m_passResources[pass].requiredResources.insert(resName);
+	}
+
+	NamedResource::resource_t RenderGraphResourceManager::fetchResource(const char* resName)
+	{
+		for (auto& [pass, res] : m_passResources)
+		{
+			if (res.producedResources.contains(resName))
+			{
+				return res.producedResources.at(resName).res;
+			}
+		}
+
+		PYR_ASSERT(false, "No render pass has been found to produce this resource. Did you make a typo, or did you forget to link them in the scene ?");
+		return NamedResource::resource_t();
+	}
+
+	std::optional<NamedResource::resource_t> RenderGraphResourceManager::fetchOptionalResource(const char* resName)
+	{
+		for (auto& [pass, res] : m_passResources)
+		{
+			if (res.producedResources.contains(resName))
+			{
+				return res.producedResources.at(resName).res;
+			}
+		}
+
+		return std::nullopt;
 	}
 
 	// throws error

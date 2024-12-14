@@ -14,7 +14,6 @@
 namespace pyr
 {
 
-
 class SceneRenderTools
 {
 private:

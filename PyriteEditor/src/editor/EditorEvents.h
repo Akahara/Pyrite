@@ -13,10 +13,5 @@ namespace EditorEvents
 	static Delegate<> OnActorRemovedEvent;
 	static Delegate<class EditorActor*> OnActorPickedEvent;
 
-
-
-
-
-
 }
 }

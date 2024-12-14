@@ -100,6 +100,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\display\RenderGraph\BuiltinPasses\SkyboxPass.h" />
     <ClCompile Include="src\utils\Delegate.cpp" />
     <ClCompile Include="src\world\Shadows\Lightmap.cpp" />
     <ClCompile Include="src\display\CubemapBuilder.cpp" />
@@ -148,6 +149,11 @@
     <ClCompile Include="vendor\stbi\stbi_impl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\Deferred_GeometryPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\Deferred_LightPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMComputePass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\RSMGIPass.h" />
+    <ClInclude Include="src\display\RenderGraph\BuiltinPasses\ShadowComputePass.h" />
     <ClInclude Include="src\utils\Delegate.h" />
     <ClInclude Include="src\world\Shadows\Lightmap.h" />
     <ClInclude Include="src\display\ConstantBuffer.h" />
@@ -200,6 +206,7 @@
     <ClInclude Include="src\world\Mesh\Model.h" />
     <ClInclude Include="src\world\Mesh\StaticMesh.h" />
     <ClInclude Include="src\world\RayCasting.h" />
+    <ClInclude Include="src\world\Shadows\ReflectiveShadowMap.h" />
     <ClInclude Include="src\world\Tools\CommonConstantBuffers.h" />
     <ClInclude Include="src\world\Tools\SceneRenderTools.h" />
     <ClInclude Include="src\world\Transform.h" />

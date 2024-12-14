@@ -1,4 +1,5 @@
 /// Returns a model matrix with basis change so that the rotation faces toward the facingNormal direction.
+
 float4x4 RotateModelToFaceNormal(float4x4 modelMatrix, float3 targetNormal)
 {
     targetNormal = normalize(targetNormal);
@@ -16,8 +17,3 @@ float4x4 RotateModelToFaceNormal(float4x4 modelMatrix, float3 targetNormal)
     
     return mul(modelMatrix, transpose(rotationMatrix));
 }
-
-//float4x4 RotateModelToFaceNormal65(float4x4 modelMatrix, float3 targetNormal)
-//{
-            // FART
-//}

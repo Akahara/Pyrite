@@ -1,6 +1,7 @@
 ﻿#include "FrameBuffer.h"
 
 #include <algorithm>
+#include <numeric>
 
 #include "GraphicalResource.h"
 #include "RenderProfiles.h"
@@ -9,6 +10,8 @@
 #include "utils/Debug.h"
 #include "utils/Math.h"
 #include "InputLayout.h"
+
+
 
 namespace pyr
 {
@@ -26,37 +29,15 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, target_t targe
 
   bool isMultisampled = targets & Target::MULTISAMPLED;
 
-  if (targets & Target::COLOR_0) {
-	ID3D11Texture2D *renderTexture;
-	CD3D11_TEXTURE2D_DESC renderTextureDesc;
-	ZeroMemory(&renderTextureDesc, sizeof(renderTextureDesc));
-	renderTextureDesc.Width =  m_width;
-	renderTextureDesc.Height = m_height;
-	renderTextureDesc.MipLevels = 1;
-	renderTextureDesc.ArraySize = 1;
-	renderTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	renderTextureDesc.SampleDesc.Count = isMultisampled ? MSAA_LEVEL : 1;
-	renderTextureDesc.SampleDesc.Quality = 0;
-	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	renderTextureDesc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
-	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
-	m_textures.push_back(renderTexture);
+  m_renderTargetViews = {};
 
-	D3D11_RENDER_TARGET_VIEW_DESC rtDesc;
-	rtDesc.Format = renderTextureDesc.Format;
-	rtDesc.ViewDimension = isMultisampled ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
-	rtDesc.Texture2D.MipSlice = 0;
-	DXTry(device.CreateRenderTargetView(renderTexture, &rtDesc, &m_renderTargetView), "Could not create a render target for a framebuffer");
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
-	srDesc.Format = renderTextureDesc.Format;
-	srDesc.ViewDimension = isMultisampled ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
-	srDesc.Texture2D.MostDetailedMip = 0;
-	srDesc.Texture2D.MipLevels = 1;
-	ID3D11ShaderResourceView *shaderResourceView;
-	DXTry(device.CreateShaderResourceView(renderTexture, &srDesc, &shaderResourceView), "Could not create a shader resource view for a framebuffer");
-	m_targetsAsTextures[targetTypeToIndex(Target::COLOR_0)] = Texture(renderTexture, shaderResourceView, m_width, m_height);
-  }
+  // lol
+  if (targets & Target::COLOR_0) {  CreateColorTarget(Target::COLOR_0, isMultisampled);  }
+  if (targets & Target::COLOR_1) {  CreateColorTarget(Target::COLOR_1, isMultisampled);  }
+  if (targets & Target::COLOR_2) {  CreateColorTarget(Target::COLOR_2, isMultisampled);  }
+  if (targets & Target::COLOR_3) {  CreateColorTarget(Target::COLOR_3, isMultisampled);  }
+  if (targets & Target::COLOR_4) {  CreateColorTarget(Target::COLOR_4, isMultisampled);  }
+  if (targets & Target::COLOR_5) {  CreateColorTarget(Target::COLOR_5, isMultisampled);  }
 
   if (targets & Target::DEPTH_STENCIL) {
 	D3D11_TEXTURE2D_DESC depthTextureDesc;
@@ -101,7 +82,7 @@ FrameBuffer::FrameBuffer(IDXGISwapChain *swapChain, ID3D11Device *device, unsign
 {
   ID3D11Texture2D *backBuffer;
   DXTry(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBuffer), "Could not retrieve the screen backbuffer");
-  DXTry(device->CreateRenderTargetView(backBuffer, NULL, &m_renderTargetView), "Could not create a render target view for the screen backbuffer");
+  DXTry(device->CreateRenderTargetView(backBuffer, NULL, &m_renderTargetViews[targetTypeToIndex(Target::COLOR_0)]), "Could not create a render target view for the screen backbuffer");
   DXRelease(backBuffer);
 }
 
@@ -110,7 +91,7 @@ void FrameBuffer::clearTargets() const
   auto &context = Engine::d3dcontext();
   constexpr float clearColor[4]{ .05f, .08f, .1f, 0.0f };
   if(m_depthStencilView) context.ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-  if(m_renderTargetView) context.ClearRenderTargetView(m_renderTargetView, clearColor);
+  std::ranges::for_each(m_renderTargetViews, [&](ID3D11RenderTargetView* rtv) { if (rtv) context.ClearRenderTargetView(rtv, clearColor); });
 }
 
 Texture FrameBuffer::getTargetAsTexture(Target target) const
@@ -118,6 +99,16 @@ Texture FrameBuffer::getTargetAsTexture(Target target) const
   Texture tex = m_targetsAsTextures[targetTypeToIndex(target)];
   PYR_ASSERT(!tex.empty(), "Tried to retrieve a non-existing texture");
   return tex;
+}
+
+unsigned int FrameBuffer::GetColoredTargetCount() const
+{
+	static unsigned int cached 	= std::accumulate(
+			m_renderTargetViews.begin(), m_renderTargetViews.end(),
+			0, 
+			[this](unsigned int acc, ID3D11RenderTargetView* rtv) { return acc + (rtv != nullptr); }
+	);
+	return cached;
 }
 
 FrameBuffer::~FrameBuffer()
@@ -131,7 +122,7 @@ FrameBuffer::~FrameBuffer()
 #endif
 
   DXRelease(m_depthStencilView);
-  DXRelease(m_renderTargetView);
+  std::ranges::for_each(m_renderTargetViews, [&](ID3D11RenderTargetView* rtv) { DXRelease(rtv); });
   DXRelease(m_overridenDepth);
   if(!m_keepTextures) {
 	  std::ranges::for_each(m_targetsAsTextures, [](auto texture) { texture.releaseRawTexture(); });
@@ -143,7 +134,7 @@ FrameBuffer::FrameBuffer(FrameBuffer&& moved) noexcept
   m_width             = std::exchange(moved.m_width, {});
   m_height            = std::exchange(moved.m_height, {});
   m_depthStencilView  = std::exchange(moved.m_depthStencilView, {});
-  m_renderTargetView  = std::exchange(moved.m_renderTargetView, {});
+  m_renderTargetViews = std::exchange(moved.m_renderTargetViews, {});
   m_textures          = std::exchange(moved.m_textures, {});
   m_targetsAsTextures = std::exchange(moved.m_targetsAsTextures, {});
   m_keepTextures      = std::exchange(moved.m_keepTextures, false);
@@ -162,7 +153,7 @@ void FrameBuffer::swap(FrameBuffer& other, bool checkForBoundBuffers) noexcept
   std::swap(m_width, other.m_width);
   std::swap(m_height, other.m_height);
   std::swap(m_depthStencilView, other.m_depthStencilView);
-  std::swap(m_renderTargetView, other.m_renderTargetView);
+  std::swap(m_renderTargetViews, other.m_renderTargetViews);
   std::swap(m_textures, other.m_textures);
   std::swap(m_targetsAsTextures, other.m_targetsAsTextures);
   std::swap(m_keepTextures, other.m_keepTextures);
@@ -177,7 +168,8 @@ void FrameBuffer::bind()
 
 void FrameBuffer::unbind()
 {
-  if (m_renderTargetView == nullptr && m_depthStencilView == nullptr) return;
+  if (std::ranges::all_of(m_renderTargetViews, [](auto* rtv) { return !rtv; }) && m_depthStencilView == nullptr) return;
+
   PYR_ASSERT(!s_frameBuffersStack.empty() && s_frameBuffersStack.back() == this, "Tried to unbind a framebuffer that was not bound!");
   s_frameBuffersStack.pop_back();
   if (!s_frameBuffersStack.empty())
@@ -187,13 +179,48 @@ void FrameBuffer::unbind()
 void FrameBuffer::bindToD3DContext() const
 {
   D3D11_VIEWPORT viewport{ 0,0,static_cast<float>(m_width),static_cast<float>(m_height),0,1 };
-  Engine::d3dcontext().OMSetRenderTargets(1, &m_renderTargetView, m_overridenDepth ? m_overridenDepth : m_depthStencilView);
+  Engine::d3dcontext().OMSetRenderTargets(Target::__COUNT_COLOR, m_renderTargetViews.data(), m_overridenDepth ? m_overridenDepth : m_depthStencilView);
   Engine::d3dcontext().RSSetViewports(1, &viewport);
 }
 
 size_t FrameBuffer::targetTypeToIndex(Target target)
 {
   return mathf::firstBitIndex(static_cast<target_t>(target));
+}
+
+void FrameBuffer::CreateColorTarget(Target colorTarget, bool bIsMultisampled /*= false*/)
+{
+	auto& device = Engine::d3ddevice();
+
+	ID3D11Texture2D* renderTexture;
+	CD3D11_TEXTURE2D_DESC renderTextureDesc;
+	ZeroMemory(&renderTextureDesc, sizeof(renderTextureDesc));
+	renderTextureDesc.Width = m_width;
+	renderTextureDesc.Height = m_height;
+	renderTextureDesc.MipLevels = 1;
+	renderTextureDesc.ArraySize = 1;
+	renderTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	renderTextureDesc.SampleDesc.Count = bIsMultisampled ? MSAA_LEVEL : 1;
+	renderTextureDesc.SampleDesc.Quality = 0;
+	renderTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	renderTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	DXTry(device.CreateTexture2D(&renderTextureDesc, NULL, &renderTexture), "Could not create a texture for a framebuffer");
+	m_textures.push_back(renderTexture);
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtDesc;
+	rtDesc.Format = renderTextureDesc.Format;
+	rtDesc.ViewDimension = bIsMultisampled ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
+	rtDesc.Texture2D.MipSlice = 0;
+	DXTry(device.CreateRenderTargetView(renderTexture, &rtDesc, &m_renderTargetViews[targetTypeToIndex(colorTarget)]), "Could not create a render target for a framebuffer");
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
+	srDesc.Format = renderTextureDesc.Format;
+	srDesc.ViewDimension = bIsMultisampled ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
+	srDesc.Texture2D.MostDetailedMip = 0;
+	srDesc.Texture2D.MipLevels = 1;
+	ID3D11ShaderResourceView* shaderResourceView;
+	DXTry(device.CreateShaderResourceView(renderTexture, &srDesc, &shaderResourceView), "Could not create a shader resource view for a framebuffer");
+	m_targetsAsTextures[targetTypeToIndex(colorTarget)] = Texture(renderTexture, shaderResourceView, m_width, m_height);
 }
 
 void FrameBuffer::setDepthOverride(ID3D11DepthStencilView* depth)

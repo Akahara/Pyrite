@@ -1,8 +1,9 @@
 #include "VertexBuffer.h"
 
-#include <d3d11.h>
 #include <vector>
 #include <algorithm>
+
+#include "engine/Directxlib.h"
 
 namespace pyr
 {

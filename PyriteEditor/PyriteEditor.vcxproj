@@ -183,6 +183,7 @@
     <ClCompile Include="vendor\efsw\src\efsw\WatcherWin32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\editorPasses\BufferVisualisationPass.h" />
     <ClInclude Include="src\editor\EditorEvents.h" />
     <ClInclude Include="src\editor\EditorSceneInjector.h" />
     <ClInclude Include="src\editor\views\EditorUI.h" />

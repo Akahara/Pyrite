@@ -14,9 +14,15 @@ public:
   using target_t = uint8_t;
   enum Target : target_t {
     COLOR_0       = 1 << 0,
-    DEPTH_STENCIL = 1 << 1,
-    __COUNT       = 2,
-    MULTISAMPLED  = 1 << 2,
+    COLOR_1       = 1 << 1,
+    COLOR_2       = 1 << 2,
+    COLOR_3       = 1 << 3,
+    COLOR_4       = 1 << 4,
+    COLOR_5       = 1 << 5,
+    __COUNT_COLOR = 6,
+    DEPTH_STENCIL = 1 << 6,
+    __COUNT       = 7,
+    MULTISAMPLED  = 1 << 7,
   };
 
   FrameBuffer() : m_width(0), m_height(0) {}
@@ -24,6 +30,8 @@ public:
 
   // standard constructor
   FrameBuffer(unsigned int width, unsigned int height, target_t targets);
+  FrameBuffer(target_t targets) : FrameBuffer(pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), targets)
+  {}
   // primary target constructor
   FrameBuffer(IDXGISwapChain *swapChain, ID3D11Device *device, unsigned int screenWidth, unsigned int screenHeight);
 
@@ -45,19 +53,26 @@ public:
   void clearTargets() const;
   void setDepthOverride(ID3D11DepthStencilView* depth);
   Texture getTargetAsTexture(Target target) const;
+  // Helper for classes that define another enum for clarity
+  Texture getTargetAsTexture(uint8_t target) const { return getTargetAsTexture(static_cast<Target>(target)); }
+  unsigned int GetColoredTargetCount() const;
+  vec2 GetDimensions() const { return { (float)m_width, (float)m_height }; }
 
   static size_t targetTypeToIndex(Target target);
 private:
 
   static std::vector<FrameBuffer *> s_frameBuffersStack;
+  void CreateColorTarget(Target colorTarget, bool bIsMultisampled = false);
 
   unsigned int m_width, m_height;
   bool m_keepTextures = false;
   std::vector<ID3D11Texture2D*> m_textures;
   std::array<Texture, Target::__COUNT> m_targetsAsTextures;
-  ID3D11RenderTargetView *m_renderTargetView = nullptr;
+  //ID3D11RenderTargetView *m_renderTargetView = nullptr;
   ID3D11DepthStencilView *m_depthStencilView = nullptr;
   ID3D11DepthStencilView *m_overridenDepth = nullptr;
+
+  std::array<ID3D11RenderTargetView*, Target::__COUNT_COLOR> m_renderTargetViews;
 };
 
 class FrameBufferPipeline {

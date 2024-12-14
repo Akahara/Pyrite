@@ -14,7 +14,6 @@ namespace pyr
 struct GlobalTextureSet ;
 class GraphicalResourceRegistry;
 
-
 struct Texture
 {
 
@@ -27,6 +26,9 @@ public:
   ID3D11DepthStencilView* toDepthStencilView();
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
+
+  // the name used in renderdoc !
+  void SetDebugName(const std::string& name);
 
   // releases the underlying texture object, must only be called by the resource manager (see managed_resource)
   void releaseRawTexture();
@@ -58,10 +60,14 @@ private:
   ID3D11DepthStencilView *m_asDepthView = nullptr;
 };
 
+//===============================================================================================================================//
+
 struct GlobalTextureSet {
     Texture WhitePixel;
     Texture BlackPixel;
 };
+
+//===============================================================================================================================//
 
 struct Cubemap
 {
@@ -80,6 +86,8 @@ private:
   ID3D11ShaderResourceView *m_texture;
 };
 
+//===============================================================================================================================//
+
 struct TextureArray
 {
     enum TextureType { Texture2D, TextureCube };
@@ -94,9 +102,14 @@ private:
     TextureType m_heldType;
 
 public:
+
+    TextureArray() = default;
                                                                                 // v v v todo : pyr_pixelFormat ?
     TextureArray(size_t width, size_t height, size_t count, TextureType type, bool bIsDepthOnly = false);
+
     ~TextureArray();
+
+    // -- GPU Copying
     static void CopyToTextureArray(const std::vector<Texture>& textures, TextureArray& outArray);
     static void CopyToTextureArray(const std::vector<Cubemap>& cubes, TextureArray& outArray);
     
@@ -108,6 +121,7 @@ public:
     bool isCubeArray()                          const { return m_heldType == TextureCube; }
 
 };
+
 //===============================================================================================================================//
 
 struct SamplerState

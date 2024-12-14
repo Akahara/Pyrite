@@ -1,3 +1,6 @@
+#ifndef SAMPLERS_HEADER_GUARD
+#define SAMPLERS_HEADER_GUARD 1
+
 SamplerState MeshTextureSampler
 {
     Filter = MIN_MAG_MIP_LINEAR;
@@ -34,3 +37,5 @@ SamplerComparisonState shadowSamplerCompare
     Filter = COMPARISON_MIN_MAG_MIP_LINEAR;
     ComparisonFunc = GREATER;
 };
+
+#endif // SAMPLERS_HEADER_GUARD

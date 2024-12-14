@@ -29,7 +29,7 @@ enum ShadowMode : uint32_t
 {
 	NoShadow = 0,
 	DynamicShadow = 1,
-	StaticShadow = 2, // < will never implement this
+	DynamicShadow_RSM = 2, // < will never implement this
 };
 
 enum ShadowMapSlot : int
@@ -228,7 +228,7 @@ struct LightsCollections {
 	template<size_t N = 16>
 	std::array<hlsl_GenericLight, N> ConvertCollectionToHLSL() const
 	{
-		if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
+		//if (!PYR_ENSURE(Spots.size() + Points.size() + Directionals.size() <= N)) return {};
 
 		std::array<hlsl_GenericLight, N> res;
 

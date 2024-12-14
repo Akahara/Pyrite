@@ -13,7 +13,7 @@ PYR_DECLARELOG(LogDebug);
 #define PYR_DEBUG(x) x
 #define PYR_ASSERT(x, ...)\
   if(!(x)) {\
-    PYR_LOG(LogDebug, FATAL, "Broken assertion: ", __VA_ARGS__);\
+    PYR_LOG(LogDebug, FATAL, "Broken assertion: ");\
     throw std::runtime_error(std::string("Broken assertion: ") + Logger::concat(__VA_ARGS__));\
   }
 #define PYR_ENSURE(x, ...)\
@@ -21,7 +21,7 @@ PYR_DECLARELOG(LogDebug);
     static bool _triggered = false;\
     bool _valid = !!(x);\
     if (!_valid && !_triggered) {\
-      PYR_LOG(LogDebug, WARN, "Ensure failed at " __FILE__ ":", __LINE__, " ", __VA_ARGS__);\
+      PYR_LOG(LogDebug, WARN, "Ensure failed at " __FILE__ ":", __LINE__, " ");\
       _triggered = true;\
       __debugbreak();\
     }\

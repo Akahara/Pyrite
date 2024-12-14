@@ -85,5 +85,6 @@ private:
 
 #define PYR_DEFINELOG(logname, verbosity) Logger PyrLogger_##logname{ #logname, Logger::verbosity }
 #define PYR_DECLARELOG(logname) extern Logger PyrLogger_##logname
-#define PYR_LOG(logger, verbosity, ...) PyrLogger_##logger.log(Logger::verbosity, __VA_ARGS__)
+#define PYR_LOG(logger, verbosity, ...) PyrLogger_##logger.log(Logger::verbosity, __VA_ARGS__)\
+
 #define PYR_LOGF(logger, verbosity, format, ...) PyrLogger_##logger.logf(Logger::verbosity, format, __VA_ARGS__)

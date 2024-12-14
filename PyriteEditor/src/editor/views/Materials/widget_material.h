@@ -192,7 +192,7 @@ namespace pye
 				   .pos = renderCamera.getPosition()
 				});
 				m_depthPrePass.getDepthPassEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
-				m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
+				//m_forwardPass.getSkyboxEffect()->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
 				renderCamera.lookAt({ 0,0,0 });
 				renderGraph.execute(pyr::RenderContext{ toRender , "Material Display Widget ", &renderCamera });

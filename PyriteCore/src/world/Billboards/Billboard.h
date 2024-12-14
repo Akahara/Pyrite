@@ -63,7 +63,7 @@ namespace pyr
 				{
 					if (!PYR_ENSURE(res.textures.size() < MAX_TEXTURE_COUNT))
 					{
-						PYR_LOGF(LogBillboards, WARN, "Trying to add a billboard, but more than 16 textures have been registered. Not implementing that soon. Too bad !");
+						//PYR_LOGF(LogBillboards, WARN, "Trying to add a billboard, but more than 16 textures have been registered. Not implementing that soon. Too bad !");
 						continue;
 					}
 					res.textures[billboard->texture] = static_cast<int>(res.textures.size());

@@ -107,6 +107,18 @@ private:
 	void setUniformImpl(const std::string& uniformName, const T& data) const;
 
 	template<>
+	void setUniformImpl<bool>(const std::string& uniformName, const bool& data) const
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetBool(data);
+	}
+
+	template<>
+	void setUniformImpl<int>(const std::string& uniformName, const int& data) const
+	{
+		m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetInt(data);
+	}
+
+	template<>
 	void setUniformImpl<float>(const std::string& uniformName, const float& data) const
 	{
 		m_effect->GetVariableByName(uniformName.c_str())->AsScalar()->SetFloat(static_cast<float>(data));

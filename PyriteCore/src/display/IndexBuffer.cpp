@@ -1,7 +1,6 @@
 ﻿#include "IndexBuffer.h"
 
 
-#include <d3d11.h>
 #include <vector>
 #include <algorithm>
 

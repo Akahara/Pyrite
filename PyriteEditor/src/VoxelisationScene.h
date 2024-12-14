@@ -202,7 +202,6 @@ public:
     fs::path meshFile = "res/meshes/axes.obj";
     pyr::Effect* meshEffect = m_grr.loadEffect(L"res/shaders/mesh.fx", pyr::InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>());
     meshEffect->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
-    m_forwardPass.getSkyboxEffect()->addBinding({ .label = "CameraBuffer", .bufferRef = m_cameraBuffer });
     m_meshModel = pyr::MeshImporter::ImportMeshesFromFile(meshFile).at(0);
     m_mesh = pyr::StaticMesh{ m_meshModel };
     m_mesh.overrideSubmeshMaterial(0, std::make_shared<pyr::Material>(meshEffect));

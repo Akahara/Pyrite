@@ -6,6 +6,7 @@
 #include "world/Mesh/RawMeshData.h"
 #include "world/Mesh/StaticMesh.h"
 #include "world/Tools/CommonConstantBuffers.h"
+
 #include "display/FrameBuffer.h"
 
 namespace pyr
@@ -38,11 +39,11 @@ namespace pyr
                     InputLayout::MakeLayoutFromVertex<pyr::RawMeshData::mesh_vertex_t>()
                 );
 
+                m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL).SetDebugName("Depth Prepass");
                 producesResource("depthBuffer", m_depthTarget.getTargetAsTexture(FrameBuffer::DEPTH_STENCIL));
             }
 
-            DepthPrePass()
-                : DepthPrePass(pyr::Device::getWinWidth(), pyr::Device::getWinHeight())
+            DepthPrePass() : DepthPrePass(pyr::Device::getWinWidth(), pyr::Device::getWinHeight())
             {}
 
             virtual void apply() override

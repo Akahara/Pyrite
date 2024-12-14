@@ -150,7 +150,7 @@ private:
 						{ aiTextureType_NORMALS, TextureType::NORMAL },
 						{ aiTextureType_METALNESS, TextureType::METALNESS },
 						{ aiTextureType_SPECULAR, TextureType::SPECULAR },
-						{ aiTextureType_AMBIENT, TextureType::AO },
+						{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::AO },
 						{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::ROUGHNESS },
 						{ aiTextureType_DISPLACEMENT, TextureType::BUMP },
 						{ aiTextureType_HEIGHT, TextureType::HEIGHT },

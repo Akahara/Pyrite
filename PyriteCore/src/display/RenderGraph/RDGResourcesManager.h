@@ -1,13 +1,14 @@
 #pragma once
 
 #include <set>
+#include <optional>
 
 #include "NamedResources.h"
 #include <unordered_map>
 
 namespace pyr
 {
-
+	// TODO : order passes correctly (current order is how they are push in the render graph...)
 	class RenderPass;
 
 	class RenderGraphResourceManager
@@ -36,6 +37,11 @@ namespace pyr
 
 		void addProduced(RenderPass* pass, const char* resName);
 		void addRequirement(RenderPass* pass, const char* resName);
+
+		// -- Returns the first produced resource that matches the name.
+		NamedResource::resource_t fetchResource(const char* resName);
+
+		std::optional<NamedResource::resource_t> fetchOptionalResource(const char* resName);
 
 		bool checkResourcesValidity();
 

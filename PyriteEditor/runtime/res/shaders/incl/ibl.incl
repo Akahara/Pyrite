@@ -1,0 +1,39 @@
+#ifndef IBL_HEADER_GUARD
+#define IBL_HEADER_GUARD
+
+#include <incl/samplers.incl>
+#include "samplers.incl"
+
+#define IBL_MAX_LOD_REFLECTION 4.0F
+
+TextureCube irrandiance_map;
+Texture2D brdfLUT;
+TextureCube prefilterMap;
+
+float3 GetEnvironnementReflection(float3 pixelNormal, float3 ViewDirection, float3 fresnel, float roughness)
+{
+    float3 R = reflect(-ViewDirection, pixelNormal);
+    
+    float3 prefilteredColor = prefilterMap.SampleLevel(blitSamplerState, R, roughness * IBL_MAX_LOD_REFLECTION).rgb;
+    float2 envBRDF = brdfLUT.Sample(blitSamplerState, float2(saturate(dot(pixelNormal, ViewDirection)), roughness)).rg;
+    float3 specular = prefilteredColor * (fresnel * envBRDF.x + envBRDF.y) + 0.001;
+    
+    return specular;    
+}
+
+float3 GetAmbiantColoring(float3 pixelNormal)
+{
+    return irrandiance_map.Sample(blitSamplerState, pixelNormal).rgb;
+}
+
+float3 GetIBLDiffuse(float3 fresnel, float metallic)
+{
+    float3 kS = fresnel;
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    
+    return kD;
+}
+
+
+#endif // IBL_HEADER_GUARD
