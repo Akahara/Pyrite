@@ -78,13 +78,15 @@ namespace pye
             m_camera.lookAt(vec3{ 0,0,0.f });
             m_camera.setProjection(pyr::PerspectiveProjection{});
             m_camController.setCamera(&m_camera);
+            
             SceneRenderGraph.addPass(&m_depthPrePass);
+            SceneRenderGraph.addPass(&m_gPass);
+
             SceneRenderGraph.addPass(&m_shadowComputePass);
             SceneRenderGraph.addPass(&m_SSAOPass);
             SceneRenderGraph.addPass(&RSMComputePass);
             SceneRenderGraph.addPass(&RSMGIPass);
             SceneRenderGraph.addPass(&m_forwardPass);
-            SceneRenderGraph.addPass(&m_gPass);
             SceneRenderGraph.addPass(&m_lightPass);
             
             SceneRenderGraph.addPass(&m_skyboxPass);

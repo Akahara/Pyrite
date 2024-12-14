@@ -81,6 +81,7 @@ namespace pyr
                 m_ssaoEffect->bindConstantBuffer("InverseCameraBuffer", pinvCameBuffer);
                 m_ssaoEffect->bindConstantBuffer("CameraBuffer", pcameraBuffer);
 
+                m_ssaoEffect->bindTexture(std::get<TextureArray>(owner->getResourcesManager().fetchResource("G_Buffer")), "G_Buffer");
                 m_ssaoEffect->bindTexture(std::get<pyr::Texture>(owner->getResourcesManager().fetchResource("depthBuffer")), "depthBuffer");
                 m_ssaoEffect->bindTexture(m_randomTexture, "blueNoise");
                 m_ssaoEffect->setUniform<std::vector<vec4>>("u_kernel", m_kernel);

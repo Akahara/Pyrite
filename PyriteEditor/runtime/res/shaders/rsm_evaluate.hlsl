@@ -20,7 +20,7 @@ struct VS_OUT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define RSM_SAMPLE_COUNT 20
+#define RSM_SAMPLE_COUNT 4
 #define RSM_SAMPLE_COUNT_SQRD RSM_SAMPLE_COUNT * RSM_SAMPLE_COUNT
 #define PI 3.141592653
 #define TWO_PI (2.0 * PI)
@@ -33,6 +33,9 @@ Texture2DArray RSM_LowRes_WorldPositions;
 Texture2DArray RSM_LowRes_Normals;
 Texture2DArray RSM_LowRes_Flux;
 
+Texture2DArray G_Buffer;
+static const int SLICE_NORMAL = 1;
+static const int SLICE_WORLDPOS = 2;
 
 cbuffer SingleLightBuffer
 {
@@ -43,9 +46,13 @@ bool bFullTexture = false;
 Texture2D LowResTexture;
 float u_DistanceComparisonThreshold = 0.05;
 float u_NormalComparisonThreshold = 0.95;
+float u_AccumulatedWeightThreshold = 3.f;
+float u_NormalWeight = 1.f;
+float u_DistanceWeight = .2f;
 float2 u_FullTextureDimensions = float2(512, 512);
 float u_Rmax; // max radius of sampling
 float u_normalizationFactor; // max radius of sampling
+int u_SampleCount = 10; // max radius of sampling
 
 static const uint LOW_RES_PASS_ID = 0;
 static const uint MAX_PASS_COUNT = 4;
@@ -78,6 +85,7 @@ float2 Hammersley(uint i, uint N)
 float2 WorldPosToUVs(float3 world_position, float4x4 view_proj)
 {
     float4 lightspace_position = mul(float4(world_position, 1), view_proj);
+    
     lightspace_position /= lightspace_position.w;
     float2 uv = lightspace_position.xy * .5f + .5f;
     uv = float2(uv.x, 1 - uv.y);
@@ -117,10 +125,12 @@ float3 ComputeIndirectIlluminationForUVs(float2 lightspace_uv, float3 x_worldPos
 {
     float3 indirect_illumination = float3(0, 0, 0);
 
+    int sampled_count_sqrd = u_SampleCount * u_SampleCount;
+    
     [loop]
-    for (int i = 0; i < RSM_SAMPLE_COUNT_SQRD; i++)
+    for (int i = 0; i < sampled_count_sqrd; i++)
     {
-        float2 xi = Hammersley(i, RSM_SAMPLE_COUNT_SQRD);
+        float2 xi = Hammersley(i, sampled_count_sqrd);
         
         float r = xi.x;
         float theta = xi.y * TWO_PI;
@@ -132,8 +142,16 @@ float3 ComputeIndirectIlluminationForUVs(float2 lightspace_uv, float3 x_worldPos
         radiance *= weight;
         indirect_illumination += radiance;
     }
-    indirect_illumination /= RSM_SAMPLE_COUNT_SQRD;
+    indirect_illumination /= sampled_count_sqrd;
     return indirect_illumination;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+float IsSuitableForInterpolation(float3 x_pos, float3 x_normal, float3 p_pos, float3 p_normal)
+{
+    return (distance(x_pos, p_pos) < u_DistanceComparisonThreshold) * (saturate(dot(x_normal, p_normal)) > u_NormalComparisonThreshold);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,6 +183,7 @@ float4 RSMComputeGITextureFS(VS_OUT psIn, float4 vpos : SV_Position) : SV_Target
     // -- First low res pass will compute all the pixels
     if (u_CurrentPassID == LOW_RES_PASS_ID)
     {
+        //return float4(uv,0,1);
         return float4(ComputeIndirectIlluminationForUVs(uv, psIn.worldPos, psIn.normal), 1);
     }
     
@@ -176,17 +195,17 @@ float4 RSMComputeGITextureFS(VS_OUT psIn, float4 vpos : SV_Position) : SV_Target
         int2 offsets[4];
         if (u_CurrentPassID == 1)
         {
-            offsets[0] = uint2(-1, +1);
-            offsets[1] = uint2(+1, +1);
-            offsets[2] = uint2(-1, -1);
-            offsets[3] = uint2(+1, -1);
+            offsets[0] = int2(-1, +1);
+            offsets[1] = int2(+1, +1);
+            offsets[2] = int2(-1, -1);
+            offsets[3] = int2(+1, -1);
         }
         else if (u_CurrentPassID > 1)
         {
-            offsets[0] = uint2(-1, 0);
-            offsets[1] = uint2(+1, 0);
-            offsets[2] = uint2(0, -1);
-            offsets[3] = uint2(0, -1);
+            offsets[0] = int2(-1, 0);
+            offsets[1] = int2(+1, 0);
+            offsets[2] = int2(0, -1);
+            offsets[3] = int2(0, -1);
         }
 
          // compute weights for each
@@ -194,35 +213,55 @@ float4 RSMComputeGITextureFS(VS_OUT psIn, float4 vpos : SV_Position) : SV_Target
         float3 accum_color = float3(0,0,0);
         for (int i = 0; i < 4; i++)
         {
-            float2 uv_offset = uv + offsets[i] * texelSize;
+            float2 uv_offset = screenspace_uv + offsets[i] * texelSize;
+            
             
             if (uv_offset.x > 1.f || uv_offset.y > 1 || uv_offset.x < 0 || uv_offset.y < 0)
                 continue;
             
-            float3 offseted_pixel_normal    = RSM_Normals.Sample(blitSamplerState, float3(uv_offset, 0)).xyz;
-            float3 offseted_pixel_worldPos  = RSM_WorldPositions.Sample(blitSamplerState, float3(uv_offset, 0)).xyz;
+            //float3 offseted_pixel_normal    = RSM_Normals.Sample(blitSamplerState, float3(uv_offset, 0)).xyz;
+            //float3 offseted_pixel_worldPos  = RSM_WorldPositions.Sample(blitSamplerState, float3(uv_offset, 0)).xyz;
             
-            float3 interpolated_color = LowResTexture.Sample(blitSamplerState, screenspace_uv + offsets[i] * 1/float2(64,64)).rgb;
+            int w, h;
+            LowResTexture.GetDimensions(w,h);
+            float2 lowres_texelsize = 1.F / float2(w,h);
+            
+            float3 offseted_pixel_normal = G_Buffer.Sample(blitSamplerState, float3(screenspace_uv + offsets[i] * lowres_texelsize, SLICE_NORMAL)).xyz;
+            float3 offseted_pixel_worldPos = G_Buffer.Sample(blitSamplerState, float3(screenspace_uv + offsets[i] * lowres_texelsize, SLICE_WORLDPOS)).xyz;
+            
+            float3 interpolated_color = LowResTexture.Sample(blitSamplerState, screenspace_uv + offsets[i] * texelSize).rgb;
             
             float3 dn = psIn.normal - offseted_pixel_normal;
             float3 dp = psIn.worldPos - offseted_pixel_worldPos;
 
-            float n_weight = exp(-dot(dn, dn) / 1.0);
-            float p_weight = exp(-dot(dp, dp) / 0.4);
+            float n_weight = exp(-dot(dn, dn) / u_NormalWeight);
+            float p_weight = exp(-dot(dp, dp) / u_DistanceWeight);
 
             float weight = n_weight * p_weight;
+            
+            
+            //float isSampleSuitable = IsSuitableForInterpolation(psIn.worldPos, psIn.normal, offseted_pixel_worldPos, offseted_pixel_normal);
+            //weight *= isSampleSuitable;
+            
             accum_color += interpolated_color * weight;
             accum_weight += weight;
+            //accum_color += interpolated_color * isSampleSuitable;
+            //accum_weight += isSampleSuitable;
         }
-
-        if (accum_weight <= 1.0)
+        
+        if (accum_weight <= u_AccumulatedWeightThreshold)
         {
-            return float4(ComputeIndirectIlluminationForUVs(uv, psIn.worldPos, psIn.normal), 1);
-            return float4(1, 0, 0, 1);
+            bool bIsVisible = length(psIn.worldPos.xyz - G_Buffer.Sample(blitSamplerState, float3(screenspace_uv, SLICE_WORLDPOS)).xyz) < 0.01f;
+            if (bIsVisible)
+            {
+                return float4(ComputeIndirectIlluminationForUVs(uv, psIn.worldPos, psIn.normal), 1);
+                return float4(1, 0, 0, 1);
+            } 
         }
         else
         {
             return float4(accum_color / accum_weight, 1);
+            return float4(1, 1, 0, 1);
         }
     }
     

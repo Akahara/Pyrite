@@ -77,7 +77,7 @@ float4 DeferredLightPassFS(VS_OUT vsIn) : SV_Target
     float Ni        = armn.a;
     
     // -- Compute lighting (GGX)
-    
+    albedo = pow(albedo, 2.2);
     float3 V = normalize(cameraPosition - worldPos);
     float3 F0 = Ni.xxx;
     F0 = lerp(F0, albedo.xyz, metallic);
@@ -108,6 +108,7 @@ float4 DeferredLightPassFS(VS_OUT vsIn) : SV_Target
     // -- SSAO
     ao *= ssaoTexture.Sample(blitSamplerState, vsIn.texCoord).r;
     float3 GI = GI_CompositeTexture.Sample(blitSamplerState, vsIn.texCoord);
+    GI = float3(0,0,0);
     
     // -- Compute the color (ambiant + specular essentially)
     float3 diffuse = (environnementIrradiance + GI) * (albedo);

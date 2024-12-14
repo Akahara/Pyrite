@@ -35,6 +35,8 @@ float u_noiseScale = 10.f;
 float u_alpha = 0.005f;
 Texture2D blueNoise;
 
+static const int SLICE_NORMAL = 1;
+Texture2DArray G_Buffer;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -71,8 +73,9 @@ float4 ps(VSOut vs) : SV_Target
     float3 worldPos = calcWorldPos(vs.texCoord);
     
     float3 normal = cross(ddy_fine(worldPos.xyz), ddx_fine(worldPos.xyz));
+    normal = G_Buffer.Sample(blitSamplerState, float3(vs.texCoord, SLICE_NORMAL)).xyz;
     normal = normalize(normal);
-
+    
     float localDepth = depthBuffer.Sample(blitSamplerState, vs.texCoord).r;
 
     float4 whiteNoiseSample = blueNoise.Sample(MeshTextureSampler, vs.texCoord * u_noiseScale);

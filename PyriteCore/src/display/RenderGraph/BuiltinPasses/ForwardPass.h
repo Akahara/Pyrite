@@ -39,8 +39,8 @@ namespace pyr
 
                 virtual void apply() override
                 {
-                    //PYR_ENSURE(owner);
-                    //if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
+                    PYR_ENSURE(owner);
+                    if (!PYR_ENSURE(owner->GetContext().contextCamera)) return;
                     pcameraBuffer->setData(CameraBuffer::data_t{ .mvp = owner->GetContext().contextCamera->getViewProjectionMatrix(), .pos = owner->GetContext().contextCamera->getPosition() });
                     
                     Engine::d3dcontext().IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

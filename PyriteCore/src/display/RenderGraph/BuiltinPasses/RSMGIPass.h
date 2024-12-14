@@ -24,8 +24,8 @@ namespace pyr
         private:
 
             pyr::GraphicalResourceRegistry m_registry;
-            pyr::FrameBuffer m_indirectLighting{512,512, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
-            pyr::FrameBuffer m_lowResPass{64, 64, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_indirectLighting{ pyr::Device::getWinWidth(), pyr::Device::getWinHeight(), pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
+            pyr::FrameBuffer m_lowResPass{128, 128, pyr::FrameBuffer::COLOR_0 | pyr::FrameBuffer::DEPTH_STENCIL };
             pyr::FrameBuffer m_blurTarget{pyr::FrameBuffer::COLOR_0};
             pyr::Effect* computeIndirectLightingEffect;
             pyr::Effect* m_blurEffect;
@@ -39,7 +39,11 @@ namespace pyr
 
             float u_DistanceThreshold = 0.05f;
             float u_NormalThreshold = 0.95f;
+            float u_AccumulatedWeightThreshold = 3.0F;
+            float u_NormalWeight = 1.0F;
+            float u_DistanceWeight = .2F;
             float u_Rmax = 0.3f;
+            int   u_SampleCount = 10;
         
         public:
 
@@ -64,9 +68,6 @@ namespace pyr
                 
                 // -- Create raw light buffer
                 pyr::LightsCollections& lights = owner->GetContext().ActorsToRender.lights;
-                //LightsBuffer::data_t light_data{};
-                //std::copy_n(lights.ConvertCollectionToHLSL().begin(), std::size(light_data.lights), std::begin(light_data.lights));
-                //pLightBuffer->setData(light_data);
                 auto castsShadows = [](const pyr::BaseLight* light) -> bool { return light->isOn && light->shadowMode == pyr::DynamicShadow_RSM; };
                 auto filtered = lights.Spots | std::ranges::views::filter([&castsShadows](const pyr::SpotLight& spotlight) { return castsShadows(&spotlight); });
                 if (filtered.empty()) return;
@@ -82,6 +83,8 @@ namespace pyr
                 computeIndirectLightingEffect->setUniform<float>("u_NormalComparisonThreshold", u_NormalThreshold);
                 computeIndirectLightingEffect->setUniform<float>("u_Rmax", u_Rmax);
 
+                computeIndirectLightingEffect->bindTexture(std::get<TextureArray>(owner->getResourcesManager().fetchResource("G_Buffer")), "G_Buffer");
+
                 // 1. low res pass
                 m_lowResPass.clearTargets();
                 m_lowResPass.bind();
@@ -96,7 +99,7 @@ namespace pyr
                 m_indirectLighting.bind();
                 computeIndirectLightingEffect->setUniform<vec2>("u_FullTextureDimensions", m_indirectLighting.GetDimensions());
                 computeIndirectLightingEffect->bindTexture(m_lowResPass.getTargetAsTexture(pyr::FrameBuffer::COLOR_0), "LowResTexture");
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 1; i++)
                 {
                     computeIndirectLightingEffect->setUniform<int>("u_CurrentPassID", i + 1);
                     RenderFn();
@@ -108,7 +111,7 @@ namespace pyr
                 ///////// ---------------- ///////// 
                 
                 pyr::RenderProfiles::popDepthProfile();
-
+                OpenDebugWindow();
 
             }
 
@@ -142,6 +145,7 @@ namespace pyr
                     computeIndirectLightingEffect->unbindResources();
                 }
 
+
             }
 
             virtual bool HasDebugWindow() override { return true; }
@@ -151,12 +155,20 @@ namespace pyr
 
                 if (ImGui::SliderFloat("Distance comparison threshold", &u_DistanceThreshold, 0, 10.F) +
                     ImGui::SliderFloat("Normal comparison threshold", &u_NormalThreshold, 0, 1.F) +
-                    ImGui::SliderFloat("Sampling disk max radius", &u_Rmax, 0, 1.F)
+                    ImGui::SliderFloat("Sampling disk max radius", &u_Rmax, 0, 1.F) +
+                    ImGui::SliderFloat("Weight cutoff for non-interpolated values", &u_AccumulatedWeightThreshold, 0, 4.F) +
+                    ImGui::SliderFloat("Normal delta weighting", &u_NormalWeight, 0, 4.F) +
+                    ImGui::SliderFloat("Distance delta weighting", &u_DistanceWeight, 0, 30.F) +
+                    ImGui::DragInt("Sample count", &u_SampleCount, 1, 0, 30)
                     )
                 {
                     computeIndirectLightingEffect->setUniform<float>("u_DistanceComparisonThreshold", u_DistanceThreshold);
                     computeIndirectLightingEffect->setUniform<float>("u_NormalComparisonThreshold", u_NormalThreshold);
                     computeIndirectLightingEffect->setUniform<float>("u_Rmax", u_Rmax);
+                    computeIndirectLightingEffect->setUniform<float>("u_AccumulatedWeightThreshold", u_AccumulatedWeightThreshold);
+                    computeIndirectLightingEffect->setUniform<float>("u_DistanceWeight", u_DistanceWeight);
+                    computeIndirectLightingEffect->setUniform<float>("u_NormalWeight", u_NormalWeight);
+                    computeIndirectLightingEffect->setUniform<int>("u_SampleCount", u_SampleCount);
                 }
 
                 ImGui::End();
